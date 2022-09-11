@@ -43,7 +43,7 @@ const static char * GAMES_NAMES[] = {
 	"Skyrim Special Edition",
 };
 
-GHashTable * search_games();
+GHashTable* search_games(int * status);
 int getGameIdFromAppId(u_int32_t id);
 
 #endif

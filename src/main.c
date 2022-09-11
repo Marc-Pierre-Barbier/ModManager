@@ -364,8 +364,14 @@ int main(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	gamePaths = search_games();
+	int searchStatus;
+	gamePaths = search_games(&searchStatus);
 	int returnValue = EXIT_SUCCESS;
+
+	if(searchStatus == EXIT_FAILURE) {
+		printf("Error while looking up libraries, do you have steam installed ?");
+		goto exit;
+	}
 
 	char * configFolder = g_build_filename(getHome(), MANAGER_FILES, NULL);
 	if(access(configFolder, F_OK) != 0) {
@@ -377,7 +383,7 @@ int main(int argc, char ** argv) {
 		if(getuid() == 0) {
 			printf("For the first please run without sudo\n");
 			returnValue = EXIT_FAILURE;
-			goto exit;
+			goto exit2;
 		} else {
 			//leading 0 == octal
 			int i = g_mkdir_with_parents(configFolder, 0755);
@@ -445,7 +451,8 @@ int main(int argc, char ** argv) {
 		returnValue = EXIT_FAILURE;
 	}
 
-exit:
+exit2:
 	free(configFolder);
+exit:
 	return returnValue;
 }
