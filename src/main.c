@@ -89,6 +89,7 @@ int validateAppId(const char * appIdStr) {
 int listGames(int argc, char ** argv) {
 	if(argc != 2) return usage();
 	GList * gamesIds = g_hash_table_get_keys(gamePaths);
+	GList * gamesIdsFirstPointer = gamesIds;
 	if(g_list_length(gamesIds) == 0) {
 		printf("No game found\n");
 	} else {
@@ -98,6 +99,7 @@ int listGames(int argc, char ** argv) {
 			gamesIds = g_list_next(gamesIds);
 		}
 	}
+	g_list_free(gamesIdsFirstPointer);
 	return EXIT_SUCCESS;
 }
 
@@ -161,6 +163,8 @@ int installAndRemoveMod(int argc, char ** argv, bool install) {
 		return EXIT_FAILURE;
 	}
 
+	int returnValue = EXIT_SUCCESS;
+
 	//strtoul set EINVAL(after C99) if the string is invalid
 	u_int32_t modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
@@ -188,7 +192,8 @@ int installAndRemoveMod(int argc, char ** argv, bool install) {
 	if(install) {
 		if(access(modFlag, F_OK) == 0) {
 			printf("The mod is already activated \n");
-			return EXIT_SUCCESS;
+			returnValue = EXIT_SUCCESS;
+			goto exit;
 		}
 
 		//Create activated file
@@ -198,19 +203,24 @@ int installAndRemoveMod(int argc, char ** argv, bool install) {
 	} else {
 		if(access(modFlag, F_OK) != 0) {
 			printf("The mod is not activated \n");
-			return EXIT_SUCCESS;
+			returnValue = EXIT_SUCCESS;
+			goto exit;
 		}
 
 		if(unlink(modFlag) != 0) {
 			printf("Error could not disable the mod.\n");
 			printf("please remove this file '%s' as root\n", modFlag);
-			return EXIT_FAILURE;
+			returnValue = EXIT_FAILURE;
+			goto exit;
 		}
 	}
 
-	free(modFolder);
-	g_list_free(modsFirstPointer);
-	return EXIT_SUCCESS;
+exit:
+
+	g_free(modFolder);
+	g_list_free_full(modsFirstPointer, free);
+	g_free(modFlag);
+	return returnValue;
 }
 
 int deploy(int argc, char ** argv) {
@@ -339,6 +349,7 @@ int setup(int argc, char ** argv) {
 	return EXIT_SUCCESS;
 }
 
+
 int unbind(int argc, char ** argv) {
 	if(argc != 3 ) return usage();
 	char * appIdStr = argv[2];
@@ -358,7 +369,6 @@ int unbind(int argc, char ** argv) {
 int main(int argc, char ** argv) {
 	if(argc < 2 ) return usage();
 
-
 	if(audit_getloginuid() == 0) {
 		printf("Root user should not be using this\n");
 		return EXIT_FAILURE;
@@ -366,14 +376,17 @@ int main(int argc, char ** argv) {
 
 	int searchStatus;
 	gamePaths = search_games(&searchStatus);
-	int returnValue = EXIT_SUCCESS;
 
+	int returnValue = EXIT_SUCCESS;
 	if(searchStatus == EXIT_FAILURE) {
+		returnValue = EXIT_FAILURE;
 		printf("Error while looking up libraries, do you have steam installed ?");
 		goto exit;
 	}
 
-	char * configFolder = g_build_filename(getHome(), MANAGER_FILES, NULL);
+	char * home = getHome();
+	char * configFolder = g_build_filename(home, MANAGER_FILES, NULL);
+	free(home);
 	if(access(configFolder, F_OK) != 0) {
 
 		//check to NOT run this as root
@@ -394,7 +407,7 @@ int main(int argc, char ** argv) {
 			//failure would have no impact
 			char * chattrcommand = g_strjoin("", "chattr +F ",configFolder, " 2> /dev/null", NULL);
 			system(chattrcommand);
-			free(chattrcommand);
+			g_free(chattrcommand);
 		}
 	}
 
@@ -452,7 +465,8 @@ int main(int argc, char ** argv) {
 	}
 
 exit2:
-	free(configFolder);
+	g_free(configFolder);
+	g_hash_table_destroy(gamePaths);
 exit:
 	return returnValue;
 }

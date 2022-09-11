@@ -99,6 +99,7 @@ ValveLibraries_t * parseVDF(const char * path, size_t * size, int * status) {
 
 							case FIELD_TOTAL_SIZE:
 								library->totalSize = strtoul(value, NULL, 0);
+								free(value);
 								break;
 
 							case FIELD_CLEAN_BYTES:
@@ -162,6 +163,7 @@ ValveLibraries_t * parseVDF(const char * path, size_t * size, int * status) {
 	}
 
 exit:
+	if(line != NULL) free(line);
 	fclose(fd);
 	return libraries;
 }
@@ -189,8 +191,10 @@ GHashTable* search_games(int * status) {
 		if (access(path, F_OK) == 0) {
 			int parserStatus;
 			libraries = parseVDF(path, &size, &parserStatus);
-			if(parserStatus == EXIT_SUCCESS)
+			if(parserStatus == EXIT_SUCCESS) {
+				g_free(path);
 				break;
+			}
 		}
 
 		g_free(path);
@@ -202,7 +206,7 @@ GHashTable* search_games(int * status) {
 		return NULL;
 	}
 
-	GHashTable* table = g_hash_table_new(g_int_hash, g_int_equal);
+	GHashTable* table = g_hash_table_new_full(g_int_hash, g_int_equal, free, free);
 
 	//fill the table
 	for(int i = 0; i < size; i++) {
