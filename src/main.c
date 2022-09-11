@@ -283,7 +283,6 @@ int deploy(int argc, char ** argv) {
 	int gameId = getGameIdFromAppId(appid);
 	const char * path = g_hash_table_lookup(gamePaths, &gameId);
 	char * steamGameFolder = g_build_path("/", path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
-	printf("%s\n", steamGameFolder);
 
 	char * gameUpperDir = g_build_filename(home, MANAGER_FILES, GAME_UPPER_DIR_NAME, appIdStr, NULL);
 	char * gameWorkDir = g_build_filename(home, MANAGER_FILES, GAME_WORK_DIR_NAME, appIdStr, NULL);
@@ -360,7 +359,8 @@ int unbind(int argc, char ** argv) {
 	int gameId = getGameIdFromAppId(appid);
 	const char * path = g_hash_table_lookup(gamePaths, &gameId);
 	char * steamGameFolder = g_build_path("/", path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
-	while(umount2(steamGameFolder, MNT_FORCE | MNT_DETACH));
+
+	while(umount2(steamGameFolder, MNT_FORCE | MNT_DETACH) == 0);
 
 	free(steamGameFolder);
 	return EXIT_SUCCESS;
