@@ -1,0 +1,4 @@
+1.
+only support betheshda game for now, i spent enough time codding this.
+2.
+try alternatives to overlayfs
