@@ -32,17 +32,17 @@ int getFiledId(const char * field) {
 		return FIELD_APPS;
 	} else {
 		printf("unknown field");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 }
 
-ValveLibraries_t * parseVDF(const char * path, size_t * size) {
+ValveLibraries_t * parseVDF(const char * path, size_t * size, int * status) {
 	FILE * fd = fopen(path, "r");
 	char * line = NULL;
 	size_t len = 0;
 	ssize_t read;
 
-
+	*status = EXIT_SUCCESS;
 
 	bool inQuotes = false;
 
@@ -75,6 +75,11 @@ ValveLibraries_t * parseVDF(const char * path, size_t * size) {
 						buffer[bufferIndex] = '\0';
 						if(nextFieldToFill == -1) {
 							nextFieldToFill = getFiledId(buffer);
+							if(nextFieldToFill == -1) {
+								if(libraries != NULL) free(libraries);
+								libraries = NULL;
+								goto exit;
+							}
 
 						} else {
 							char * value = strndup(buffer, bufferIndex);
@@ -137,7 +142,10 @@ ValveLibraries_t * parseVDF(const char * path, size_t * size) {
 			case '}':
 				if(inQuotes) {
 					printf("Syntax error in VDF\n");
-					exit(EXIT_FAILURE);
+					free(libraries);
+					libraries = NULL;
+					*status = EXIT_FAILURE;
+					goto exit;
 				}
 				if(nextFieldToFill == FIELD_APPS) {
 					nextFieldToFill = -1;
@@ -153,23 +161,45 @@ ValveLibraries_t * parseVDF(const char * path, size_t * size) {
 		}
 	}
 
+exit:
 	fclose(fd);
 	return libraries;
 }
 
-GHashTable* search_games() {
+void freeLibraries(ValveLibraries_t * libraries, int size) {
+	for(int i = 0; i < size; i++) {
+		free(libraries[i].path);
+		free(libraries[i].label);
+		free(libraries[i].contentId);
+		free(libraries[i].update_clean_bytes_tally);
+		free(libraries[i].time_last_update_corruption);
+		free(libraries[i].apps);
+	}
+	free(libraries);
+}
+
+GHashTable* search_games(int * status) {
 	ValveLibraries_t * libraries = NULL;
 	size_t size = 0;
-	const char * HOME = getHome();
+	char * home = getHome();
+	*status = EXIT_SUCCESS;
 
 	for(int i = 0; i < LEN(steamLibraries); i++) {
-		char * path = g_build_filename(HOME, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
+		char * path = g_build_filename(home, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
 		if (access(path, F_OK) == 0) {
-			libraries = parseVDF(path, &size);
-			break;
+			int parserStatus;
+			libraries = parseVDF(path, &size, &parserStatus);
+			if(parserStatus == EXIT_SUCCESS)
+				break;
 		}
 
 		g_free(path);
+	}
+
+	free(home);
+	if(libraries == NULL) {
+		*status = EXIT_FAILURE;
+		return NULL;
 	}
 
 	GHashTable* table = g_hash_table_new(g_int_hash, g_int_equal);
@@ -186,17 +216,7 @@ GHashTable* search_games() {
 		}
 	}
 
-	//free used up memory
-	for(int i = 0; i < size; i++) {
-		free(libraries[i].path);
-		free(libraries[i].label);
-		free(libraries[i].contentId);
-		free(libraries[i].update_clean_bytes_tally);
-		free(libraries[i].time_last_update_corruption);
-		free(libraries[i].apps);
-	}
-
-	if(libraries != NULL) free(libraries);
+	freeLibraries(libraries, size);
 	return table;
 }
 

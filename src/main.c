@@ -365,17 +365,19 @@ int main(int argc, char ** argv) {
 	}
 
 	gamePaths = search_games();
-
-
-
+	int returnValue = EXIT_SUCCESS;
 
 	char * configFolder = g_build_filename(getHome(), MANAGER_FILES, NULL);
 	if(access(configFolder, F_OK) != 0) {
+
 		//check to NOT run this as root
 		//creating folder as root will causes lots of headache
+		//such as problem with access rights and taking the risk of
+		//running system as root (wich is a big security issue)
 		if(getuid() == 0) {
 			printf("For the first please run without sudo\n");
-			return EXIT_FAILURE;
+			returnValue = EXIT_FAILURE;
+			goto exit;
 		} else {
 			//leading 0 == octal
 			int i = g_mkdir_with_parents(configFolder, 0755);
@@ -389,37 +391,61 @@ int main(int argc, char ** argv) {
 			free(chattrcommand);
 		}
 	}
-	free(configFolder);
 
 
 	if(strcmp(argv[1], "--list-games") == 0 || strcmp(argv[1], "-l") == 0) {
-		if(isRoot()) return noRoot();
-		return listGames(argc, argv);
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = listGames(argc, argv);
+
 	} else if(strcmp(argv[1], "--add") == 0 || strcmp(argv[1], "-a") == 0) {
-		if(isRoot()) return noRoot();
-		return add(argc, argv);
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = add(argc, argv);
+
 	} else if(strcmp(argv[1], "--list-mods") == 0 || strcmp(argv[1], "-m") == 0) {
-		if(isRoot()) return noRoot();
-		return listMods(argc, argv);
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = listMods(argc, argv);
+
 	} else if(strcmp(argv[1], "--install") == 0 || strcmp(argv[1], "-i") == 0) {
-		if(isRoot()) return noRoot();
-		return installAndRemoveMod(argc, argv, true);
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = installAndRemoveMod(argc, argv, true);
+
 	} else if(strcmp(argv[1], "--remove") == 0 || strcmp(argv[1], "-r") == 0) {
-		if(isRoot()) return noRoot();
-		return installAndRemoveMod(argc, argv, false);
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = installAndRemoveMod(argc, argv, false);
+
 	} else if(strcmp(argv[1], "--deploy") == 0 || strcmp(argv[1], "-d") == 0) {
-		if(!isRoot()) return needRoot();
-		return deploy(argc, argv);
+		if(!isRoot())
+			returnValue = needRoot();
+		else
+			returnValue = deploy(argc, argv);
+
 	} else if(strcmp(argv[1], "--unbind") == 0 || strcmp(argv[1], "-u") == 0){
-		if(!isRoot()) return needRoot();
-		return unbind(argc, argv);
+		if(!isRoot())
+			returnValue = needRoot();
+		else
+			returnValue = unbind(argc, argv);
+
 	} else if(strcmp(argv[1], "--setup") == 0) {
-		if(isRoot()) return noRoot();
-		return setup(argc, argv);
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = setup(argc, argv);
 	} else {
-		return usage();
+		usage();
+		returnValue = EXIT_FAILURE;
 	}
 
-
-	return 0;
+exit:
+	free(configFolder);
+	return returnValue;
 }
