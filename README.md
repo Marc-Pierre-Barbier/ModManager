@@ -30,7 +30,7 @@ Use --unbind or -u <APPID> to rollback a deployment
 ## instructions and warnings about casefold:
 Casefold is and options in some linux filesystems that will make a folder (not the whole filesystem) case insensitive, this is really good for proton since it gives a small lookup performance boost and allow us to install mods without fearing having two file with the same name.
 
-sadly i don't think overlayfs support it, but it might still be worth a try
+sadly i don't think overlayfs support it, but it might still be worth a try. currently i haven't tested without casefold and mods might break because of that.
 
 
 

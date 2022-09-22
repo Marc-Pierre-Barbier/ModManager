@@ -392,7 +392,7 @@ int main(int argc, char ** argv) {
 		//check to NOT run this as root
 		//creating folder as root will causes lots of headache
 		//such as problem with access rights and taking the risk of
-		//running system as root (wich is a big security issue)
+		//running system as root (which is a big security issue)
 		if(getuid() == 0) {
 			printf("For the first please run without sudo\n");
 			returnValue = EXIT_FAILURE;
