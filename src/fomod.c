@@ -2,11 +2,14 @@
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/xmlstring.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-
+#include <dirent.h>
+#include <glib.h>
+#include "file.h"
 
 //TODO:cleanup prop
 //and other strings
@@ -63,12 +66,12 @@ TypeDescriptor_t getDescriptor(const char * descriptor) {
 	}
 }
 
-FOModGroup_t * parseGroup(xmlNodePtr groupNode) {
+FOModGroup_t parseGroup(xmlNodePtr groupNode) {
 	xmlNodePtr pluginsNode = groupNode->children;
-	FOModGroup_t * group = malloc(sizeof(FOModGroup_t));
-	group->name = (char *) xmlGetProp( groupNode, (const xmlChar *) "name");
-	group->type = getGroupType((char *) xmlGetProp(groupNode, (const xmlChar *) "type"));
-	group->order = getFOModOrder((char *) xmlGetProp(pluginsNode, (const xmlChar *) "order"));
+	FOModGroup_t group;
+	group.name = (char *) xmlGetProp( groupNode, (const xmlChar *) "name");
+	group.type = getGroupType((char *) xmlGetProp(groupNode, (const xmlChar *) "type"));
+	group.order = getFOModOrder((char *) xmlGetProp(pluginsNode, (const xmlChar *) "order"));
 	FOModPlugin_t * plugins = NULL;
 	int pluginCount = 0;
 
@@ -125,8 +128,8 @@ FOModGroup_t * parseGroup(xmlNodePtr groupNode) {
 		currentPlugin = currentPlugin->next;
 	}
 
-	group->plugins = plugins;
-	group->pluginCount = pluginCount;
+	group.plugins = plugins;
+	group.pluginCount = pluginCount;
 	return group;
 }
 
@@ -143,6 +146,7 @@ FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
 		step->name = (char *)xmlGetProp(stepNode, (const xmlChar *)"name");
 		step->requiredFlags = NULL;
 		step->flagCount = 0;
+		step->groupCount = 0;
 
 		xmlNodePtr stepchildren = stepNode->children;
 
@@ -164,7 +168,9 @@ FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
 				if(stepchildren != NULL) {
 					step->optionOrder = getFOModOrder((const char *)xmlGetProp(stepchildren, (const xmlChar *)"order"));
 					xmlNodePtr group = stepchildren->children;
-					step->groups = parseGroup(group);
+					step->groupCount += 1;
+					step->groups = realloc(step->groups, step->groupCount * sizeof(FOModGroup_t));
+					step->groups[step->groupCount - 1] = parseGroup(group);
 				}
 			}
 
@@ -296,4 +302,187 @@ void parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	}
 
 	xmlFreeDoc(doc);
+}
+
+int getInputCount(const char * input) {
+	char buff[2];
+	buff[1] = '\0';
+
+	int elementCount = 0;
+
+	for(int i = 0; input[i] != '\0'; i++) {
+		buff[0] = input[i];
+		//if the character is a valid character
+		if(strstr("0123456789 ", buff) != NULL) {
+			if(input[i] == ' ') elementCount += 1;
+		} else {
+			return -1;
+		}
+
+	}
+
+	return elementCount;
+}
+
+char * findFOModFolder(const char * modFolder) {
+	struct dirent * dir;
+	DIR *d = opendir(modFolder);
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			if(g_ascii_strcasecmp(dir->d_name, "fomod") == 0) {
+				char * fomodDir = g_build_path(modFolder, dir->d_name, NULL);
+				closedir(d);
+				return fomodDir;
+			}
+		}
+		closedir(d);
+	}
+	return NULL;
+}
+
+char * findFOModFile(const char * fomodFolder) {
+	struct dirent * dir;
+	DIR *d = opendir(fomodFolder);
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			if(g_ascii_strcasecmp(dir->d_name, "moduleconfig.xml") == 0) {
+				char * fomodFile = g_build_filename(fomodFolder, dir->d_name, NULL);
+				closedir(d);
+				return fomodFile;
+			}
+		}
+		closedir(d);
+	}
+	return NULL;
+}
+
+void printfOptionsInOrder(FOModGroup_t group) {
+	for(int i = 0; i < group.pluginCount; i++) {
+		printf("%d, %s\n", i, group.plugins[i].name);
+		printf("%s\n", group.plugins[i].description);
+	}
+}
+
+gint flagEqual(const FOModFlag_t * a, const FOModFlag_t * b) {
+	int nameCmp = strcmp(a->name, b->name);
+	if(nameCmp == 0) {
+		if(strcmp(a->value, b->value) == 0)
+			//is equal
+			return 0;
+
+		return 1;
+	}
+	return nameCmp;
+}
+
+//TODO: support order parameters
+void installFOMod(const char * modFolder, const char * destination) {
+	char * fomodFolder = findFOModFolder(modFolder);
+	char * fomodFile = findFOModFile(fomodFolder);
+
+	FOMod_t fomod;
+	parseFOMod(fomodFile, &fomod);
+
+	GList * flagList = g_list_alloc();
+
+	for(int i = 0; i < fomod.stepCount; i++) {
+		FOModStep_t * step = &fomod.steps[i];
+
+		bool validFlags = true;
+		for(int i = 0; i < step->flagCount; i++) {
+			GList * flagLink = g_list_find_custom(flagList, &step->requiredFlags[i], (GCompareFunc)flagEqual);
+			if(flagLink == NULL) {
+				validFlags = false;
+				break;
+			}
+		}
+
+		if(!validFlags) continue;
+
+		for(int groupId = 0; groupId < step->groupCount; groupId++ ) {
+			FOModGroup_t group = step->groups[groupId];
+
+			int min;
+			int max;
+			int inputCount = 0;
+			char *inputBuffer = NULL;
+
+			while(true) {
+				printfOptionsInOrder(group);
+				switch(group.type) {
+				case ONE_ONLY:
+					printf("Select one :\n");
+					min = 1;
+					max = 1;
+					break;
+
+				case ANY:
+					printf("Select any (space separated) (leave empty for nothing) :\n");
+					min = 0;
+					max = group.pluginCount - 1;
+					break;
+
+				case AT_LEAST_ONE:
+					printf("Select at least one (space separated) (leave empty for nothing) :\n");
+					min = 1;
+					max = group.pluginCount - 1;
+					break;
+
+				case AT_MOST_ONE:
+					printf("Select one or none (space separated) (leave empty for nothing) :\n");
+					min = 0;
+					max = 1;
+					break;
+
+				case ALL:
+					printf("Press enter to continue\n");
+					min = 0;
+					max = 0;
+					break;
+				}
+
+
+				if(scanf( "%ms", &inputBuffer) == 1) {
+					inputCount = getInputCount(inputBuffer);
+					if(inputCount <= max && inputCount >= min) {
+						break;
+					}
+					fprintf(stderr, "Invalid input");
+					free(inputBuffer);
+				} else {
+				//TODO: handle error
+				}
+			}
+
+			GRegex* regex = g_regex_new("\\s*", 0, 0, NULL);
+			char ** choices = g_regex_split(regex, inputBuffer, 0);
+
+			for(int choiceId = 0; choices[choiceId] != NULL; choiceId++) {
+				int choice = atoi(choices[choiceId]);
+				FOModPlugin_t plugin = group.plugins[choice];
+				for(int i = 0; i < plugin.flagCount; i++) {
+					flagList = g_list_append(flagList, &plugin.flags[i]);
+				}
+
+				//do the install
+				for(int i = 0; i < plugin.fileCount; i++) {
+					FOModFile_t * file = &plugin.files[i];
+
+					//TODO: support file->destination
+					//using link to save disk space.
+					if(file->isFolder) {
+						copy(file->source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE | CP_LINK);
+					} else {
+						copy(file->source, destination, CP_LINK);
+					}
+
+				}
+			}
+
+			g_strfreev(choices);
+			g_regex_unref(regex);
+			free(inputBuffer);
+		}
+	}
+	g_list_free(flagList);
 }

@@ -43,6 +43,7 @@ typedef struct FOModGroup {
 typedef struct FOModStep {
 	FOModOrder_t optionOrder;
 	FOModGroup_t * groups;
+	int groupCount;
 	char * name;
 	FOModFlag_t * requiredFlags;
 	int flagCount;
