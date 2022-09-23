@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <glib.h>
 #include "file.h"
+#include "libxml/globals.h"
 
 //TODO:cleanup prop
 //and other strings
@@ -66,12 +67,25 @@ TypeDescriptor_t getDescriptor(const char * descriptor) {
 	}
 }
 
+char * freeAndDup(xmlChar * line) {
+	char * free = strdup((const char *) line);
+	xmlFree(line);
+	return free;
+}
+
 FOModGroup_t parseGroup(xmlNodePtr groupNode) {
 	xmlNodePtr pluginsNode = groupNode->children;
 	FOModGroup_t group;
-	group.name = (char *) xmlGetProp( groupNode, (const xmlChar *) "name");
-	group.type = getGroupType((char *) xmlGetProp(groupNode, (const xmlChar *) "type"));
-	group.order = getFOModOrder((char *) xmlGetProp(pluginsNode, (const xmlChar *) "order"));
+	group.name = freeAndDup(xmlGetProp( groupNode, (const xmlChar *) "name"));
+
+	xmlChar * type = xmlGetProp(groupNode, (const xmlChar *) "type");
+	group.type = getGroupType((const char *)type);
+	xmlFree(type);
+
+	char * order = (char *) xmlGetProp(pluginsNode, (const xmlChar *) "order");
+	group.order = getFOModOrder(order);
+	xmlFree(order);
+
 	FOModPlugin_t * plugins = NULL;
 	int pluginCount = 0;
 
@@ -81,14 +95,14 @@ FOModGroup_t parseGroup(xmlNodePtr groupNode) {
 		plugins = realloc(plugins, pluginCount * sizeof(FOModPlugin_t));
 		FOModPlugin_t * plugin = &plugins[pluginCount - 1];
 
-		plugin->name = (char *) xmlGetProp(currentPlugin, (const xmlChar *) "name");
+		plugin->name = freeAndDup(xmlGetProp(currentPlugin, (const xmlChar *) "name"));
 
 		xmlNodePtr nodeElement = currentPlugin->children;
 		while(nodeElement != NULL) {
 			if(xmlStrcmp(nodeElement->name, (const xmlChar *) "description") == 0) {
-				plugin->description = (char *) xmlNodeGetContent(nodeElement);
+				plugin->description = freeAndDup(xmlNodeGetContent(nodeElement));
 			} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "image") == 0) {
-				plugin->image = (char *) xmlGetProp(currentPlugin, (const xmlChar *) "path");
+				plugin->image = freeAndDup(xmlGetProp(currentPlugin, (const xmlChar *) "path"));
 			} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "conditionFlags") == 0) {
 				FOModFlag_t * flags = NULL;
 				int flagCount = 0;
@@ -97,8 +111,8 @@ FOModGroup_t parseGroup(xmlNodePtr groupNode) {
 					flagCount += 1;
 					flags = realloc(flags, flagCount * sizeof(FOModFlag_t));
 
-					flags[flagCount - 1].name = (char *) xmlGetProp(nodeElement, (const xmlChar *) "name");
-					flags[flagCount - 1].value = (char *) xmlNodeGetContent(nodeElement);
+					flags[flagCount - 1].name = freeAndDup(xmlGetProp(nodeElement, (const xmlChar *) "name"));
+					flags[flagCount - 1].value = freeAndDup(xmlNodeGetContent(nodeElement));
 
 					flagNode = flagNode->next;
 				}
@@ -111,16 +125,22 @@ FOModGroup_t parseGroup(xmlNodePtr groupNode) {
 					filesCount += 1;
 
 					files = realloc(files, (filesCount + 1) * sizeof(FOModFile_t));
-					files[filesCount - 1].destination = (char *) xmlGetProp(nodeElement, (const xmlChar *) "destination");
-					files[filesCount - 1].source = (char *) xmlGetProp(nodeElement, (const xmlChar *) "source");
-					files[filesCount - 1].priority = atoi((char *) xmlGetProp(nodeElement, (const xmlChar *) "priority"));
+					files[filesCount - 1].destination = freeAndDup(xmlGetProp(nodeElement, (const xmlChar *) "destination"));
+					files[filesCount - 1].source = freeAndDup(xmlGetProp(nodeElement, (const xmlChar *) "source"));
+					//TODO: test if it's a number
+					//TODO: test if props is present and default to 0
+					xmlChar * priority = xmlGetProp(nodeElement, (const xmlChar *) "priority");
+					files[filesCount - 1].priority = atoi((char *)priority);
+					xmlFree(priority);
 					files[filesCount - 1].isFolder = xmlStrcmp(nodeElement->name, (const xmlChar *) "folder") == 0;
 
 					flagNode = flagNode->next;
 				}
 				plugin->files = files;
 			} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "typeDescriptor") == 0) {
-				plugin->type = getDescriptor((char *) xmlGetProp(nodeElement->children, (const xmlChar *) "name"));
+				xmlChar * name = xmlGetProp(nodeElement->children, (const xmlChar *) "name");
+				plugin->type = getDescriptor((char *) name);
+				xmlFree(name);
 			}
 		}
 
@@ -143,7 +163,7 @@ FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
 		steps = realloc(steps, *stepCount * sizeof(FOModStep_t));
 
 		FOModStep_t * step = &steps[*stepCount - 1];
-		step->name = (char *)xmlGetProp(stepNode, (const xmlChar *)"name");
+		step->name = freeAndDup(xmlGetProp(stepNode, (const xmlChar *)"name"));
 		step->requiredFlags = NULL;
 		step->flagCount = 0;
 		step->groupCount = 0;
@@ -158,15 +178,17 @@ FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
 					step->flagCount += 1;
 					step->requiredFlags = realloc(step->requiredFlags, step->flagCount * sizeof(FOModFlag_t));
 					FOModFlag_t * flag = &(step->requiredFlags[step->flagCount - 1]);
-					flag->name = (char *) xmlGetProp(requiredFlagsNode, (const xmlChar *) "flag");
-					flag->value = (char *) xmlGetProp(requiredFlagsNode, (const xmlChar *) "value");
+					flag->name = freeAndDup(xmlGetProp(requiredFlagsNode, (const xmlChar *) "flag"));
+					flag->value = freeAndDup(xmlGetProp(requiredFlagsNode, (const xmlChar *) "value"));
 
 					requiredFlagsNode = requiredFlagsNode->next;
 				}
 
 			} else if(xmlStrcmp(stepchildren->name, (const xmlChar *) "optionalFileGroups") == 0) {
 				if(stepchildren != NULL) {
-					step->optionOrder = getFOModOrder((const char *)xmlGetProp(stepchildren, (const xmlChar *)"order"));
+					xmlChar * optionOrder = xmlGetProp(stepchildren, (const xmlChar *)"order");
+					step->optionOrder = getFOModOrder((char *)optionOrder);
+					xmlFree(optionOrder);
 					xmlNodePtr group = stepchildren->children;
 					step->groupCount += 1;
 					step->groups = realloc(step->groups, step->groupCount * sizeof(FOModGroup_t));
@@ -187,6 +209,15 @@ FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
 void parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	xmlDocPtr doc;
 	xmlNodePtr cur;
+
+	fomod->condFiles = NULL;
+	fomod->condFilesCount = 0;
+	fomod->requiredInstallFiles = NULL;
+	fomod->stepCount = 0;
+	fomod->stepOrder = 0;
+	fomod->steps = NULL;
+	fomod->moduleImage = NULL;
+	fomod->moduleName = NULL;
 
 	doc = xmlParseFile(fomodFile);
 
@@ -213,9 +244,7 @@ void parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 			//might cause some issues. when will c finally support utf-8
 			fomod->moduleName = (char *)cur->content;
 		} else if(xmlStrcmp(cur->name, (const xmlChar *) "moduleImage") == 0) {
-			xmlChar * imagePath = xmlGetProp(cur, (const xmlChar *)"path");
-			fomod->moduleImage = strdup((const char *)imagePath);
-			xmlFree(imagePath);
+			fomod->moduleImage = freeAndDup(xmlGetProp(cur, (const xmlChar *)"path"));
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"requiredInstallFiles") == 0) {
 			//TODO: support non empty destination.
 			xmlNodePtr requiredInstallFile = cur->children;
@@ -240,12 +269,14 @@ void parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 			int stepCount = 0;
 			FOModStep_t * steps = parseInstallSteps(cur, &stepCount);
 
+			if(fomod->steps == NULL) {
+				//TODO: manage the error
+				exit(1);
+			}
+
 			fomod->steps = steps;
 			fomod->stepCount = stepCount;
 		} else if(xmlStrcmp(cur->name, (const xmlChar *) "conditionalFileInstalls") == 0) {
-			fomod->condFiles = NULL;
-			fomod->condFilesCount = 0;
-
 			xmlNodePtr patterns = cur->children;
 			if(patterns != NULL) {
 				xmlNodePtr currentPattern = patterns->children;
@@ -270,8 +301,8 @@ void parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 								condFile->flagCount += 1;
 								condFile->requiredFlags = realloc(condFile->requiredFlags, condFile->flagCount * sizeof(FOModFlag_t));
 								FOModFlag_t * flag = &(condFile->requiredFlags[condFile->flagCount - 1]);
-								flag->name = (char *) xmlGetProp(flagNode, (const xmlChar *) "flag");
-								flag->value = (char *) xmlGetProp(flagNode, (const xmlChar *) "value");
+								flag->name = freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "flag"));
+								flag->value = freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "value"));
 
 								flagNode = flagNode->next;
 							}
@@ -284,8 +315,8 @@ void parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 								condFile->fileCount += 1;
 								condFile->files = realloc(condFile->files, condFile->fileCount * sizeof(FOModFile_t));
 								FOModFile_t * flag = &(condFile->files[condFile->fileCount - 1]);
-								flag->source = (char *) xmlGetProp(filesNode, (const xmlChar *) "source");
-								flag->destination = (char *) xmlGetProp(filesNode, (const xmlChar *) "destination");
+								flag->source = freeAndDup(xmlGetProp(filesNode, (const xmlChar *) "source"));
+								flag->destination =  freeAndDup(xmlGetProp(filesNode, (const xmlChar *) "destination"));
 								flag->priority = 0;
 								flag->isFolder = xmlStrcmp(patternChild->name, (xmlChar *) "folder") == 0;
 
@@ -375,7 +406,71 @@ gint flagEqual(const FOModFlag_t * a, const FOModFlag_t * b) {
 	return nameCmp;
 }
 
+//Maybe integrate this into the rest of the code instead of freeing after the fact
+void freeFOMod(FOMod_t * fomod) {
+	for(int i = 0; i < fomod->condFilesCount; i++) {
+		FOModCondFile_t * condFile = &(fomod->condFiles[i]);
+		for(int fileId = 0; fileId < condFile->fileCount; fileId++) {
+			free(condFile->files[fileId].destination);
+			free(condFile->files[fileId].source);
+		}
+
+		for(int flagId = 0; flagId < condFile->flagCount; flagId++) {
+			FOModFlag_t * flag = &(condFile->requiredFlags[flagId]);
+			free(flag->name);
+			free(flag->value);
+		}
+		free(condFile->files);
+		free(condFile->requiredFlags);
+	}
+	free(fomod->condFiles);
+
+	free(fomod->moduleImage);
+	free(fomod->moduleName);
+
+	int size = countUntilNull(fomod->requiredInstallFiles);
+	for(int i = 0; i < size; i++) {
+		free(fomod->requiredInstallFiles[i]);
+	}
+	free(fomod->requiredInstallFiles);
+
+	for(int i = 0; i < fomod->stepCount; i++) {
+		FOModStep_t * step = &fomod->steps[i];
+		for(int groupId = 0; groupId < step->groupCount; groupId++) {
+			FOModGroup_t * group = &step->groups[groupId];
+			free(group->name);
+			for(int pluginId = 0; pluginId < group->pluginCount; pluginId++) {
+				FOModPlugin_t * plugin = &(group->plugins[pluginId]);
+				free(plugin->description);
+				free(plugin->image);
+				free(plugin->name);
+				for(int fileId = 0; fileId < plugin->fileCount; fileId++) {
+					free(plugin->files[fileId].destination);
+					free(plugin->files[fileId].source);
+				}
+
+				for(int flagId = 0; flagId < plugin->flagCount; flagId++) {
+					free(plugin->flags[flagId].name);
+					free(plugin->flags[flagId].value);
+				}
+
+				free(plugin->files);
+				free(plugin->flags);
+			}
+			free(step->groups[groupId].plugins);
+		}
+		for(int flagId = 0; flagId < step->flagCount; flagId++) {
+			FOModFlag_t * flag = &(step->requiredFlags[flagId]);
+			free(flag->name);
+			free(flag->value);
+		}
+		free(step->requiredFlags);
+		free(step->name);
+	}
+}
+
 //TODO: support order parameters
+//TODO: support priority
 void installFOMod(const char * modFolder, const char * destination) {
 	char * fomodFolder = findFOModFolder(modFolder);
 	char * fomodFile = findFOModFile(fomodFolder);
@@ -470,12 +565,12 @@ void installFOMod(const char * modFolder, const char * destination) {
 
 					//TODO: support file->destination
 					//using link to save disk space.
+					//TODO: check for copy success
 					if(file->isFolder) {
 						copy(file->source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE | CP_LINK);
 					} else {
 						copy(file->source, destination, CP_LINK);
 					}
-
 				}
 			}
 
@@ -484,5 +579,35 @@ void installFOMod(const char * modFolder, const char * destination) {
 			free(inputBuffer);
 		}
 	}
+
+	for(int condId = 0; condId < fomod.condFilesCount; condId++) {
+		FOModCondFile_t *condfile = &fomod.condFiles[condId];
+
+		bool areAllFlagsValid = true;
+
+		//check if all flags are valid;
+		for(int flagId = 0; flagId < condfile->flagCount; flagId++) {
+			GList * link = g_list_find_custom(flagList, &(condfile->requiredFlags[flagId]), (GCompareFunc)flagEqual);
+			if(link == NULL) {
+				areAllFlagsValid = false;
+				break;
+			}
+		}
+
+		if(areAllFlagsValid) {
+			for(int fileId = 0; fileId < condfile->flagCount; fileId++) {
+				FOModFile_t * file = &(condfile->files[fileId]);
+				//TODO: support destination
+				//TODO: handle error
+				if(file->isFolder) {
+					copy(file->source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE | CP_LINK);
+				} else {
+					copy(file->source, destination, CP_LINK);
+				}
+			}
+		}
+	}
 	g_list_free(flagList);
+	freeFOMod(&fomod);
+	//TODO: properly free
 }
