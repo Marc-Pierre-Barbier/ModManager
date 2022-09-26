@@ -15,6 +15,7 @@
 #include "steam.h"
 #include "main.h"
 #include "file.h"
+#include "fomod.h"
 
 GHashTable * gamePaths;
 
@@ -58,6 +59,7 @@ int usage() {
 	printf("Use --remove or -r <APPID> <MODID> to remove a mod from a game\n");
 	printf("Use --deploy or -d <APPID> to deploy the mods for the game\n");
 	printf("Use --unbind or -u <APPID> to rollback a deployment\n");
+	printf("Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod\n");
 	//TODO: as bonus
 	//printf("Use --start-game <APPID> to deploy the mods and launch the game through steam\n");
 	//printf("Use --steam in team cmdline options to deploy directly on game startup\n");
@@ -124,7 +126,9 @@ int listMods(int argc, char ** argv) {
 	}
 
 	//might crash if no mods were installed
-	char * modFolder = g_build_filename(getenv("HOME"), MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	char * home = getHome();
+	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	free(home);
 	GList * mods = listFilesInFolder(modFolder);
 	unsigned short index = 0;
 
@@ -165,15 +169,16 @@ int installAndRemoveMod(int argc, char ** argv, bool install) {
 
 	int returnValue = EXIT_SUCCESS;
 
-	//strtoul set EINVAL(after C99) if the string is invalid
+	//strtoul set EINVAL if the string is invalid
 	u_int32_t modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
-		printf("Appid has to be a valid number\n");
+		printf("ModId has to be a valid number\n");
 		return -1;
 	}
 
 	//might crash if no mods were installed
-	char * modFolder = g_build_filename(getenv("HOME"), MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	char * home = getHome();
+	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
 	GList * mods = listFilesInFolder(modFolder);
 	GList * modsFirstPointer = mods;
 
@@ -366,6 +371,54 @@ int unbind(int argc, char ** argv) {
 	return EXIT_SUCCESS;
 }
 
+int fomod(int argc, char ** argv) {
+	if(argc != 4) return usage();
+	char * appIdStr = argv[2];
+	u_int32_t appid = validateAppId(appIdStr);
+	if(appid < 0) {
+		printf("Invalid appid");
+		return EXIT_FAILURE;
+	}
+
+	//strtoul set EINVAL if the string is invalid
+	u_int32_t modId = strtoul(argv[3], NULL, 10);
+	if(errno == EINVAL) {
+		printf("Modid has to be a valid number\n");
+		return -1;
+	}
+
+	//might crash if no mods were installed
+	char * home = getHome();
+	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	free(home);
+	GList * mods = listFilesInFolder(modFolder);
+	GList * modsFirstPointer = mods;
+
+	for(int i = 0; i < modId; i++) {
+		mods = g_list_next(mods);
+	}
+
+	if(mods == NULL) {
+		printf("Mod not found\n");
+		return EXIT_FAILURE;
+	}
+
+	char * destination = g_strconcat(mods->data, "__FOMOD", NULL);
+
+	if(access(destination, F_OK) == 0) {
+		delete(destination, true);
+	}
+	char * modDestination = g_build_filename(modFolder, destination, NULL);
+	char * modPath = g_build_filename(modFolder, mods->data, NULL);
+
+//TODO: add error handling
+	int returnValue = installFOMod(modPath, modDestination);
+
+	free(destination);
+	g_list_free_full(modsFirstPointer, free);
+	return returnValue;
+}
+
 int main(int argc, char ** argv) {
 	if(argc < 2 ) return usage();
 
@@ -459,6 +512,12 @@ int main(int argc, char ** argv) {
 			returnValue = noRoot();
 		else
 			returnValue = setup(argc, argv);
+	} else if(strcmp(argv[1], "--fomod") == 0){
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = fomod(argc, argv);
+
 	} else {
 		usage();
 		returnValue = EXIT_FAILURE;

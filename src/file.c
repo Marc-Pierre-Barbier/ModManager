@@ -14,6 +14,7 @@ u_int32_t countSetBits(u_int32_t n) {
         return (n & 1) + countSetBits(n >> 1);
 }
 
+//TODO: add interruption support
 //simplest way to copy a file in c(linux)
 int copy(const char * path, const char * dest, u_int32_t flags) {
 	int flagCount = countSetBits(flags);
@@ -23,7 +24,6 @@ int copy(const char * path, const char * dest, u_int32_t flags) {
 	}
 	//flags + cp + path + dest
 	const char * args[flagCount + 4];
-	memset(args, 0, (flagCount + 4) * sizeof(char *));
 	args[0] = "/bin/cp";
 	args[1] = path;
 	args[2] = dest;
@@ -41,6 +41,8 @@ int copy(const char * path, const char * dest, u_int32_t flags) {
 		args[argIndex] = "-T";
 		argIndex += 1;
 	}
+
+	args[argIndex] = NULL;
 
 
 	int pid = fork();

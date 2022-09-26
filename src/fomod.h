@@ -67,6 +67,6 @@ typedef struct FOMod {
 	int condFilesCount;
 } FOMod_t;
 
-void freeFOMod(FOMod_t * fomod);
+int installFOMod(const char * modFolder, const char * destination);
 
 #endif

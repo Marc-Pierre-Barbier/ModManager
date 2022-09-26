@@ -42,7 +42,7 @@ int un7z(const char * path, const char * outdir) {
 	return returnValue;
 }
 
-char * extractLastPart(const char * filePath, const char delimeter) {
+const char * extractLastPart(const char * filePath, const char delimeter) {
 	int length = strlen(filePath);
 	int index = -1;
 	for(int i= length -1; i >= 0; i--) {
@@ -53,16 +53,14 @@ char * extractLastPart(const char * filePath, const char delimeter) {
 	}
 
 	if(index <= 0 || index == length) return NULL;
-	char * extension = malloc((length - index) * sizeof(char));
-	memcpy(extension, &filePath[index], (length - index));
-	return extension;
+	return &filePath[index];
 }
 
-char * extractExtension(const char * filePath) {
+const char * extractExtension(const char * filePath) {
 	return extractLastPart(filePath, '.');
 }
 
-char * extractFileName(const char * filePath) {
+const char * extractFileName(const char * filePath) {
 	return extractLastPart(filePath, '/');
 }
 
@@ -83,13 +81,12 @@ int addMod(const char * filePath, int appId) {
 		goto exit2;
 	}
 
-	char * filename = extractFileName(filePath);
-	char * extension = extractExtension(filename);
+	const char * filename = extractFileName(filePath);
+	const char * extension = extractExtension(filename);
 	char * lowercaseExtension = g_ascii_strdown(extension, -1);
-	free(extension);
 
 	char appIdStr[20];
-
+	sprintf(appIdStr, "%d", appId);
 	char * outdir = g_build_filename(configFolder, MOD_FOLDER_NAME, appIdStr, filename, NULL);
 
 	g_mkdir_with_parents(outdir, 0755);
@@ -108,7 +105,6 @@ int addMod(const char * filePath, int appId) {
 	printf("Done\n");
 
 	free(lowercaseExtension);
-	free(filename);
 	free(outdir);
 exit2:
 	free(configFolder);
