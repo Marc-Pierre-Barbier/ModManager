@@ -44,7 +44,7 @@ sadly i don't think overlayfs support it, but it might still be worth a try. cur
 5. try alternatives to overlayfs (searching for casefold support)
 6. adding a hook for %command% in steam
 7. remake the whole copy function to rename everything in lower case this way we can make casefold obselete.
-8. check if the order of the overlayfs directors is the right one.
+8. check if the order of the overlayfs directories is the right one.
 
 ## How to contribute:
 if you have creation engine based games not listed in src/steam.h
