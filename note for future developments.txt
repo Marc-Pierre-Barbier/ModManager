@@ -1,7 +1,0 @@
-1.
-only support betheshda game for now, i spent enough time codding this.
-2.
-try alternatives to overlayfs (searching for casefold support)
-3.
-adding a hook for %command% in steam ?
-should be easy to find the appid id this way and deploy.

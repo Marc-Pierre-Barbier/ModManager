@@ -18,6 +18,7 @@ Use --install or -i <APPID> <MODID> to add a mod to a game
 Use --remove or -r <APPID> <MODID> to remove a mod from a game
 Use --deploy or -d <APPID> to deploy the mods for the game
 Use --unbind or -u <APPID> to rollback a deployment
+Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod
 ```
 
 ## Requirements:
@@ -28,18 +29,27 @@ Use --unbind or -u <APPID> to rollback a deployment
 * Fuse-overlayfs
 
 ## instructions and warnings about casefold:
-Casefold is and options in some linux filesystems that will make a folder (not the whole filesystem) case insensitive, this is really good for proton since it gives a small lookup performance boost and allow us to install mods without fearing having two file with the same name.
+Casefold is and options in some linux filesystem that will make a folder (not the whole filesystem) case insensitive, this is really good for proton since it gives a small lookup performance boost and allow us to install mods without fearing having two file with the same name.
 
 sadly i don't think overlayfs support it, but it might still be worth a try. currently i haven't tested without casefold and mods might break because of that.
 
 
 
 ## TODO:
-
 1. we need a name for this.
-2. add more game to the code, currently i only have Skyrim se.
-3. replace the copy of the games files by hard links if available.
-4. fomod support
+2. allow to change mod priority.
+3. add more game to the code, currently i only have Skyrim se.
+4. replace the copy of the games files by hard links if available.
+5. try alternatives to overlayfs (searching for casefold support)
+6. adding a hook for %command% in steam
+
+## How to contribute:
+if you have creation engine based games not listed in src/steam.h
+please open an issue with the EXACT name of the game folder in steamapps/common/
+
+otherwise if you know how to code in c don't be scared to create mr or suggest changes.
+
+don't try to make me change the licence i chose GPL-2 on purpose and i won't use GPL-3.
 
 ## Compilation and install instructions:
 download a version from the releases(please avoir a simple clone of the git).
