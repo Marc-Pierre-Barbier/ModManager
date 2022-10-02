@@ -7,8 +7,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 # set the project name
 project(ModManager)
 
+
+set(SOURCES
+	src/main.c
+	src/steam.c
+	src/install.c
+	src/overlayfs.c
+	src/getHome.c
+	src/file.c
+	src/fomod.c
+	src/fomod/group.c
+	src/fomod/xmlUtil.c
+	src/fomod/parser.c
+)
+
 # add the executable
-add_executable(ModManager src/main.c src/steam.c src/install.c src/overlayfs.c src/getHome.c src/file.c src/fomod.c)
+add_executable(ModManager ${SOURCES})
 add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 find_package(PkgConfig REQUIRED)

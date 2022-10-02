@@ -44,9 +44,9 @@ int un7z(const char * path, const char * outdir) {
 }
 
 const char * extractLastPart(const char * filePath, const char delimeter) {
-	int length = strlen(filePath);
-	int index = -1;
-	for(int i= length -1; i >= 0; i--) {
+	const unsigned long length = strlen(filePath);
+	long index = -1;
+	for(long i= length - 1; i >= 0; i--) {
 		if(filePath[i] == delimeter) {
 			index = i + 1;
 			break;

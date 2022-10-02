@@ -44,7 +44,6 @@ int copy(const char * path, const char * dest, u_int32_t flags) {
 
 	args[argIndex] = NULL;
 
-
 	int pid = fork();
 	if(pid == 0) {
 		//discard the const. since we are in a fork we don't care.
