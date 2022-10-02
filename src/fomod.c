@@ -491,6 +491,7 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	}
 
 	xmlFreeDoc(doc);
+	return EXIT_SUCCESS;
 }
 
 int getInputCount(const char * input) {
@@ -633,21 +634,75 @@ void freeFOMod(FOMod_t * fomod) {
 	}
 }
 
-//TODO: support order parameters
+
+int stepCmpAsc(const void * stepA, const void * stepB) {
+	const FOModStep_t * step1 = (const FOModStep_t *)stepA;
+	const FOModStep_t * step2 = (const FOModStep_t *)stepB;
+	return strcmp(step1->name, step2->name);
+}
+
+int stepCmpDesc(const void * stepA, const void * stepB) {
+	const FOModStep_t * step1 = (const FOModStep_t *)stepA;
+	const FOModStep_t * step2 = (const FOModStep_t *)stepB;
+	return 1 - strcmp(step1->name, step2->name);
+}
+
+
+void sortSteps(FOMod_t * fomod) {
+	switch(fomod->stepOrder) {
+	case ASC:
+		qsort(fomod->steps, fomod->stepCount, sizeof(*fomod->steps), stepCmpAsc);
+		break;
+	case DESC:
+		qsort(fomod->steps, fomod->stepCount, sizeof(*fomod->steps), stepCmpDesc);
+		break;
+	case ORD:
+		//ord mean that we keep the curent order, so no need to sort anything.
+		break;
+	}
+}
+
+int groupCmpAsc(const void * stepA, const void * stepB) {
+	const FOModGroup_t * step1 = (const FOModGroup_t *)stepA;
+	const FOModGroup_t * step2 = (const FOModGroup_t *)stepB;
+	return strcmp(step1->name, step2->name);
+}
+
+int groupCmpDesc(const void * stepA, const void * stepB) {
+	const FOModGroup_t * step1 = (const FOModGroup_t *)stepA;
+	const FOModGroup_t * step2 = (const FOModGroup_t *)stepB;
+	return 1 - strcmp(step1->name, step2->name);
+}
+
+void sortGroup(FOModGroup_t * group) {
+	switch(group->order) {
+	case ASC:
+		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), groupCmpAsc);
+		break;
+	case DESC:
+		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), groupCmpDesc);
+		break;
+	case ORD:
+		//ord mean that we keep the curent order, so no need to sort anything.
+		break;
+	}
+}
+
+
 //TODO: support priority
 //TODO: error support
 int installFOMod(const char * modFolder, const char * destination) {
 	char * fomodFolder = findFOModFolder(modFolder);
 	if(fomodFolder == NULL) {
 		fprintf(stderr, "Fomod folder not found, are you sure this is a fomod mod ?\n");
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	char * fomodFile = findFOModFile(fomodFolder);
 	if(fomodFile == NULL) {
 		fprintf(stderr, "Fomod file not found, are you sure this is a fomod mod ?\n");
 		g_free(fomodFolder);
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	FOMod_t fomod;
@@ -657,6 +712,8 @@ int installFOMod(const char * modFolder, const char * destination) {
 	}
 
 	GList * flagList = NULL;
+
+	sortSteps(&fomod);
 
 	for(int i = 0; i < fomod.stepCount; i++) {
 		FOModStep_t * step = &fomod.steps[i];
@@ -675,12 +732,13 @@ int installFOMod(const char * modFolder, const char * destination) {
 		for(int groupId = 0; groupId < step->groupCount; groupId++ ) {
 			FOModGroup_t group = step->groups[groupId];
 
+			sortGroup(&group);
+
 			u_int8_t min;
 			u_int8_t max;
 			int inputCount = 0;
 			char *inputBuffer = NULL;
 			size_t bufferSize = 0;
-
 
 			while(true) {
 				printfOptionsInOrder(group);
@@ -809,5 +867,7 @@ int installFOMod(const char * modFolder, const char * destination) {
 	}
 	printf("FOMod successfully installed!\n");
 	g_list_free(flagList);
+	g_list_free(pendingFileOperations);
 	freeFOMod(&fomod);
+	return EXIT_SUCCESS;
 }

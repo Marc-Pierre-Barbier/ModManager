@@ -13,14 +13,16 @@ add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLIB REQUIRED glib-2.0)
-pkg_search_module(audit REQUIRED libaudit)
+pkg_search_module(AUDIT REQUIRED audit)
 pkg_search_module(LIBXML REQUIRED libxml-2.0)
 
-target_include_directories(ModManager PRIVATE ${GLIB_INCLUDE_DIRS} ${LIBXML_INCLUDE_DIRS})
+target_include_directories(ModManager PRIVATE ${GLIB_INCLUDE_DIRS} ${LIBXML_INCLUDE_DIRS} ${AUDIT_INCLUDE_DIRS})
 
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
 
 target_link_libraries(ModManager ${GLIB_LDFLAGS})
-target_link_libraries(ModManager ${AUDIT_LIBRARIES})
 target_link_libraries(ModManager ${LIBXML_LIBRARIES})
+target_link_libraries(ModManager ${AUDIT_LIBRARIES})
+
+install(TARGETS ModManager DESTINATION bin)
