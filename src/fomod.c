@@ -543,6 +543,14 @@ int getInputCount(const char * input) {
 	return elementCount;
 }
 
+gint priorityCmp(gconstpointer a, gconstpointer b) {
+	const FOModFile_t * fileA = (const FOModFile_t *)a;
+	const FOModFile_t * fileB = (const FOModFile_t *)b;
+
+	return fileA->priority - fileB->priority;
+}
+
+
 char * findFOModFolder(const char * modFolder) {
 	struct dirent * dir;
 	DIR *d = opendir(modFolder);
@@ -732,6 +740,7 @@ int installFOMod(const char * modFolder, const char * destination) {
 	}
 
 	GList * flagList = NULL;
+	GList * pendingFileOperations = NULL;
 
 	sortSteps(&fomod);
 
@@ -825,22 +834,10 @@ int installFOMod(const char * modFolder, const char * destination) {
 				for(int i = 0; i < plugin.fileCount; i++) {
 					FOModFile_t * file = &plugin.files[i];
 
-					//TODO: support file->destination
-					//no using link since priority is made to override files and link is annoying to deal with when overriding files.
-					char * source = (char *) g_build_path("/", modFolder, file->source, NULL);
-					fixPath(source);
-					int returnValue = EXIT_SUCCESS;
-					if(file->isFolder) {
-						returnValue = copy(source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE);
-					} else {
-						returnValue = copy(source, destination, 0);
-					}
-					printf("source: %s, destination: %s\n", source, destination);
-					g_free(source);
-					if(returnValue != EXIT_SUCCESS) {
-						fprintf(stderr, "Copy failed, some file might be corrupted\n");
-						exit(EXIT_FAILURE);
-					}
+					FOModFile_t * fileCopy = malloc(sizeof(*file));
+					*fileCopy = *file;
+
+					pendingFileOperations = g_list_append(pendingFileOperations, fileCopy);
 				}
 			}
 
@@ -866,26 +863,49 @@ int installFOMod(const char * modFolder, const char * destination) {
 		if(areAllFlagsValid) {
 			for(int fileId = 0; fileId < condfile->flagCount; fileId++) {
 				FOModFile_t * file = &(condfile->files[fileId]);
-				//TODO: support destination
-				//TODO: handle error
-				char * source = (char *) g_build_path("/", modFolder, file->source, NULL);
-				fixPath(source);
-				int returnValue;
-				if(file->isFolder) {
-					returnValue = copy(source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE | CP_LINK);
-				} else {
-					returnValue = copy(source, destination, CP_LINK);
-				}
-				if(returnValue != EXIT_SUCCESS) {
-					fprintf(stderr, "Copy failed, some file might be corrupted\n");
-				}
-				printf("source: %s, destination: %s\n", source, destination);
-				g_free(source);
+
+				FOModFile_t * fileCopy = malloc(sizeof(*file));
+				*fileCopy = *file;
+
+				pendingFileOperations = g_list_append(pendingFileOperations, fileCopy);
 			}
 		}
 	}
+
+
+	pendingFileOperations = g_list_sort(pendingFileOperations, priorityCmp);
+	GList * currentFileOperation = pendingFileOperations;
+
+	while(currentFileOperation != NULL) {
+		//TODO: support destination
+		//TODO: handle error
+		//no using link since priority is made to override files and link is annoying to deal with when overriding files.
+		const FOModFile_t * file = (const FOModFile_t *)currentFileOperation->data;
+		char * source = g_build_path("/", modFolder, file->source, NULL);
+
+		//fix the / and \ windows - unix paths
+		fixPath(source);
+
+		int copyResult;
+		if(file->isFolder) {
+			copyResult = copy(source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE);
+		} else {
+			copyResult = copy(source, destination, 0);
+		}
+		if(copyResult != EXIT_SUCCESS) {
+			fprintf(stderr, "Copy failed, some file might be corrupted\n");
+		}
+		printf("source: %s, destination: %s\n", source, destination);
+		g_free(source);
+
+		currentFileOperation = g_list_next(currentFileOperation);
+	}
+
+
+
 	printf("FOMod successfully installed!\n");
 	g_list_free(flagList);
+	g_list_free_full(pendingFileOperations, free);
 	freeFOMod(&fomod);
 	return EXIT_SUCCESS;
 }
