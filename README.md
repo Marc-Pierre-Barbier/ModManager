@@ -15,9 +15,10 @@ Use --list-games or -l to list compatible games
 Use --add or -a <APPID> <FILENAME> to add a mod to a game
 Use --list-mods or -m <APPID> to list all mods for a game
 Use --install or -i <APPID> <MODID> to add a mod to a game
-Use --remove or -r <APPID> <MODID> to remove a mod from a game
+Use --uninstall or -u <APPID> <MODID> to uninstall a mod from a game
+Use --remove or -r <APPID> <MODID> to remove a mod
 Use --deploy or -d <APPID> to deploy the mods for the game
-Use --unbind or -u <APPID> to rollback a deployment
+Use --unbind <APPID> to rollback a deployment
 Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod
 ```
 

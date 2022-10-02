@@ -56,9 +56,10 @@ int usage() {
 	printf("Use --add or -a <APPID> <FILENAME> to add a mod to a game\n");
 	printf("Use --list-mods or -m <APPID> to list all mods for a game\n");
 	printf("Use --install or -i <APPID> <MODID> to add a mod to a game\n");
-	printf("Use --remove or -r <APPID> <MODID> to remove a mod from a game\n");
+	printf("Use --uninstall or -u <APPID> <MODID> to uninstall a mod from a game\n");
+	printf("Use --remove or -r <APPID> <MODID> to remove a mod\n");
 	printf("Use --deploy or -d <APPID> to deploy the mods for the game\n");
-	printf("Use --unbind or -u <APPID> to rollback a deployment\n");
+	printf("Use --unbind <APPID> to rollback a deployment\n");
 	printf("Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod\n");
 	//TODO: as bonus
 	//printf("Use --start-game <APPID> to deploy the mods and launch the game through steam\n");
@@ -159,7 +160,7 @@ int listMods(int argc, char ** argv) {
  * this will just flag the mod as needed to be deployed
  * it's the deploying process that handle the rest
 */
-int installAndRemoveMod(int argc, char ** argv, bool install) {
+int installAndUninstallMod(int argc, char ** argv, bool install) {
 	if(argc != 4) return usage();
 	char * appIdStr = argv[2];
 	u_int32_t appid = validateAppId(appIdStr);
@@ -371,10 +372,51 @@ int unbind(int argc, char ** argv) {
 	return EXIT_SUCCESS;
 }
 
+int removeMod(int argc, char ** argv) {
+	if(argc != 4) return usage();
+	char * appIdStr = argv[2];
+	int appid = validateAppId(appIdStr);
+	if(appid < 0) {
+		printf("Invalid appid");
+		return EXIT_FAILURE;
+	}
+
+	//strtoul set EINVAL if the string is invalid
+	u_int32_t modId = strtoul(argv[3], NULL, 10);
+	if(errno == EINVAL) {
+		printf("Modid has to be a valid number\n");
+		return EXIT_FAILURE;
+	}
+
+	//might crash if no mods were installed
+	char * home = getHome();
+	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	free(home);
+	GList * mods = listFilesInFolder(modFolder);
+	GList * modsFirstPointer = mods;
+
+	for(int i = 0; i < modId; i++) {
+		mods = g_list_next(mods);
+	}
+
+	if(mods == NULL) {
+		printf("Mod not found\n");
+		return EXIT_FAILURE;
+	}
+
+	gchar * filename = g_build_filename(modFolder, mods->data, NULL);
+
+	delete(filename, true);
+
+	g_free(filename);
+	g_list_free_full(modsFirstPointer, free);
+	return EXIT_SUCCESS;
+}
+
 int fomod(int argc, char ** argv) {
 	if(argc != 4) return usage();
 	char * appIdStr = argv[2];
-	u_int32_t appid = validateAppId(appIdStr);
+	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
 		printf("Invalid appid");
 		return EXIT_FAILURE;
@@ -411,7 +453,7 @@ int fomod(int argc, char ** argv) {
 	char * modDestination = g_build_filename(modFolder, destination, NULL);
 	char * modPath = g_build_filename(modFolder, mods->data, NULL);
 
-//TODO: add error handling
+	//TODO: add error handling
 	int returnValue = installFOMod(modPath, modDestination);
 
 	free(destination);
@@ -487,13 +529,13 @@ int main(int argc, char ** argv) {
 		if(isRoot())
 			returnValue = noRoot();
 		else
-			returnValue = installAndRemoveMod(argc, argv, true);
+			returnValue = installAndUninstallMod(argc, argv, true);
 
-	} else if(strcmp(argv[1], "--remove") == 0 || strcmp(argv[1], "-r") == 0) {
+	} else if(strcmp(argv[1], "--uninstall") == 0 || strcmp(argv[1], "-u") == 0) {
 		if(isRoot())
 			returnValue = noRoot();
 		else
-			returnValue = installAndRemoveMod(argc, argv, false);
+			returnValue = installAndUninstallMod(argc, argv, false);
 
 	} else if(strcmp(argv[1], "--deploy") == 0 || strcmp(argv[1], "-d") == 0) {
 		if(!isRoot())
@@ -501,7 +543,7 @@ int main(int argc, char ** argv) {
 		else
 			returnValue = deploy(argc, argv);
 
-	} else if(strcmp(argv[1], "--unbind") == 0 || strcmp(argv[1], "-u") == 0){
+	} else if(strcmp(argv[1], "--unbind") == 0){
 		if(!isRoot())
 			returnValue = needRoot();
 		else
@@ -517,6 +559,12 @@ int main(int argc, char ** argv) {
 			returnValue = noRoot();
 		else
 			returnValue = fomod(argc, argv);
+
+	} else if(strcmp(argv[1], "--remove") == 0 || strcmp(argv[1], "-r") == 0) {
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = removeMod(argc, argv);
 
 	} else {
 		usage();
