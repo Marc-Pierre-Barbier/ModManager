@@ -13,11 +13,6 @@
 #include "file.h"
 #include "libxml/globals.h"
 
-//TODO:cleanup prop
-//and other strings
-//TODO: protect every access to a node's child to avoid reading the wrong node
-
-
 //replace \ in the path by /
 void fixPath(char * path) {
 	while(*path != '\0') {
@@ -69,7 +64,7 @@ TypeDescriptor_t getDescriptor(const char * descriptor) {
 		return REQUIRED;
 	} else if(strcmp(descriptor, "Recommended") == 0) {
 		return RECOMMENDED;
-	} else if(strcmp(descriptor, "NotUsable") == 0) {
+	} else if(strcmp(descriptor, "CouldBeUsable") == 0) {
 		return MAYBE_USABLE;
 	} else if(strcmp(descriptor, "NotUsable") == 0) {
 		return NOT_USABLE;
@@ -93,7 +88,6 @@ bool validateNode(xmlNodePtr * node, bool skipText, const char * names, ...) {
 		}
 	}
 
-	//TODO: chose a proper return value
 	if(*node == NULL) {
 		return true;
 	}
@@ -122,25 +116,21 @@ char * freeAndDup(xmlChar * line) {
 	return free;
 }
 
-FOModGroup_t parseGroup(xmlNodePtr groupNode) {
+int parseGroup(xmlNodePtr groupNode, FOModGroup_t* group) {
 	xmlNodePtr pluginsNode = groupNode->children;
-
 	if(!validateNode(&pluginsNode, true, "plugins", NULL)) {
-		//TODO handle error;
-		printf("%d\n", __LINE__);
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 
-	FOModGroup_t group;
-	group.name = freeAndDup(xmlGetProp( groupNode, (const xmlChar *) "name"));
+	group->name = freeAndDup(xmlGetProp( groupNode, (const xmlChar *) "name"));
 
 	xmlChar * type = xmlGetProp(groupNode, (const xmlChar *) "type");
-	group.type = getGroupType((const char *)type);
+	group->type = getGroupType((const char *)type);
 	xmlFree(type);
 
 	char * order = (char *) xmlGetProp(pluginsNode, (const xmlChar *) "order");
-	group.order = getFOModOrder(order);
+	group->order = getFOModOrder(order);
 	xmlFree(order);
 
 	FOModPlugin_t * plugins = NULL;
@@ -177,9 +167,7 @@ FOModGroup_t parseGroup(xmlNodePtr groupNode) {
 				xmlNodePtr flagNode = nodeElement->children;
 				while(flagNode != NULL) {
 					if(!validateNode(&flagNode, true, "flag", NULL)) {
-						//TODO: handle error
-						printf("%d\n", __LINE__);
-						exit(EXIT_FAILURE);
+						goto failure;
 					}
 
 					if(flagNode == NULL)continue;
@@ -196,44 +184,40 @@ FOModGroup_t parseGroup(xmlNodePtr groupNode) {
 				plugin->flagCount = flagCount;
 			} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "files") == 0) {
 				FOModFile_t * files = NULL;
-				int filesCount = 0;
 				xmlNodePtr fileNode = nodeElement->children;
 				while(fileNode != NULL) {
 					if(!validateNode(&fileNode, true, "folder", "file", NULL)) {
-						//TODO: handle error
-						printf("%d\n", __LINE__);
-						exit(EXIT_FAILURE);
+						fprintf(stderr, "Unexpected node in files");
+						goto failure;
 					}
 
 					if(fileNode == NULL)continue;
 
+					plugin->fileCount += 1;
 
-					filesCount += 1;
+					plugin->files = realloc(plugin->files, (plugin->fileCount + 1) * sizeof(FOModFile_t));
+					FOModFile_t * file = &plugin->files[plugin->fileCount - 1];
 
-					files = realloc(files, (filesCount + 1) * sizeof(FOModFile_t));
-					files[filesCount - 1].destination = freeAndDup(xmlGetProp(fileNode, (const xmlChar *) "destination"));
-					files[filesCount - 1].source = freeAndDup(xmlGetProp(fileNode, (const xmlChar *) "source"));
+					file->destination = freeAndDup(xmlGetProp(fileNode, (const xmlChar *) "destination"));
+					file->source = freeAndDup(xmlGetProp(fileNode, (const xmlChar *) "source"));
+
 					//TODO: test if it's a number
-					//TODO: test if props is present and default to 0
 					xmlChar * priority = xmlGetProp(fileNode, (const xmlChar *) "priority");
 					if(priority == NULL) {
-						files[filesCount - 1].priority = 0;
+						file->priority = 0;
 					} else {
-						files[filesCount - 1].priority = atoi((char *)priority);
+						file->priority = atoi((char *)priority);
 					}
 					xmlFree(priority);
-					files[filesCount - 1].isFolder = xmlStrcmp(fileNode->name, (const xmlChar *) "folder") == 0;
+					file->isFolder = xmlStrcmp(fileNode->name, (const xmlChar *) "folder") == 0;
 
 					fileNode = fileNode->next;
 				}
-				plugin->files = files;
-				plugin->fileCount = filesCount;
 			} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "typeDescriptor") == 0) {
 				xmlNodePtr typeNode = nodeElement->children;
 				if(!validateNode(&typeNode, true, "type", NULL)) {
-					//TODO: handle error
-					printf("%d\n", __LINE__);
-					exit(EXIT_FAILURE);
+					fprintf(stderr, "Unexpected node in typeDescriptor");
+					goto failure;
 				}
 				xmlChar * name = xmlGetProp(typeNode, (const xmlChar *) "name");
 				plugin->type = getDescriptor((char *) name);
@@ -247,9 +231,38 @@ FOModGroup_t parseGroup(xmlNodePtr groupNode) {
 		currentPlugin = currentPlugin->next;
 	}
 
-	group.plugins = plugins;
-	group.pluginCount = pluginCount;
-	return group;
+	group->plugins = plugins;
+	group->pluginCount = pluginCount;
+	return EXIT_SUCCESS;
+
+failure:
+	//we need to free all of our allocations since we can't expect ou parent function to know what we allocated and what we haven't.
+	if(pluginCount != 0) {
+		for(int pluginId = 0; pluginId < pluginCount; pluginId++) {
+			FOModPlugin_t * plugin = &plugins[pluginId];
+			if(plugin->fileCount != 0) {
+				for(int i = 0; i < plugin->fileCount; i++) {
+					free(plugin->files[i].destination);
+					free(plugin->files[i].source);
+				}
+				free(plugin->files);
+			}
+
+			if(plugin->flagCount != 0) {
+				for(int i = 0; i < plugin->flagCount; i++) {
+					free(plugin->flags[i].name);
+					free(plugin->flags[i].value);
+				}
+				free(plugin->flags);
+			}
+
+			if(plugin->description != NULL)free(plugin->description);
+			if(plugin->image != NULL)free(plugin->image);
+			if(plugin->name != NULL)free(plugin->name);
+		}
+		free(plugins);
+	}
+	return EXIT_FAILURE;
 }
 
 FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
@@ -320,7 +333,11 @@ FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
 
 					step->groupCount += 1;
 					step->groups = realloc(step->groups, step->groupCount * sizeof(FOModGroup_t));
-					step->groups[step->groupCount - 1] = parseGroup(group);
+					int status = parseGroup(group, &step->groups[step->groupCount - 1]);
+
+					if(status != EXIT_SUCCESS) {
+						//TODO: handle error
+					}
 
 					group = group->next;
 				}
@@ -395,6 +412,12 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 				requiredInstallFile = cur->children;
 			}
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"installSteps") == 0) {
+			if(fomod->steps != NULL) {
+				fprintf(stderr, "Multiple 'installSteps' tags");
+				//TODO: handle error
+				return EXIT_FAILURE;
+			}
+
 			xmlChar * stepOrder = xmlGetProp(cur, (xmlChar *)"order");
 			fomod->stepOrder = getFOModOrder((char *)stepOrder);
 			xmlFree(stepOrder);
@@ -633,21 +656,18 @@ void freeFOMod(FOMod_t * fomod) {
 	}
 }
 
-//TODO: support order parameters
-//TODO: support priority
-//TODO: error support
 int installFOMod(const char * modFolder, const char * destination) {
 	char * fomodFolder = findFOModFolder(modFolder);
 	if(fomodFolder == NULL) {
-		fprintf(stderr, "Fomod folder not found, are you sure this is a fomod mod ?\n");
-		return -1;
+		fprintf(stderr, "FOMod folder not found, are you sure this is a fomod mod ?\n");
+		return EXIT_FAILURE;
 	}
 
 	char * fomodFile = findFOModFile(fomodFolder);
 	if(fomodFile == NULL) {
-		fprintf(stderr, "Fomod file not found, are you sure this is a fomod mod ?\n");
+		fprintf(stderr, "FOMod file not found, are you sure this is a fomod mod ?\n");
 		g_free(fomodFolder);
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	FOMod_t fomod;
@@ -748,7 +768,6 @@ int installFOMod(const char * modFolder, const char * destination) {
 					FOModFile_t * file = &plugin.files[i];
 
 					//TODO: support file->destination
-					//TODO: check for copy success
 					//no using link since priority is made to override files and link is annoying to deal with when overriding files.
 					char * source = (char *) g_build_path("/", modFolder, file->source, NULL);
 					fixPath(source);

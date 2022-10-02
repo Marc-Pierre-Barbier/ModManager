@@ -1,5 +1,5 @@
 #define APP_NAME "modmanager"
-//relative to home the url is not preprocessed so ../ might prose some issues
+//relative to home the url is not preprocessed so ../ might create some issues
 // in c "A" "B" is the same as "AB"
 #define MANAGER_FILES ".local/share/" APP_NAME
 #define MOD_FOLDER_NAME "MOD_FOLDER"

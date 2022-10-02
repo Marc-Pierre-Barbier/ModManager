@@ -10,8 +10,6 @@
 #include <sys/types.h>
 #include <wordexp.h>
 
-//TODO: optimise and replace reallocs
-
 enum FieldIds { FIELD_PATH, FIELD_LABEL, FIELD_CONTENT_ID, FIELD_TOTAL_SIZE, FIELD_CLEAN_BYTES, FIELD_CORRUPTION, FIELD_APPS };
 
 int getFiledId(const char * field) {

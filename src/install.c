@@ -8,12 +8,13 @@
 #include "main.h"
 
 //TODO: replace ALL system call by execv / execl since it make my code into swiss cheese
+// we can imagine a milicious fomod with a simple shell code inside.
 
 int unzip(const char * path, const char * outdir) {
 	int returnValue = EXIT_SUCCESS;
 	char * unzipCommand = g_strconcat("/bin/sh -c 'yes | unzip \"", path, "\" -d \"" , outdir, "\" > /dev/null'", NULL);
 	if(system(unzipCommand) != 0) {
-		printf("\nFailed to unzip archive\n");
+		printf("\nFailed to decompress archive\n");
 		returnValue = EXIT_FAILURE;
 	}
 	free(unzipCommand);
@@ -24,7 +25,7 @@ int unrar(const char * path, const char * outdir) {
 	int returnValue = EXIT_SUCCESS;
 	char * unrarCommand = g_strconcat("/bin/sh -c 'unrar -y x \"", path, "\" \"", outdir, "\" > /dev/null'", NULL);
 	if(system(unrarCommand) != 0) {
-		printf("Failed to unzip archive\n");
+		printf("Failed to decompress archive\n");
 		returnValue = EXIT_FAILURE;
 	}
 	free(unrarCommand);
@@ -35,7 +36,7 @@ int un7z(const char * path, const char * outdir) {
 	int returnValue = EXIT_SUCCESS;
 	char * un7zCommand = g_strconcat("/bin/sh -c 'yes | 7z x \"", path, "\" \"-o", outdir, "\" > /dev/null'", NULL);
 	if(system(un7zCommand) != 0) {
-		printf("Failed to unzip archive\n");
+		printf("Failed to decompress archive\n");
 		returnValue = EXIT_FAILURE;
 	}
 	free(un7zCommand);
