@@ -24,7 +24,7 @@ Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod
 
 ## Requirements:
 * glib2
-* A casefold enable filesystem
+* 7z unzip unrar
 
 ### Optional requirements:
 * Fuse (2 or 3)
@@ -37,7 +37,7 @@ Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod
 4. replace the copy of the games files by hard links if available.
 5. try alternatives to overlayfs (searching for casefold support)
 6. adding a hook for %command% in steam
-7. remake the whole copy function to rename everything in lower case this way we can make casefold obselete.
+7. remake the whole copy function to rename everything in lower case this way we can make casefold obsolete.
 8. check if the order of the overlayfs directories is the right one.
 
 ## How to contribute:
