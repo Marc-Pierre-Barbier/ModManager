@@ -2,8 +2,11 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "file.h"
 #include <stdio.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <glib.h>
+#include "file.h"
 
 u_int32_t countSetBits(u_int32_t n) {
     // base case
@@ -81,5 +84,38 @@ int move(const char * source, const char * destination) {
 		int returnValue;
 		waitpid(pid, &returnValue, 0);
 		return returnValue;
+	}
+}
+
+
+//rename a folder and all subfolder and files to lowercase
+//TODO: error handling
+void casefold(const char * folder) {
+	DIR * d = opendir(folder);
+	struct dirent *dir;
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			//removes .. & . from the list
+			if(strcmp(dir->d_name, "..") != 0 && strcmp(dir->d_name, ".") != 0) {
+				//only look at ascii and hope for the best.
+				gchar * file = g_build_path("/", folder, dir->d_name, NULL);
+
+				gchar * destinationName = g_ascii_strdown(dir->d_name, -1);
+				gchar * destination = g_build_path("/", folder,destinationName, NULL);
+
+				int result = move(file, destination);
+				if(result != EXIT_SUCCESS) {
+					printf("Move failed: %s => %s \n", dir->d_name, destinationName);
+				}
+				g_free(destinationName);
+				g_free(destination);
+
+				if(dir->d_type == DT_DIR) {
+					casefold(file);
+				}
+				g_free(file);
+			}
+		}
+		closedir(d);
 	}
 }

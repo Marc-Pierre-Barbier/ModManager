@@ -2,45 +2,100 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <glib.h>
 #include "install.h"
 #include "main.h"
+#include "file.h"
 
-//TODO: replace ALL system call by execv / execl since it make my code into swiss cheese
-// we can imagine a milicious fomod with a simple shell code inside.
+int unzip(char * path, char * outdir) {
+	char * const args[] = {
+		"unzip",
+		"-LL", // to lowercase
+		"-q",
+		path,
+		"-d",
+		outdir,
+		NULL
+	};
 
-int unzip(const char * path, const char * outdir) {
-	int returnValue = EXIT_SUCCESS;
-	char * unzipCommand = g_strconcat("/bin/sh -c 'yes | unzip \"", path, "\" -d \"" , outdir, "\" > /dev/null'", NULL);
-	if(system(unzipCommand) != 0) {
-		printf("\nFailed to decompress archive\n");
-		returnValue = EXIT_FAILURE;
+	pid_t pid = fork();
+
+	if(pid == 0) {
+		execv("/usr/bin/unzip", args);
+		return EXIT_FAILURE;
+	} else {
+		int returnValue;
+		waitpid(pid, &returnValue, 0);
+
+		if(returnValue != 0) {
+			printf("\nFailed to decompress archive\n");
+			returnValue = EXIT_FAILURE;
+		}
+		return EXIT_SUCCESS;
 	}
-	free(unzipCommand);
-	return returnValue;
 }
 
-int unrar(const char * path, const char * outdir) {
-	int returnValue = EXIT_SUCCESS;
-	char * unrarCommand = g_strconcat("/bin/sh -c 'unrar -y x \"", path, "\" \"", outdir, "\" > /dev/null'", NULL);
-	if(system(unrarCommand) != 0) {
-		printf("Failed to decompress archive\n");
-		returnValue = EXIT_FAILURE;
+int unrar(char * path, char * outdir) {
+	char * const args[] = {
+		"unrar",
+		"x",
+		"-y", //assume yes
+		"-cl", // to lowercase
+		path,
+		outdir,
+		NULL
+	};
+
+	pid_t pid = fork();
+
+	if(pid == 0) {
+		execv("/usr/bin/unrar", args);
+		return EXIT_FAILURE;
+	} else {
+		int returnValue;
+		waitpid(pid, &returnValue, 0);
+
+		if(returnValue != 0) {
+			printf("\nFailed to decompress archive\n");
+			returnValue = EXIT_FAILURE;
+		}
+		return EXIT_SUCCESS;
 	}
-	free(unrarCommand);
-	return returnValue;
 }
 
-int un7z(const char * path, const char * outdir) {
-	int returnValue = EXIT_SUCCESS;
-	char * un7zCommand = g_strconcat("/bin/sh -c 'yes | 7z x \"", path, "\" \"-o", outdir, "\" > /dev/null'", NULL);
-	if(system(un7zCommand) != 0) {
-		printf("Failed to decompress archive\n");
-		returnValue = EXIT_FAILURE;
+
+int un7z(char * path, const char * outdir) {
+	gchar * outParameter = g_strjoin("", "-o", outdir, NULL);
+
+	char * const args[] = {
+		"7z",
+		"-y", //assume yes
+		"x",
+		path,
+		outParameter,
+		NULL
+	};
+
+	pid_t pid = fork();
+
+	if(pid == 0) {
+		execv("/usr/bin/7z", args);
+		return EXIT_FAILURE;
+	} else {
+		g_free(outParameter);
+		int returnValue;
+		waitpid(pid, &returnValue, 0);
+
+		if(returnValue != 0) {
+			printf("\nFailed to decompress archive\n");
+			returnValue = EXIT_FAILURE;
+		}
+		//make everything lowercase since 7z don't have an argument for that.
+		casefold(outdir);
+		return EXIT_SUCCESS;
 	}
-	free(un7zCommand);
-	return returnValue;
 }
 
 const char * extractLastPart(const char * filePath, const char delimeter) {
@@ -66,7 +121,7 @@ const char * extractFileName(const char * filePath) {
 }
 
 
-int addMod(const char * filePath, int appId) {
+int addMod(char * filePath, int appId) {
 	int returnValue = EXIT_SUCCESS;
 
 	if (access(filePath, F_OK) != 0) {

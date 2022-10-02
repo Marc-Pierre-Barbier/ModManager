@@ -345,8 +345,18 @@ int setup(int argc, char ** argv) {
 
 	//links don't conflict with overlayfs and avoid coping 17Gb of files.
 	//but links require the files to be on the same filesystem
-	const int returnValue = copy(steamGameFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR | CP_LINK);
-	if(returnValue < 0) copy(steamGameFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR);
+	int returnValue = copy(steamGameFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR | CP_LINK);
+	if(returnValue < 0) {
+		printf("Coping game files.  HINT: having the game on the same partition as you home director will make this operation use zero extra space");
+		returnValue = copy(steamGameFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR);
+		if(returnValue < 0) {
+			fprintf(stderr, "Copy failed make sure you have enough space on your device.");
+			free(steamGameFolder);
+			free(gameFolder);
+			return EXIT_FAILURE;
+		}
+	}
+	casefold(gameFolder);
 
 	free(steamGameFolder);
 	free(gameFolder);
@@ -382,7 +392,7 @@ int removeMod(int argc, char ** argv) {
 	}
 
 	//strtoul set EINVAL if the string is invalid
-	u_int32_t modId = strtoul(argv[3], NULL, 10);
+	unsigned long modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
 		printf("Modid has to be a valid number\n");
 		return EXIT_FAILURE;
@@ -423,7 +433,7 @@ int fomod(int argc, char ** argv) {
 	}
 
 	//strtoul set EINVAL if the string is invalid
-	u_int32_t modId = strtoul(argv[3], NULL, 10);
+	unsigned long modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
 		printf("Modid has to be a valid number\n");
 		return -1;
@@ -498,11 +508,6 @@ int main(int argc, char ** argv) {
 			if(i < 0) {
 				printf("Could not create configs, check access rights for this path: %s", configFolder);
 			}
-			//try to enable casefold
-			//failure would have no impact
-			char * chattrcommand = g_strjoin("", "chattr +F ",configFolder, " 2> /dev/null", NULL);
-			system(chattrcommand);
-			g_free(chattrcommand);
 		}
 	}
 

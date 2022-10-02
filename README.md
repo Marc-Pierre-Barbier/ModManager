@@ -30,13 +30,6 @@ Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod
 * Fuse (2 or 3)
 * Fuse-overlayfs
 
-## instructions and warnings about casefold:
-Casefold is and options in some linux filesystem that will make a folder (not the whole filesystem) case insensitive, this is really good for proton since it gives a small file lookup performance boost and allow us to install mods without fearing having two file with the same name.
-
-sadly i don't think overlayfs support it, but it might still be worth a try. currently i haven't tested without casefold and mods will probably break because of that.
-
-
-
 ## TODO:
 1. we need a name for this.
 2. allow to change mod priority.

@@ -11,5 +11,6 @@
 int copy(const char * path, const char * dest, u_int32_t flags);
 int delete(const char * path, bool recursive);
 int move(const char * source, const char * destination);
+void casefold(const char * folder);
 
 #endif
