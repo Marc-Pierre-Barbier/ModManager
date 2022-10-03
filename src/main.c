@@ -62,15 +62,12 @@ int usage() {
 	printf("Use --deploy or -d <APPID> to deploy the mods for the game\n");
 	printf("Use --unbind <APPID> to rollback a deployment\n");
 	printf("Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod\n");
-	//TODO: as bonus
-	//printf("Use --start-game <APPID> to deploy the mods and launch the game through steam\n");
-	//printf("Use --steam in team cmdline options to deploy directly on game startup\n");
 	return EXIT_FAILURE;
 }
 
 int validateAppId(const char * appIdStr) {
 	//strtoul set EINVAL(after C99) if the string is invalid
-	u_int32_t appid = strtoul(appIdStr, NULL, 10);
+	unsigned long appid = strtoul(appIdStr, NULL, 10);
 	if(errno == EINVAL) {
 		printf("Appid has to be a valid number\n");
 		return -1;
@@ -87,7 +84,8 @@ int validateAppId(const char * appIdStr) {
 		return -1;
 	}
 
-	return appid;
+	//no valid appid goes far enough to justify long
+	return (int)appid;
 }
 
 int listGames(int argc, char ** argv) {
@@ -98,7 +96,7 @@ int listGames(int argc, char ** argv) {
 		printf("No game found\n");
 	} else {
 		while(gamesIds != NULL) {
-			int * gameIndex = (int*)gamesIds->data;
+			const int * gameIndex = (int*)gamesIds->data;
 			printf("%d: %s\n", GAMES_APPIDS[*gameIndex], GAMES_NAMES[*gameIndex]);
 			gamesIds = g_list_next(gamesIds);
 		}
@@ -109,9 +107,9 @@ int listGames(int argc, char ** argv) {
 
 int add(int argc, char ** argv) {
 	if(argc != 4) return usage();
-		char * appIdStr = argv[2];
+	const char * appIdStr = argv[2];
 
-	u_int32_t appid = validateAppId(appIdStr);
+	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
@@ -166,7 +164,7 @@ int listAllMods(int argc, char ** argv) {
 int installAndUninstallMod(int argc, char ** argv, bool install) {
 	if(argc != 4) return usage();
 	char * appIdStr = argv[2];
-	u_int32_t appid = validateAppId(appIdStr);
+	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
@@ -174,7 +172,7 @@ int installAndUninstallMod(int argc, char ** argv, bool install) {
 	int returnValue = EXIT_SUCCESS;
 
 	//strtoul set EINVAL if the string is invalid
-	u_int32_t modId = strtoul(argv[3], NULL, 10);
+	unsigned long modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
 		printf("ModId has to be a valid number\n");
 		return -1;
@@ -183,6 +181,7 @@ int installAndUninstallMod(int argc, char ** argv, bool install) {
 	//might crash if no mods were installed
 	char * home = getHome();
 	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	free(home);
 	GList * mods = listFilesInFolder(modFolder);
 	GList * modsFirstPointer = mods;
 
@@ -206,9 +205,14 @@ int installAndUninstallMod(int argc, char ** argv, bool install) {
 		}
 
 		//Create activated file
-		FILE * fd = fopen(modFlag, "w");
-		fwrite("", 1, 1, fd);
-		fclose(fd);
+		FILE * fd = fopen(modFlag, "w+");
+		if(fd != NULL) {
+			fwrite("", 1, 1, fd);
+			fclose(fd);
+		} else {
+			printf("Could not interact with the activation file\n");
+			returnValue = EXIT_FAILURE;
+		}
 	} else {
 		if(access(modFlag, F_OK) != 0) {
 			printf("The mod is not activated \n");
@@ -285,6 +289,8 @@ int deploy(int argc, char ** argv) {
 		free(modFlag);
 	}
 
+	g_free(modFolder);
+
 	//const char * data = "lowerdir=gameFolder,gameFolder2,gameFolder3..."
 	modsToInstall[modCount] = gameFolder;
 	modsToInstall[modCount + 1] = NULL;
@@ -295,6 +301,7 @@ int deploy(int argc, char ** argv) {
 
 	char * gameUpperDir = g_build_filename(home, MANAGER_FILES, GAME_UPPER_DIR_NAME, appIdStr, NULL);
 	char * gameWorkDir = g_build_filename(home, MANAGER_FILES, GAME_WORK_DIR_NAME, appIdStr, NULL);
+	free(home);
 
 	//unmount the game folder
 	//DETACH + FORCE allow us to be sure it will be unload.
@@ -315,12 +322,16 @@ int deploy(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
+	g_free(steamGameFolder);
+	g_free(gameUpperDir);
+	g_free(gameWorkDir);
+
 	return EXIT_SUCCESS;
 }
 
 int setup(int argc, char ** argv) {
 	if(argc != 3 ) return usage();
-	char * appIdStr = argv[2];
+	const char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
@@ -370,7 +381,7 @@ int setup(int argc, char ** argv) {
 
 int unbind(int argc, char ** argv) {
 	if(argc != 3 ) return usage();
-	char * appIdStr = argv[2];
+	const char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
@@ -387,7 +398,7 @@ int unbind(int argc, char ** argv) {
 
 int removeMod(int argc, char ** argv) {
 	if(argc != 4) return usage();
-	char * appIdStr = argv[2];
+	const char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
 		printf("Invalid appid");
@@ -422,6 +433,7 @@ int removeMod(int argc, char ** argv) {
 	delete(filename, true);
 
 	g_free(filename);
+	g_free(modFolder);
 	g_list_free_full(modsFirstPointer, free);
 	return EXIT_SUCCESS;
 }
@@ -471,6 +483,9 @@ int fomod(int argc, char ** argv) {
 
 	free(destination);
 	g_list_free_full(modsFirstPointer, free);
+	g_free(modDestination);
+	g_free(modPath);
+	g_free(modFolder);
 	return returnValue;
 }
 
