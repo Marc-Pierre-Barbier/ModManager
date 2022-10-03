@@ -1,3 +1,5 @@
+//no function should ever be put here, only keep important macros here
+
 #define APP_NAME "modmanager"
 //relative to home the url is not preprocessed so ../ might create some issues
 // in c "A" "B" is the same as "AB"

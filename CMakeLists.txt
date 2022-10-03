@@ -15,6 +15,7 @@ set(SOURCES
 	src/overlayfs.c
 	src/getHome.c
 	src/file.c
+	src/order.c
 	src/fomod.c
 	src/fomod/group.c
 	src/fomod/xmlUtil.c

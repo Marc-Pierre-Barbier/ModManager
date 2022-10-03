@@ -16,6 +16,7 @@
 #include "main.h"
 #include "file.h"
 #include "fomod.h"
+#include "order.h"
 
 GHashTable * gamePaths;
 
@@ -119,10 +120,11 @@ int add(int argc, char ** argv) {
 	return EXIT_SUCCESS;
 }
 
-int listMods(int argc, char ** argv) {
+int listAllMods(int argc, char ** argv) {
 	if(argc != 3) return usage();
 	char * appIdStr = argv[2];
-	if(validateAppId(appIdStr) < 0) {
+	int appid = validateAppId(appIdStr);
+	if( appid < 0) {
 		return EXIT_FAILURE;
 	}
 
@@ -130,7 +132,8 @@ int listMods(int argc, char ** argv) {
 	char * home = getHome();
 	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
-	GList * mods = listFilesInFolder(modFolder);
+
+	GList * mods = listMods(appid);
 	unsigned short index = 0;
 
 	printf("Id | Installed  | Name\n");
@@ -528,7 +531,7 @@ int main(int argc, char ** argv) {
 		if(isRoot())
 			returnValue = noRoot();
 		else
-			returnValue = listMods(argc, argv);
+			returnValue = listAllMods(argc, argv);
 
 	} else if(strcmp(argv[1], "--install") == 0 || strcmp(argv[1], "-i") == 0) {
 		if(isRoot())
