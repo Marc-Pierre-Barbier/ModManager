@@ -4,8 +4,6 @@
 This mod manager is made a protect the game files & mods files at all costs.
 if an operation or a mod tries to modify the files they will be stocked in and overlay folder (~/.local/share/modmanager/UPPER_DIRS/appid)
 
-this mod manager will try to enable casefold inside the mods folder as a way of ensuring that there will not be two file with the same name.
-
 mods conflicts are solved by priority, currently we still have to implements
 a way to change the priority.
 
