@@ -24,6 +24,7 @@ stages:          # List of stages for jobs, and their order of execution
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
   script:
+    - echo "target_link_libraries(ModManager -static)" >> CMakeLists.txt # add static since the gitlab-CI is using musl
     - mkdir build
     - cd build
     - cmake ..
