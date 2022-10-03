@@ -15,7 +15,7 @@
 
 before_script:
   - apk update
-  - apk add cmake glib-dev gtk4.0-dev make ninja gcc
+  - apk add cmake glib-dev gtk4.0-dev make ninja gcc git cmake make clang build-base llvm-static llvm-dev clang-static clang-dev
 
 
 stages:          # List of stages for jobs, and their order of execution
