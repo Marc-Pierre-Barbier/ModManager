@@ -96,6 +96,5 @@ void swapPlace(int appid, int modId, int modId2) {
 	GList * list = listMods(appid);
 
 
-
 	g_list_free(list);
 }

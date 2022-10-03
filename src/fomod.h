@@ -5,6 +5,7 @@
 #include "fomod/group.h"
 #include "fomod/xmlUtil.h"
 
+
 int installFOMod(const char * modFolder, const char * destination);
 
 #endif

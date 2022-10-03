@@ -15,6 +15,15 @@
  * @return GList of char containing the name of the mod folder in order
  */
 GList * listMods(int appid);
+
+/**
+ * @brief Change the mod order by swaping two mod
+ *
+ * @param appid the game
+ * index of the mod in the mod list.
+ * @param modId
+ * @param modId2
+ */
 void swapPlace(int appid, int modId, int modId2);
 
 #endif

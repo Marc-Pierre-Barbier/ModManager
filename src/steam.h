@@ -36,14 +36,32 @@ const static char * steamLibraries[] = {
 // order has to be the same as in GAMES_NAMES
 const static u_int32_t GAMES_APPIDS[] = {
 	489830,
+	22330,
+	377160
 };
 
 //the name of the game in the steamapps/common folder
 const static char * GAMES_NAMES[] = {
 	"Skyrim Special Edition",
+	"Oblivion",
+	"Fallout 4"
 };
 
+/**
+ * @brief list all installed games and the paths to the game's files
+ *
+ * @param status pointer to a status variable that will be modified to EXIT_SUCCESS or EXIT_FAILURE
+ * @return GHashTable* a map appid(int) => path(char *)
+ */
+ //TODO: flip the return value and parameter
 GHashTable* search_games(int * status);
-int getGameIdFromAppId(u_int32_t id);
+
+/**
+ * @brief search the index of the game inside GAMES_NAMES or GAMES_APPIDS
+ *
+ * @param appid
+ * @return -1 in case of failure or the index of the game.
+ */
+int getGameIdFromAppId(u_int32_t appid);
 
 #endif

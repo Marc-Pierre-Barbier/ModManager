@@ -223,9 +223,9 @@ GHashTable* search_games(int * status) {
 }
 
 
-int getGameIdFromAppId(u_int32_t id) {
+int getGameIdFromAppId(u_int32_t appid) {
 	for(int k = 0; k < LEN(GAMES_APPIDS); k++) {
-		if(id == GAMES_APPIDS[k]) {
+		if(appid == GAMES_APPIDS[k]) {
 			return k;
 		}
 	}
