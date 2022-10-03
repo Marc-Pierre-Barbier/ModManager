@@ -2,6 +2,7 @@
 #include "libxml/tree.h"
 #include "xmlUtil.h"
 #include <stdlib.h>
+#include <string.h>
 
 //Maybe integrate this into the rest of the code instead of freeing after the fact
 void freeFOMod(FOMod_t * fomod) {
@@ -21,11 +22,10 @@ void freeFOMod(FOMod_t * fomod) {
 		free(condFile->requiredFlags);
 	}
 	free(fomod->condFiles);
-
 	free(fomod->moduleImage);
 	free(fomod->moduleName);
 
-	int size = countUntilNull(fomod->requiredInstallFiles);
+	int size = countUntilNull(fomod->requiredInstallFiles, sizeof(char **));
 	for(int i = 0; i < size; i++) {
 		free(fomod->requiredInstallFiles[i]);
 	}
@@ -46,6 +46,9 @@ void freeFOMod(FOMod_t * fomod) {
 		free(step->requiredFlags);
 		free(step->name);
 	}
+
+	//set every counter to zero and every pointer to null
+	memset(fomod, 0, sizeof(FOMod_t));
 }
 
 int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
@@ -285,7 +288,7 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 					exit(EXIT_FAILURE);
 				}
 
-				int size = countUntilNull(fomod->requiredInstallFiles) + 2;
+				int size = countUntilNull(fomod->requiredInstallFiles, sizeof(char **)) + 2;
 				fomod->requiredInstallFiles = realloc(fomod->requiredInstallFiles, sizeof(char *) * size);
 				//ensure it is null terminated
 				fomod->requiredInstallFiles[size - 1] = NULL;

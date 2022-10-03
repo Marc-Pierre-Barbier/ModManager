@@ -1,4 +1,3 @@
-#include "fomod.h"
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/xmlstring.h>
@@ -8,11 +7,12 @@
 #include <string.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <glib.h>
 #include <stdarg.h>
+#include <unistd.h>
+
+#include "fomod.h"
 #include "file.h"
 #include "libxml/globals.h"
-#include "fomod/parser.h"
 
 int getInputCount(const char * input) {
 	char buff[2];
@@ -45,39 +45,6 @@ gint priorityCmp(gconstpointer a, gconstpointer b) {
 	const FOModFile_t * fileB = (const FOModFile_t *)b;
 
 	return fileA->priority - fileB->priority;
-}
-
-
-char * findFOModFolder(const char * modFolder) {
-	struct dirent * dir;
-	DIR *d = opendir(modFolder);
-	if (d) {
-		while ((dir = readdir(d)) != NULL) {
-			if(g_ascii_strcasecmp(dir->d_name, "fomod") == 0) {
-				char * fomodDir = g_build_path("/", modFolder, dir->d_name, NULL);
-				closedir(d);
-				return fomodDir;
-			}
-		}
-		closedir(d);
-	}
-	return NULL;
-}
-
-char * findFOModFile(const char * fomodFolder) {
-	struct dirent * dir;
-	DIR *d = opendir(fomodFolder);
-	if (d) {
-		while ((dir = readdir(d)) != NULL) {
-			if(g_ascii_strcasecmp(dir->d_name, "moduleconfig.xml") == 0) {
-				char * fomodFile = g_build_filename(fomodFolder, dir->d_name, NULL);
-				closedir(d);
-				return fomodFile;
-			}
-		}
-		closedir(d);
-	}
-	return NULL;
 }
 
 void printfOptionsInOrder(FOModGroup_t group) {
@@ -152,18 +119,75 @@ void sortGroup(FOModGroup_t * group) {
 	}
 }
 
-//TODO: support priority
-int installFOMod(const char * modFolder, const char * destination) {
-	char * fomodFolder = findFOModFolder(modFolder);
-	if(fomodFolder == NULL) {
-		fprintf(stderr, "Fomod folder not found, are you sure this is a fomod mod ?\n");
-		return EXIT_FAILURE;
-	}
+//TODO: handle error
+int processFileOperations(GList * pendingFileOperations, const char * modFolder, const char * destination) {
+	pendingFileOperations = g_list_sort(pendingFileOperations, priorityCmp);
+	GList * currentFileOperation = pendingFileOperations;
 
-	char * fomodFile = findFOModFile(fomodFolder);
-	if(fomodFile == NULL) {
+	while(currentFileOperation != NULL) {
+		//TODO: support destination
+		//no using link since priority is made to override files and link is annoying to deal with when overriding files.
+		const FOModFile_t * file = (const FOModFile_t *)currentFileOperation->data;
+		char * source = g_build_path("/", modFolder, file->source, NULL);
+
+		//fix the / and \ windows - unix paths
+		fixPath(source);
+
+		int copyResult;
+		if(file->isFolder) {
+			copyResult = copy(source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE);
+		} else {
+			copyResult = copy(source, destination, 0);
+		}
+		if(copyResult != EXIT_SUCCESS) {
+			fprintf(stderr, "Copy failed, some file might be corrupted\n");
+		}
+		printf("source: %s, destination: %s\n", source, destination);
+		g_free(source);
+
+		currentFileOperation = g_list_next(currentFileOperation);
+	}
+	return EXIT_SUCCESS;
+}
+
+GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendingFileOperations) {
+	for(int condId = 0; condId < fomod->condFilesCount; condId++) {
+		const FOModCondFile_t *condFile = &fomod->condFiles[condId];
+
+		bool areAllFlagsValid = true;
+
+		//checking if all flags are valid
+		for(int flagId = 0; flagId < condFile->flagCount; flagId++) {
+			const GList * link = g_list_find_custom(flagList, &(condFile->requiredFlags[flagId]), (GCompareFunc)flagEqual);
+			if(link == NULL) {
+				areAllFlagsValid = false;
+				break;
+			}
+		}
+
+		if(areAllFlagsValid) {
+			for(int fileId = 0; fileId < condFile->flagCount; fileId++) {
+				const FOModFile_t * file = &(condFile->files[fileId]);
+
+				FOModFile_t * fileCopy = malloc(sizeof(*file));
+				*fileCopy = *file;
+
+				pendingFileOperations = g_list_append(pendingFileOperations, fileCopy);
+			}
+		}
+	}
+	return pendingFileOperations;
+}
+
+int installFOMod(const char * modFolder, const char * destination) {
+	//everything should be lowercase since we use casefold() before calling any install function
+	char * fomodFolder = g_build_path("/", modFolder, "fomod", NULL);
+	char * fomodFile = g_build_filename(fomodFolder, "moduleconfig.xml", NULL);
+
+	if(access(fomodFile, F_OK) != 0) {
 		fprintf(stderr, "FOMod file not found, are you sure this is a fomod mod ?\n");
 		g_free(fomodFolder);
+		g_free(fomodFile);
 		return EXIT_FAILURE;
 	}
 
@@ -172,6 +196,7 @@ int installFOMod(const char * modFolder, const char * destination) {
 	if(returnValue != EXIT_SUCCESS) {
 		return returnValue;
 	}
+	g_free(fomodFile);
 
 	GList * flagList = NULL;
 	GList * pendingFileOperations = NULL;
@@ -179,7 +204,7 @@ int installFOMod(const char * modFolder, const char * destination) {
 	sortSteps(&fomod);
 
 	for(int i = 0; i < fomod.stepCount; i++) {
-		FOModStep_t * step = &fomod.steps[i];
+		const FOModStep_t * step = &fomod.steps[i];
 
 		bool validFlags = true;
 		for(int flagId = 0; flagId < step->flagCount; flagId++) {
@@ -280,66 +305,15 @@ int installFOMod(const char * modFolder, const char * destination) {
 		}
 	}
 
-	for(int condId = 0; condId < fomod.condFilesCount; condId++) {
-		const FOModCondFile_t *condFile = &fomod.condFiles[condId];
-
-		bool areAllFlagsValid = true;
-
-		//checking if all flags are valid
-		for(int flagId = 0; flagId < condFile->flagCount; flagId++) {
-			const GList * link = g_list_find_custom(flagList, &(condFile->requiredFlags[flagId]), (GCompareFunc)flagEqual);
-			if(link == NULL) {
-				areAllFlagsValid = false;
-				break;
-			}
-		}
-
-		if(areAllFlagsValid) {
-			for(int fileId = 0; fileId < condFile->flagCount; fileId++) {
-				const FOModFile_t * file = &(condFile->files[fileId]);
-
-				FOModFile_t * fileCopy = malloc(sizeof(*file));
-				*fileCopy = *file;
-
-				pendingFileOperations = g_list_append(pendingFileOperations, fileCopy);
-			}
-		}
-	}
 
 
-	pendingFileOperations = g_list_sort(pendingFileOperations, priorityCmp);
-	GList * currentFileOperation = pendingFileOperations;
-
-	while(currentFileOperation != NULL) {
-		//TODO: support destination
-		//TODO: handle error
-		//no using link since priority is made to override files and link is annoying to deal with when overriding files.
-		const FOModFile_t * file = (const FOModFile_t *)currentFileOperation->data;
-		char * source = g_build_path("/", modFolder, file->source, NULL);
-
-		//fix the / and \ windows - unix paths
-		fixPath(source);
-
-		int copyResult;
-		if(file->isFolder) {
-			copyResult = copy(source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE);
-		} else {
-			copyResult = copy(source, destination, 0);
-		}
-		if(copyResult != EXIT_SUCCESS) {
-			fprintf(stderr, "Copy failed, some file might be corrupted\n");
-		}
-		printf("source: %s, destination: %s\n", source, destination);
-		g_free(source);
-
-		currentFileOperation = g_list_next(currentFileOperation);
-	}
-
-
+	pendingFileOperations = processCondFiles(&fomod, flagList, pendingFileOperations);
+	processFileOperations(pendingFileOperations, modFolder, destination);
 
 	printf("FOMod successfully installed!\n");
 	g_list_free(flagList);
 	g_list_free_full(pendingFileOperations, free);
 	freeFOMod(&fomod);
+	g_free(fomodFolder);
 	return EXIT_SUCCESS;
 }

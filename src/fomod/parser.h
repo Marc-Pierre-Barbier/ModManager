@@ -25,7 +25,19 @@ typedef struct FOMod {
 	int condFilesCount;
 } FOMod_t;
 
+/**
+ * @brief parse a fomod xml file (found inside the mod folder /fomod/moduleconfig.xml (everything should be lowercase))
+ *
+ * @param fomodFile path to the moduleconfig.xml
+ * @param fomod pointer to a new FOMod_t
+ * @return error code.
+ */
 int parseFOMod(const char * fomodFile, FOMod_t* fomod);
+
+/**
+ * @brief Free content of a fomod file.
+ * @param fomod
+ */
 void freeFOMod(FOMod_t * fomod);
 
 #endif

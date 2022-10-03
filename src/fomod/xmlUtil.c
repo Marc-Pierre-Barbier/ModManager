@@ -27,10 +27,10 @@ void fixPath(char * path) {
 	}
 }
 
-int countUntilNull(void * pointers) {
+int countUntilNull(void * pointers, size_t typeSize) {
 	int i = 0;
 	while(pointers != NULL) {
-		pointers++;
+		pointers += typeSize;
 		i++;
 	}
 	return i;
