@@ -14,8 +14,8 @@
 # For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
 
 before_script:
-  - apk update
-  - apk add cmake glib-dev gtk4.0-dev make ninja gcc git cmake make clang build-base llvm-static llvm-dev clang-static clang-dev audit audit-libs audit-dev
+  - apt update -y
+  - apt install cmake libglib2.0-dev libgtk-4-dev make ninja gcc git make clang libaudit-dev -y
 
 
 stages:          # List of stages for jobs, and their order of execution
