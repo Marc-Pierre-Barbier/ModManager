@@ -15,7 +15,7 @@
 
 before_script:
   - apt update -y
-  - apt install cmake libglib2.0-dev libgtk-4-dev make ninja gcc git make clang libaudit-dev -y
+  - apt install cmake libglib2.0-dev libgtk-4-dev make gcc git make clang libaudit-dev -y
 
 
 stages:          # List of stages for jobs, and their order of execution
