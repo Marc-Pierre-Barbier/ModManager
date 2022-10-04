@@ -9,7 +9,6 @@ project(ModManager)
 
 
 set(SOURCES
-	src/main.c
 	src/steam.c
 	src/install.c
 	src/overlayfs.c
@@ -23,7 +22,8 @@ set(SOURCES
 )
 
 # add the executable
-add_executable(ModManager ${SOURCES})
+add_executable(ModManager src/main.c ${SOURCES})
+
 add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 find_package(PkgConfig REQUIRED)
