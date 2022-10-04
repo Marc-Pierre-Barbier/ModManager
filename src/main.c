@@ -90,7 +90,7 @@ int validateAppId(const char * appIdStr) {
 	return (int)appid;
 }
 
-int listGames(int argc, char ** argv) {
+int listGames(int argc, char **) {
 	if(argc != 2) return usage();
 	GList * gamesIds = g_hash_table_get_keys(gamePaths);
 	GList * gamesIdsFirstPointer = gamesIds;

@@ -41,3 +41,5 @@ target_link_libraries(ModManager ${LIBXML_LIBRARIES})
 target_link_libraries(ModManager ${AUDIT_LIBRARIES})
 
 install(TARGETS ModManager DESTINATION bin)
+
+set_property(TARGET ModManager PROPERTY C_STANDARD 23)
