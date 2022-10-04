@@ -67,14 +67,15 @@ int usage() {
 }
 
 int validateAppId(const char * appIdStr) {
+	char * strtoulSentinel;
 	//strtoul set EINVAL(after C99) if the string is invalid
-	unsigned long appid = strtoul(appIdStr, NULL, 10);
-	if(errno == EINVAL) {
+	unsigned long appid = strtoul(appIdStr, &strtoulSentinel, 10);
+	if(errno == EINVAL || strtoulSentinel == appIdStr) {
 		printf("Appid has to be a valid number\n");
 		return -1;
 	}
 
-	int gameId = getGameIdFromAppId(appid);
+	int gameId = getGameIdFromAppId((int)appid);
 	if(gameId < 0) {
 		printf("Game is not compatible\n");
 		return -1;
@@ -500,9 +501,20 @@ int swapMod(int argc, char ** argv) {
 	}
 
 
+	char * sentinel;
 	//no mod will go over the MAX_INT value
-	int modIdA = (int)strtoul(argv[3], NULL, 10);
-	int modIdB = (int)strtoul(argv[4], NULL, 10);
+	int modIdA = (int)strtoul(argv[3], &sentinel, 10);
+	if(errno == EINVAL || sentinel == argv[3]) {
+		printf("Modid A has to be a valid number\n");
+		return -1;
+	}
+	int modIdB = (int)strtoul(argv[4], &sentinel, 10);
+	if(errno == EINVAL || sentinel == argv[4]) {
+		printf("Modid B has to be a valid number\n");
+		return -1;
+	}
+
+	printf("%d, %d\n", modIdA, modIdB);
 	return swapPlace(appid, modIdA, modIdB);
 }
 
