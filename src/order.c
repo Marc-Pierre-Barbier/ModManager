@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "order.h"
 
 //no function are declared in main it's just macros
@@ -92,9 +93,51 @@ GList * listMods(int appid) {
 }
 
 
-void swapPlace(int appid, int modId, int modId2) {
-	GList * list = listMods(appid);
+int swapPlace(int appid, int modIdA, int modIdB) {
+	char appidStr[10];
+	sprintf(appidStr, "%d", appid);
 
+	char * home = getHome();
+	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appidStr, NULL);
+	free(home);
+
+	GList * list = listMods(appid);
+	GList * listA = list;
+	GList * listB = list;
+
+	for(int i = 0; i < modIdA; i++) {
+		listA = g_list_next(listA);
+	}
+
+	for(int i = 0; i < modIdB; i++) {
+		listB = g_list_next(listB);
+	}
+
+	if(listA == NULL || listB == NULL) {
+		printf("Invalid modId\n");
+		return EXIT_FAILURE;
+	}
+
+	char * modAFolder = g_build_filename(modFolder, listA->data, ORDER_FILE, NULL);
+	char * modBFolder = g_build_filename(modFolder, listB->data, ORDER_FILE, NULL);
+
+	FILE * fileA = fopen(modAFolder, "w");
+	FILE * fileB = fopen(modBFolder, "w");
+
+	g_free(modAFolder);
+	g_free(modBFolder);
+
+	if(fileA == NULL || fileB == NULL) {
+		fprintf(stderr, "Error could not open order file\n");
+		return EXIT_FAILURE;
+	}
+
+	fprintf(fileA, "%d", modIdB);
+	fprintf(fileB, "%d", modIdA);
+
+	fclose(fileA);
+	fclose(fileB);
 
 	g_list_free(list);
+	return EXIT_SUCCESS;
 }

@@ -24,6 +24,6 @@ GList * listMods(int appid);
  * @param modId
  * @param modId2
  */
-void swapPlace(int appid, int modId, int modId2);
+int swapPlace(int appid, int modId, int modId2);
 
 #endif

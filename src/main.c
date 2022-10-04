@@ -62,6 +62,7 @@ int usage() {
 	printf("Use --deploy or -d <APPID> to deploy the mods for the game\n");
 	printf("Use --unbind <APPID> to rollback a deployment\n");
 	printf("Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod\n");
+	printf("Use --swap <APPID> <MODID A> MODID B> to swap two mod in the loading order\n");
 	return EXIT_FAILURE;
 }
 
@@ -489,6 +490,22 @@ int fomod(int argc, char ** argv) {
 	return returnValue;
 }
 
+int swapMod(int argc, char ** argv) {
+	if(argc != 5) return usage();
+	char * appIdStr = argv[2];
+	int appid = validateAppId(appIdStr);
+	if(appid < 0) {
+		printf("Invalid appid");
+		return EXIT_FAILURE;
+	}
+
+
+	//no mod will go over the MAX_INT value
+	int modIdA = (int)strtoul(argv[3], NULL, 10);
+	int modIdB = (int)strtoul(argv[4], NULL, 10);
+	return swapPlace(appid, modIdA, modIdB);
+}
+
 int main(int argc, char ** argv) {
 	if(argc < 2 ) return usage();
 
@@ -588,6 +605,12 @@ int main(int argc, char ** argv) {
 			returnValue = noRoot();
 		else
 			returnValue = removeMod(argc, argv);
+
+	} else if(strcmp(argv[1], "--swap") == 0 || strcmp(argv[1], "-s") == 0) {
+		if(isRoot())
+			returnValue = noRoot();
+		else
+			returnValue = swapMod(argc, argv);
 
 	} else {
 		usage();
