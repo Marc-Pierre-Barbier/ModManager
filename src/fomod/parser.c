@@ -51,7 +51,7 @@ void freeFOMod(FOMod_t * fomod) {
 	memset(fomod, 0, sizeof(FOMod_t));
 }
 
-int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
+static int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
 	xmlNodePtr requiredFlagsNode = node->children;
 
 	while (requiredFlagsNode != NULL) {
@@ -76,7 +76,7 @@ int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
 	return EXIT_SUCCESS;
 }
 
-int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
+static int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
 	xmlChar * optionOrder = xmlGetProp(node, (const xmlChar *)"order");
 	step->optionOrder = getFOModOrder((char *)optionOrder);
 	xmlFree(optionOrder);
@@ -105,7 +105,7 @@ int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
 	return EXIT_SUCCESS;
 }
 
-FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
+static FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
 	FOModStep_t * steps = NULL;
 	*stepCount = 0;
 
@@ -146,7 +146,7 @@ FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
 	return steps;
 }
 
-int parseDependencies(xmlNodePtr node, FOModCondFile_t * condFile) {
+static int parseDependencies(xmlNodePtr node, FOModCondFile_t * condFile) {
 	xmlNodePtr flagNode = node->children;
 
 	if(!validateNode(&flagNode, true, "flagDependency", NULL)) {
@@ -167,7 +167,7 @@ int parseDependencies(xmlNodePtr node, FOModCondFile_t * condFile) {
 	return EXIT_SUCCESS;
 }
 
-int parseFiles(xmlNodePtr node, FOModCondFile_t * condFile) {
+static int parseFiles(xmlNodePtr node, FOModCondFile_t * condFile) {
 	xmlNodePtr filesNode = node->children;
 
 
@@ -192,7 +192,7 @@ int parseFiles(xmlNodePtr node, FOModCondFile_t * condFile) {
 	return EXIT_SUCCESS;
 }
 
-int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
+static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 	xmlNodePtr patterns = node->children;
 	if(patterns != NULL) {
 		if(!validateNode(&patterns, true, "patterns", NULL)) {

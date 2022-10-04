@@ -9,7 +9,7 @@
 #include "main.h"
 #include "file.h"
 
-int unzip(char * path, char * outdir) {
+static int unzip(char * path, char * outdir) {
 	char * const args[] = {
 		"unzip",
 		"-LL", // to lowercase
@@ -37,7 +37,7 @@ int unzip(char * path, char * outdir) {
 	}
 }
 
-int unrar(char * path, char * outdir) {
+static int unrar(char * path, char * outdir) {
 	char * const args[] = {
 		"unrar",
 		"x",
@@ -66,7 +66,7 @@ int unrar(char * path, char * outdir) {
 }
 
 
-int un7z(char * path, const char * outdir) {
+static int un7z(char * path, const char * outdir) {
 	gchar * outParameter = g_strjoin("", "-o", outdir, NULL);
 
 	char * const args[] = {
@@ -98,7 +98,7 @@ int un7z(char * path, const char * outdir) {
 	}
 }
 
-const char * extractLastPart(const char * filePath, const char delimeter) {
+static const char * extractLastPart(const char * filePath, const char delimeter) {
 	const unsigned long length = strlen(filePath);
 	long index = -1;
 	for(long i= length - 1; i >= 0; i--) {
@@ -112,14 +112,13 @@ const char * extractLastPart(const char * filePath, const char delimeter) {
 	return &filePath[index];
 }
 
-const char * extractExtension(const char * filePath) {
+static const char * extractExtension(const char * filePath) {
 	return extractLastPart(filePath, '.');
 }
 
-const char * extractFileName(const char * filePath) {
+static const char * extractFileName(const char * filePath) {
 	return extractLastPart(filePath, '/');
 }
-
 
 int addMod(char * filePath, int appId) {
 	int returnValue = EXIT_SUCCESS;

@@ -8,13 +8,13 @@
 #include <glib.h>
 #include "file.h"
 
-u_int32_t countSetBits(u_int32_t n) {
-    // base case
-    if (n == 0)
-        return 0;
-    else
-        // if last bit set add 1 else add 0
-        return (n & 1) + countSetBits(n >> 1);
+static u_int32_t countSetBits(u_int32_t n) {
+	// base case
+	if (n == 0)
+		return 0;
+	else
+		// if last bit set add 1 else add 0
+		return (n & 1) + countSetBits(n >> 1);
 }
 
 //TODO: add interruption support

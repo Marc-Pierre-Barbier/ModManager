@@ -3,7 +3,7 @@
 #include "string.h"
 #include <stdlib.h>
 
-GroupType_t getGroupType(const char * type) {
+static GroupType_t getGroupType(const char * type) {
 	if(strcmp(type, "SelectAtLeastOne") == 0) {
 		return AT_LEAST_ONE;
 	} else if(strcmp(type, "SelectAtMostOne") == 0) {
@@ -19,7 +19,7 @@ GroupType_t getGroupType(const char * type) {
 	}
 }
 
-TypeDescriptor_t getDescriptor(const char * descriptor) {
+static TypeDescriptor_t getDescriptor(const char * descriptor) {
 	if(strcmp(descriptor, "Optional") == 0) {
 		return OPTIONAL;
 	} else if(strcmp(descriptor, "Required") == 0) {
@@ -64,7 +64,7 @@ void freeGroup(FOModGroup_t * group) {
 	group->pluginCount = 0;
 }
 
-int parseConditionFlags(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
+static int parseConditionFlags(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
 	xmlNodePtr flagNode = nodeElement->children;
 	while(flagNode != NULL) {
 		if(!validateNode(&flagNode, true, "flag", NULL)) {
@@ -89,7 +89,7 @@ int parseConditionFlags(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
 	return EXIT_SUCCESS;
 }
 
-int parseGroupFiles(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
+static int parseGroupFiles(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
 	FOModFile_t * files = NULL;
 	xmlNodePtr fileNode = nodeElement->children;
 	while(fileNode != NULL) {
@@ -123,7 +123,7 @@ int parseGroupFiles(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
 	return EXIT_SUCCESS;
 }
 
-int parseNodeElement(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
+static int parseNodeElement(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
 	if(xmlStrcmp(nodeElement->name, (const xmlChar *) "description") == 0) {
 		plugin->description = freeAndDup(xmlNodeGetContent(nodeElement));
 	} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "image") == 0) {

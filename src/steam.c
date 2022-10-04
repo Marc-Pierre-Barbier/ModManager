@@ -12,7 +12,7 @@
 
 enum FieldIds { FIELD_PATH, FIELD_LABEL, FIELD_CONTENT_ID, FIELD_TOTAL_SIZE, FIELD_CLEAN_BYTES, FIELD_CORRUPTION, FIELD_APPS };
 
-int getFiledId(const char * field) {
+static int getFiledId(const char * field) {
 	//replace with a hash + switch
 	if(strcmp(field, "path") == 0) {
 		return FIELD_PATH;
@@ -34,7 +34,7 @@ int getFiledId(const char * field) {
 	}
 }
 
-ValveLibraries_t * parseVDF(const char * path, size_t * size, int * status) {
+static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * status) {
 	FILE * fd = fopen(path, "r");
 	char * line = NULL;
 	size_t len = 0;
@@ -166,7 +166,7 @@ exit:
 	return libraries;
 }
 
-void freeLibraries(ValveLibraries_t * libraries, int size) {
+static void freeLibraries(ValveLibraries_t * libraries, int size) {
 	for(int i = 0; i < size; i++) {
 		free(libraries[i].path);
 		free(libraries[i].label);

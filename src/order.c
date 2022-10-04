@@ -12,7 +12,7 @@ typedef struct Mod {
 	char * name;
 } Mod_t;
 
-gint compareOrder(const void * a, const void * b) {
+static gint compareOrder(const void * a, const void * b) {
 	const Mod_t * ModA = a;
 	const Mod_t * ModB = b;
 

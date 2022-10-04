@@ -14,7 +14,7 @@
 #include "file.h"
 #include "libxml/globals.h"
 
-int getInputCount(const char * input) {
+static int getInputCount(const char * input) {
 	char buff[2];
 	buff[1] = '\0';
 
@@ -40,21 +40,21 @@ int getInputCount(const char * input) {
 	return elementCount;
 }
 
-gint priorityCmp(gconstpointer a, gconstpointer b) {
+static gint priorityCmp(gconstpointer a, gconstpointer b) {
 	const FOModFile_t * fileA = (const FOModFile_t *)a;
 	const FOModFile_t * fileB = (const FOModFile_t *)b;
 
 	return fileA->priority - fileB->priority;
 }
 
-void printfOptionsInOrder(FOModGroup_t group) {
+static void printfOptionsInOrder(FOModGroup_t group) {
 	for(int i = 0; i < group.pluginCount; i++) {
 		printf("%d, %s\n", i, group.plugins[i].name);
 		printf("%s\n", group.plugins[i].description);
 	}
 }
 
-gint flagEqual(const FOModFlag_t * a, const FOModFlag_t * b) {
+static gint flagEqual(const FOModFlag_t * a, const FOModFlag_t * b) {
 	int nameCmp = strcmp(a->name, b->name);
 	if(nameCmp == 0) {
 		if(strcmp(a->value, b->value) == 0)
@@ -66,20 +66,20 @@ gint flagEqual(const FOModFlag_t * a, const FOModFlag_t * b) {
 	return nameCmp;
 }
 
-int stepCmpAsc(const void * stepA, const void * stepB) {
+static int stepCmpAsc(const void * stepA, const void * stepB) {
 	const FOModStep_t * step1 = (const FOModStep_t *)stepA;
 	const FOModStep_t * step2 = (const FOModStep_t *)stepB;
 	return strcmp(step1->name, step2->name);
 }
 
-int stepCmpDesc(const void * stepA, const void * stepB) {
+static int stepCmpDesc(const void * stepA, const void * stepB) {
 	const FOModStep_t * step1 = (const FOModStep_t *)stepA;
 	const FOModStep_t * step2 = (const FOModStep_t *)stepB;
 	return 1 - strcmp(step1->name, step2->name);
 }
 
 
-void sortSteps(FOMod_t * fomod) {
+static void sortSteps(FOMod_t * fomod) {
 	switch(fomod->stepOrder) {
 	case ASC:
 		qsort(fomod->steps, fomod->stepCount, sizeof(*fomod->steps), stepCmpAsc);
@@ -93,19 +93,19 @@ void sortSteps(FOMod_t * fomod) {
 	}
 }
 
-int groupCmpAsc(const void * stepA, const void * stepB) {
+static int groupCmpAsc(const void * stepA, const void * stepB) {
 	const FOModGroup_t * step1 = (const FOModGroup_t *)stepA;
 	const FOModGroup_t * step2 = (const FOModGroup_t *)stepB;
 	return strcmp(step1->name, step2->name);
 }
 
-int groupCmpDesc(const void * stepA, const void * stepB) {
+static int groupCmpDesc(const void * stepA, const void * stepB) {
 	const FOModGroup_t * step1 = (const FOModGroup_t *)stepA;
 	const FOModGroup_t * step2 = (const FOModGroup_t *)stepB;
 	return 1 - strcmp(step1->name, step2->name);
 }
 
-void sortGroup(FOModGroup_t * group) {
+static void sortGroup(FOModGroup_t * group) {
 	switch(group->order) {
 	case ASC:
 		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), groupCmpAsc);

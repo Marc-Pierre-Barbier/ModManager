@@ -20,11 +20,11 @@
 
 GHashTable * gamePaths;
 
-bool isRoot() {
+static bool isRoot() {
 	return getuid() == 0;
 }
 
-GList * listFilesInFolder(const char * path) {
+static GList * listFilesInFolder(const char * path) {
 	GList * list = NULL;
 	DIR *d;
 	struct dirent *dir;
@@ -42,17 +42,17 @@ GList * listFilesInFolder(const char * path) {
 	return list;
 }
 
-int noRoot() {
+static int noRoot() {
 	printf("Don't run this argument as root\n");
 	return EXIT_FAILURE;
 }
 
-int needRoot() {
+static int needRoot() {
 	printf("Root is needed to bind with the game files\n");
 	return EXIT_FAILURE;
 }
 
-int usage() {
+static int usage() {
 	printf("Use --list-games or -l to list compatible games\n");
 	printf("Use --add or -a <APPID> <FILENAME> to add a mod to a game\n");
 	printf("Use --list-mods or -m <APPID> to list all mods for a game\n");
@@ -66,7 +66,7 @@ int usage() {
 	return EXIT_FAILURE;
 }
 
-int validateAppId(const char * appIdStr) {
+static int validateAppId(const char * appIdStr) {
 	char * strtoulSentinel;
 	//strtoul set EINVAL(after C99) if the string is invalid
 	unsigned long appid = strtoul(appIdStr, &strtoulSentinel, 10);
@@ -90,7 +90,7 @@ int validateAppId(const char * appIdStr) {
 	return (int)appid;
 }
 
-int listGames(int argc, char **) {
+static int listGames(int argc, char **) {
 	if(argc != 2) return usage();
 	GList * gamesIds = g_hash_table_get_keys(gamePaths);
 	GList * gamesIdsFirstPointer = gamesIds;
@@ -107,7 +107,7 @@ int listGames(int argc, char **) {
 	return EXIT_SUCCESS;
 }
 
-int add(int argc, char ** argv) {
+static int add(int argc, char ** argv) {
 	if(argc != 4) return usage();
 	const char * appIdStr = argv[2];
 
@@ -120,7 +120,7 @@ int add(int argc, char ** argv) {
 	return EXIT_SUCCESS;
 }
 
-int listAllMods(int argc, char ** argv) {
+static int listAllMods(int argc, char ** argv) {
 	if(argc != 3) return usage();
 	char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
@@ -163,7 +163,7 @@ int listAllMods(int argc, char ** argv) {
  * this will just flag the mod as needed to be deployed
  * it's the deploying process that handle the rest
 */
-int installAndUninstallMod(int argc, char ** argv, bool install) {
+static int installAndUninstallMod(int argc, char ** argv, bool install) {
 	if(argc != 4) return usage();
 	char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
@@ -238,7 +238,7 @@ exit:
 	return returnValue;
 }
 
-int deploy(int argc, char ** argv) {
+static int deploy(int argc, char ** argv) {
 	if(argc != 3) return usage();
 
 	char * appIdStr = argv[2];
@@ -331,7 +331,7 @@ int deploy(int argc, char ** argv) {
 	return EXIT_SUCCESS;
 }
 
-int setup(int argc, char ** argv) {
+static int setup(int argc, char ** argv) {
 	if(argc != 3 ) return usage();
 	const char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
@@ -381,7 +381,7 @@ int setup(int argc, char ** argv) {
 }
 
 
-int unbind(int argc, char ** argv) {
+static int unbind(int argc, char ** argv) {
 	if(argc != 3 ) return usage();
 	const char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
@@ -398,7 +398,7 @@ int unbind(int argc, char ** argv) {
 	return EXIT_SUCCESS;
 }
 
-int removeMod(int argc, char ** argv) {
+static int removeMod(int argc, char ** argv) {
 	if(argc != 4) return usage();
 	const char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
@@ -440,7 +440,7 @@ int removeMod(int argc, char ** argv) {
 	return EXIT_SUCCESS;
 }
 
-int fomod(int argc, char ** argv) {
+static int fomod(int argc, char ** argv) {
 	if(argc != 4) return usage();
 	char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
@@ -491,7 +491,7 @@ int fomod(int argc, char ** argv) {
 	return returnValue;
 }
 
-int swapMod(int argc, char ** argv) {
+static int swapMod(int argc, char ** argv) {
 	if(argc != 5) return usage();
 	char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
