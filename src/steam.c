@@ -125,8 +125,11 @@ static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * statu
 								} else {
 									library->apps[library->appsCount - 1].update = strtoul(value, NULL, 10);
 								}
+								free(value);
 								isAppId = !isAppId;
 								break;
+							default:
+								free(value);
 							}
 							//field apps is using braces so the syntax is different
 							if(nextFieldToFill != FIELD_APPS)nextFieldToFill = -1;

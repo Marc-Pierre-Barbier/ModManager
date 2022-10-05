@@ -35,8 +35,13 @@ GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendin
  * @param destination folder of the new mod that contains the result of the process.
  * @return error code
  */
-int processFileOperations(GList * pendingFileOperations, const char * modFolder, const char * destination);
+int processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination);
 
-
+/**
+ * @brief
+ *
+ * @param fileOperations
+ */
+void freeFileOperations(GList * fileOperations);
 
 #endif

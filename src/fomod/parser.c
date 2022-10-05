@@ -36,16 +36,17 @@ void freeFOMod(FOMod_t * fomod) {
 		for(int groupId = 0; groupId < step->groupCount; groupId++) {
 			FOModGroup_t * group = &step->groups[groupId];
 			freeGroup(group);
-			free(step->groups[groupId].plugins);
 		}
 		for(int flagId = 0; flagId < step->flagCount; flagId++) {
 			FOModFlag_t * flag = &(step->requiredFlags[flagId]);
 			free(flag->name);
 			free(flag->value);
 		}
+		free(step->groups);
 		free(step->requiredFlags);
 		free(step->name);
 	}
+	free(fomod->steps);
 
 	//set every counter to zero and every pointer to null
 	memset(fomod, 0, sizeof(FOMod_t));

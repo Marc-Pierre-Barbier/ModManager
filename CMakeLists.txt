@@ -4,8 +4,12 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -fsanitize=address -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations")
-set(CMAKE_C_FLAGS_DEBUG "-g -Werror")
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+	add_link_options(-fsanitize=address)
+endif()
+
+set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wmaybe-uninitialized")
+set(CMAKE_C_FLAGS_DEBUG "-g -fsanitize=address -Werror -O0")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 
 # generate the compile_commands for vscode / clang
@@ -38,7 +42,6 @@ pkg_search_module(LIBXML REQUIRED libxml-2.0)
 
 target_include_directories(ModManager PRIVATE ${GLIB_INCLUDE_DIRS} ${LIBXML_INCLUDE_DIRS} ${AUDIT_INCLUDE_DIRS})
 
-add_link_options(-fsanitize=address)
 
 target_link_libraries(ModManager ${GLIB_LDFLAGS})
 target_link_libraries(ModManager ${LIBXML_LIBRARIES})

@@ -51,6 +51,7 @@ GList * listMods(int appid) {
 
 				Mod_t * mod = alloca(sizeof(Mod_t));
 				mod->modId = modId;
+				//we are going to return this value so no alloca here
 				mod->name = strdup(dir->d_name);
 				//strdup but on the stack
 				//add one for the \0
@@ -120,6 +121,7 @@ int swapPlace(int appid, int modIdA, int modIdB) {
 
 	char * modAFolder = g_build_filename(modFolder, listA->data, ORDER_FILE, NULL);
 	char * modBFolder = g_build_filename(modFolder, listB->data, ORDER_FILE, NULL);
+	g_free(modFolder);
 
 	FILE * fileA = fopen(modAFolder, "w");
 	FILE * fileB = fopen(modBFolder, "w");
@@ -138,6 +140,6 @@ int swapPlace(int appid, int modIdA, int modIdB) {
 	fclose(fileA);
 	fclose(fileB);
 
-	g_list_free(list);
+	g_list_free_full(list, free);
 	return EXIT_SUCCESS;
 }

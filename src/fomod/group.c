@@ -36,6 +36,7 @@ static TypeDescriptor_t getDescriptor(const char * descriptor) {
 }
 
 void freeGroup(FOModGroup_t * group) {
+	free(group->name);
 	if(group->pluginCount == 0) return;
 	for(int pluginId = 0; pluginId < group->pluginCount; pluginId++) {
 		FOModPlugin_t * plugin = &group->plugins[pluginId];

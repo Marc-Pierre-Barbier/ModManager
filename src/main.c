@@ -137,6 +137,7 @@ static int listAllMods(int argc, char ** argv) {
 	free(home);
 
 	GList * mods = listMods(appid);
+	GList * p_mods = mods;
 	unsigned short index = 0;
 
 	printf("Id | Installed  | Name\n");
@@ -150,13 +151,15 @@ static int listAllMods(int argc, char ** argv) {
 			printf(DISABLED_COLOR " %d | ✕ | %s\n", index, modName);
 		}
 
+		g_free(modPath);
+
 		index++;
 		mods = g_list_next(mods);
 	}
 
 
 	free(modFolder);
-	free(mods);
+	g_list_free_full(p_mods, free);
 	return EXIT_SUCCESS;
 }
 
@@ -534,6 +537,7 @@ int main(int argc, char ** argv) {
 
 	int searchStatus;
 	gamePaths = search_games(&searchStatus);
+
 
 	int returnValue = EXIT_SUCCESS;
 	if(searchStatus == EXIT_FAILURE) {

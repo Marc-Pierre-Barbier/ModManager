@@ -100,22 +100,29 @@ void casefold(const char * folder) {
 			//removes .. & . from the list
 			if(strcmp(dir->d_name, "..") != 0 && strcmp(dir->d_name, ".") != 0) {
 				//only look at ascii and hope for the best.
-				gchar * file = g_build_path("/", folder, dir->d_name, NULL);
+				gchar * file = g_build_filename(folder, dir->d_name, NULL);
 
 				gchar * destinationName = g_ascii_strdown(dir->d_name, -1);
 				gchar * destination = g_build_path("/", folder,destinationName, NULL);
 
-				int result = move(file, destination);
-				if(result != EXIT_SUCCESS) {
-					fprintf(stderr, "Move failed: %s => %s \n", dir->d_name, destinationName);
-				}
-				g_free(destinationName);
-				g_free(destination);
 
-				if(dir->d_type == DT_DIR) {
-					casefold(file);
+				if(strcmp(destinationName, dir->d_name) != 0) {
+
+					int result = move(file, destination);
+					if(result != EXIT_SUCCESS) {
+						fprintf(stderr, "Move failed: %s => %s \n", dir->d_name, destinationName);
+					}
+
+
 				}
 				g_free(file);
+				g_free(destinationName);
+
+				if(dir->d_type == DT_DIR) {
+					casefold(destination);
+				}
+
+				g_free(destination);
 			}
 		}
 		closedir(d);

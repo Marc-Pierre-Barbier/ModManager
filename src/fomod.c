@@ -12,6 +12,7 @@
 
 #include "fomod.h"
 #include "file.h"
+#include "fomod/fomodTypes.h"
 #include "libxml/globals.h"
 
 static int getInputCount(const char * input) {
@@ -44,7 +45,7 @@ static gint priorityCmp(gconstpointer a, gconstpointer b) {
 	const FOModFile_t * fileA = (const FOModFile_t *)a;
 	const FOModFile_t * fileB = (const FOModFile_t *)b;
 
-	return fileA->priority - fileB->priority;
+	return fileB->priority - fileA->priority;
 }
 
 static void printfOptionsInOrder(FOModGroup_t group) {
@@ -120,9 +121,10 @@ static void sortGroup(FOModGroup_t * group) {
 }
 
 //TODO: handle error
-int processFileOperations(GList * pendingFileOperations, const char * modFolder, const char * destination) {
-	pendingFileOperations = g_list_sort(pendingFileOperations, priorityCmp);
-	GList * currentFileOperation = pendingFileOperations;
+int processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination) {
+	//priority higher a less important and should be processed first.
+	*pendingFileOperations = g_list_sort(*pendingFileOperations, priorityCmp);
+	GList * currentFileOperation = *pendingFileOperations;
 
 	while(currentFileOperation != NULL) {
 		//TODO: support destination
@@ -171,11 +173,30 @@ GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendin
 				FOModFile_t * fileCopy = malloc(sizeof(*file));
 				*fileCopy = *file;
 
+				//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
+				char * destination = g_ascii_strdown(file->destination, -1);
+				fileCopy->destination = destination;
+
+				char * source = g_ascii_strdown(file->source, -1);
+				fileCopy->source = source;
+
 				pendingFileOperations = g_list_append(pendingFileOperations, fileCopy);
 			}
 		}
 	}
 	return pendingFileOperations;
+}
+
+void freeFileOperations(GList * fileOperations) {
+	GList * fileOperationsStart = fileOperations;
+	while(fileOperations != NULL) {
+		FOModFile_t * file = (FOModFile_t *)fileOperations->data;
+		if(file->destination != NULL)free(file->destination);
+		if(file->source != NULL)free(file->source);
+		fileOperations = g_list_next(fileOperations);
+	}
+
+	g_list_free_full(fileOperationsStart, free);
 }
 
 int installFOMod(const char * modFolder, const char * destination) {
@@ -259,6 +280,10 @@ int installFOMod(const char * modFolder, const char * destination) {
 					min = 0;
 					max = 0;
 					break;
+				default:
+					//never happen;
+					fprintf(stderr, "unexpected type please report this issue %d, %d", group.type, __LINE__);
+					return EXIT_FAILURE;
 				}
 
 
@@ -277,11 +302,14 @@ int installFOMod(const char * modFolder, const char * destination) {
 				}
 			}
 
+			//processing user input
+
 			GRegex* regex = g_regex_new("\\s*", 0, 0, NULL);
 			char ** choices = g_regex_split(regex, inputBuffer, 0);
 			g_regex_unref(regex);
 
 			for(int choiceId = 0; choices[choiceId] != NULL; choiceId++) {
+				//TODO: safer user input
 				int choice = atoi(choices[choiceId]);
 				FOModPlugin_t plugin = group.plugins[choice];
 				for(int flagId = 0; flagId < plugin.flagCount; flagId++) {
@@ -292,8 +320,17 @@ int installFOMod(const char * modFolder, const char * destination) {
 				for(int pluginId = 0; pluginId < plugin.fileCount; pluginId++) {
 					const FOModFile_t * file = &plugin.files[pluginId];
 
-					FOModFile_t * fileCopy = malloc(sizeof(*file));
+					FOModFile_t * fileCopy = malloc(sizeof(FOModFile_t));
 					*fileCopy = *file;
+
+					//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
+					char * destination = g_ascii_strdown(file->destination, -1);
+					fileCopy->destination = strdup(destination);
+					g_free(destination);
+
+					char * source = g_ascii_strdown(file->source, -1);
+					fileCopy->source = strdup(source);
+					g_free(source);
 
 					pendingFileOperations = g_list_append(pendingFileOperations, fileCopy);
 				}
@@ -304,14 +341,14 @@ int installFOMod(const char * modFolder, const char * destination) {
 		}
 	}
 
-
+	//TODO: manage multiple files with the same name
 
 	pendingFileOperations = processCondFiles(&fomod, flagList, pendingFileOperations);
-	processFileOperations(pendingFileOperations, modFolder, destination);
+	processFileOperations(&pendingFileOperations, modFolder, destination);
 
 	printf("FOMod successfully installed!\n");
 	g_list_free(flagList);
-	g_list_free_full(pendingFileOperations, free);
+	freeFileOperations(pendingFileOperations);
 	freeFOMod(&fomod);
 	g_free(fomodFolder);
 	return EXIT_SUCCESS;
