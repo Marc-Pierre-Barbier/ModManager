@@ -18,6 +18,9 @@
 #include "fomod.h"
 #include "order.h"
 
+#define ENABLED_COLOR "\033[0;32m"
+#define DISABLED_COLOR "\033[0;31m"
+
 GHashTable * gamePaths;
 
 static bool isRoot() {
@@ -43,12 +46,12 @@ static GList * listFilesInFolder(const char * path) {
 }
 
 static int noRoot() {
-	printf("Don't run this argument as root\n");
+	fprintf(stderr, "Don't run this argument as root\n");
 	return EXIT_FAILURE;
 }
 
 static int needRoot() {
-	printf("Root is needed to bind with the game files\n");
+	fprintf(stderr, "Root is needed to bind with the game files\n");
 	return EXIT_FAILURE;
 }
 
@@ -71,18 +74,18 @@ static int validateAppId(const char * appIdStr) {
 	//strtoul set EINVAL(after C99) if the string is invalid
 	unsigned long appid = strtoul(appIdStr, &strtoulSentinel, 10);
 	if(errno == EINVAL || strtoulSentinel == appIdStr) {
-		printf("Appid has to be a valid number\n");
+		fprintf(stderr, "Appid has to be a valid number\n");
 		return -1;
 	}
 
 	int gameId = getGameIdFromAppId((int)appid);
 	if(gameId < 0) {
-		printf("Game is not compatible\n");
+		fprintf(stderr, "Game is not compatible\n");
 		return -1;
 	}
 
 	if(!g_hash_table_contains(gamePaths, &gameId)) {
-		printf("Game not found\n");
+		fprintf(stderr, "Game not found\n");
 		return -1;
 	}
 
@@ -142,9 +145,9 @@ static int listAllMods(int argc, char ** argv) {
 		char * modPath = g_build_filename(modFolder, modName, INSTALLED_FLAG_FILE, NULL);
 
 		if(access(modPath, F_OK) == 0) {
-			printf("\033[0;32m %d | ✓ | %s\n", index, modName);
+			printf(ENABLED_COLOR " %d | ✓ | %s\n", index, modName);
 		} else {
-			printf("\033[0;31m %d | ✕ | %s\n", index, modName);
+			printf(DISABLED_COLOR " %d | ✕ | %s\n", index, modName);
 		}
 
 		index++;
@@ -176,7 +179,7 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 	//strtoul set EINVAL if the string is invalid
 	unsigned long modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
-		printf("ModId has to be a valid number\n");
+		fprintf(stderr, "ModId has to be a valid number\n");
 		return -1;
 	}
 
@@ -192,7 +195,7 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 	}
 
 	if(mods == NULL) {
-		printf("Mod not found\n");
+		fprintf(stderr, "Mod not found\n");
 		return EXIT_FAILURE;
 	}
 
@@ -201,7 +204,7 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 
 	if(install) {
 		if(access(modFlag, F_OK) == 0) {
-			printf("The mod is already activated \n");
+			fprintf(stderr, "The mod is already activated \n");
 			returnValue = EXIT_SUCCESS;
 			goto exit;
 		}
@@ -223,8 +226,8 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 		}
 
 		if(unlink(modFlag) != 0) {
-			printf("Error could not disable the mod.\n");
-			printf("please remove this file '%s' as root\n", modFlag);
+			fprintf(stderr, "Error could not disable the mod.\n");
+			fprintf(stderr, "please remove this file '%s'\n", modFlag);
 			returnValue = EXIT_FAILURE;
 			goto exit;
 		}
@@ -251,7 +254,10 @@ static int deploy(int argc, char ** argv) {
 	char * gameFolder = g_build_filename(home, MANAGER_FILES, GAME_FOLDER_NAME, appIdStr, NULL);
 
 	if(access(gameFolder, F_OK) != 0) {
+		free(home);
+		g_free(gameFolder);
 		printf("Please run '%s --setup %d' first", APP_NAME, appid);
+		return EXIT_FAILURE;
 	}
 
 	//unmount everything beforhand
@@ -314,13 +320,13 @@ static int deploy(int argc, char ** argv) {
 	if(status == 0) {
 		printf("Everything is ready, just launch the game\n");
 	} else if(status == -1) {
-		printf("Could not mount the mods overlay, try to install fuse-overlay\n");
+		fprintf(stderr, "Could not mount the mods overlay, try to install fuse-overlay\n");
 		return EXIT_FAILURE;
 	} else if(status == -2) {
-		printf("Could not mount the mods overlay\n");
+		fprintf(stderr, "Could not mount the mods overlay\n");
 		return EXIT_FAILURE;
 	} else {
-		printf("%d take a screenshot and go insult the dev that let this passthrough\n", __LINE__);
+		fprintf(stderr, "%d bug detected, please report this.\n", __LINE__);
 		return EXIT_FAILURE;
 	}
 
@@ -403,14 +409,14 @@ static int removeMod(int argc, char ** argv) {
 	const char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
-		printf("Invalid appid");
+		fprintf(stderr, "Invalid appid");
 		return EXIT_FAILURE;
 	}
 
 	//strtoul set EINVAL if the string is invalid
 	unsigned long modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
-		printf("Modid has to be a valid number\n");
+		fprintf(stderr, "Modid has to be a valid number\n");
 		return EXIT_FAILURE;
 	}
 
@@ -426,7 +432,7 @@ static int removeMod(int argc, char ** argv) {
 	}
 
 	if(mods == NULL) {
-		printf("Mod not found\n");
+		fprintf(stderr, "Mod not found\n");
 		return EXIT_FAILURE;
 	}
 
@@ -445,14 +451,14 @@ static int fomod(int argc, char ** argv) {
 	char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
-		printf("Invalid appid");
+		fprintf(stderr, "Invalid appid");
 		return EXIT_FAILURE;
 	}
 
 	//strtoul set EINVAL if the string is invalid
 	unsigned long modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
-		printf("Modid has to be a valid number\n");
+		fprintf(stderr, "Modid has to be a valid number\n");
 		return -1;
 	}
 
@@ -468,7 +474,7 @@ static int fomod(int argc, char ** argv) {
 	}
 
 	if(mods == NULL) {
-		printf("Mod not found\n");
+		fprintf(stderr, "Mod not found\n");
 		return EXIT_FAILURE;
 	}
 
@@ -496,7 +502,7 @@ static int swapMod(int argc, char ** argv) {
 	char * appIdStr = argv[2];
 	int appid = validateAppId(appIdStr);
 	if(appid < 0) {
-		printf("Invalid appid");
+		fprintf(stderr, "Invalid appid");
 		return EXIT_FAILURE;
 	}
 
@@ -505,12 +511,12 @@ static int swapMod(int argc, char ** argv) {
 	//no mod will go over the MAX_INT value
 	int modIdA = (int)strtoul(argv[3], &sentinel, 10);
 	if(errno == EINVAL || sentinel == argv[3]) {
-		printf("Modid A has to be a valid number\n");
+		fprintf(stderr, "Modid A has to be a valid number\n");
 		return -1;
 	}
 	int modIdB = (int)strtoul(argv[4], &sentinel, 10);
 	if(errno == EINVAL || sentinel == argv[4]) {
-		printf("Modid B has to be a valid number\n");
+		fprintf(stderr, "Modid B has to be a valid number\n");
 		return -1;
 	}
 
@@ -522,7 +528,7 @@ int main(int argc, char ** argv) {
 	if(argc < 2 ) return usage();
 
 	if(audit_getloginuid() == 0) {
-		printf("Root user should not be using this\n");
+		fprintf(stderr, "The root user should not be using this\n");
 		return EXIT_FAILURE;
 	}
 
@@ -532,7 +538,7 @@ int main(int argc, char ** argv) {
 	int returnValue = EXIT_SUCCESS;
 	if(searchStatus == EXIT_FAILURE) {
 		returnValue = EXIT_FAILURE;
-		printf("Error while looking up libraries, do you have steam installed ?");
+		fprintf(stderr, "Error while looking up libraries, do you have steam installed ?");
 		goto exit;
 	}
 
@@ -546,14 +552,15 @@ int main(int argc, char ** argv) {
 		//such as problem with access rights and taking the risk of
 		//running system as root (which is a big security issue)
 		if(getuid() == 0) {
-			printf("For the first please run without sudo\n");
+			fprintf(stderr, "For the first run please avoid sudo\n");
 			returnValue = EXIT_FAILURE;
 			goto exit2;
 		} else {
 			//leading 0 == octal
 			int i = g_mkdir_with_parents(configFolder, 0755);
 			if(i < 0) {
-				printf("Could not create configs, check access rights for this path: %s", configFolder);
+				fprintf(stderr, "Could not create configs, check access rights for this path: %s", configFolder);
+				goto exit2;
 			}
 		}
 	}

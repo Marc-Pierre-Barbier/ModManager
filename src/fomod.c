@@ -142,7 +142,6 @@ int processFileOperations(GList * pendingFileOperations, const char * modFolder,
 		if(copyResult != EXIT_SUCCESS) {
 			fprintf(stderr, "Copy failed, some file might be corrupted\n");
 		}
-		printf("source: %s, destination: %s\n", source, destination);
 		g_free(source);
 
 		currentFileOperation = g_list_next(currentFileOperation);

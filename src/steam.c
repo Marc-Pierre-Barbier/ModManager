@@ -29,7 +29,7 @@ static int getFiledId(const char * field) {
 	} else if(strcmp(field, "apps") == 0) {
 		return FIELD_APPS;
 	} else {
-		printf("unknown field");
+		fprintf(stderr, "unknown field");
 		return -1;
 	}
 }
@@ -140,7 +140,8 @@ static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * statu
 				break;
 			case '}':
 				if(inQuotes) {
-					printf("Syntax error in VDF\n");
+					fprintf(stderr, "Syntax error in VDF\n");
+					//TODO: fix this leak
 					free(libraries);
 					libraries = NULL;
 					*status = EXIT_FAILURE;

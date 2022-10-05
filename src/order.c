@@ -114,7 +114,7 @@ int swapPlace(int appid, int modIdA, int modIdB) {
 	}
 
 	if(listA == NULL || listB == NULL) {
-		printf("Invalid modId\n");
+		fprintf(stderr, "Invalid modId\n");
 		return EXIT_FAILURE;
 	}
 

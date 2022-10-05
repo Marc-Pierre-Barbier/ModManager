@@ -22,7 +22,7 @@ static u_int32_t countSetBits(u_int32_t n) {
 int copy(const char * path, const char * dest, u_int32_t flags) {
 	int flagCount = countSetBits(flags);
 	if(flagCount > 3) {
-		printf("Invalid flags for cp command\n");
+		fprintf(stderr, "Invalid flags for cp command\n");
 		return -1;
 	}
 	//flags + cp + path + dest
@@ -105,7 +105,7 @@ void casefold(const char * folder) {
 
 				int result = move(file, destination);
 				if(result != EXIT_SUCCESS) {
-					printf("Move failed: %s => %s \n", dir->d_name, destinationName);
+					fprintf(stderr, "Move failed: %s => %s \n", dir->d_name, destinationName);
 				}
 				g_free(destinationName);
 				g_free(destination);

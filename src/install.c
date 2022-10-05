@@ -30,10 +30,9 @@ static int unzip(char * path, char * outdir) {
 		waitpid(pid, &returnValue, 0);
 
 		if(returnValue != 0) {
-			printf("\nFailed to decompress archive\n");
-			returnValue = EXIT_FAILURE;
+			fprintf(stderr, "\nFailed to decompress archive\n");
 		}
-		return EXIT_SUCCESS;
+		return returnValue;
 	}
 }
 
@@ -58,10 +57,9 @@ static int unrar(char * path, char * outdir) {
 		waitpid(pid, &returnValue, 0);
 
 		if(returnValue != 0) {
-			printf("\nFailed to decompress archive\n");
-			returnValue = EXIT_FAILURE;
+			fprintf(stderr, "\nFailed to decompress archive\n");
 		}
-		return EXIT_SUCCESS;
+		return returnValue;
 	}
 }
 
@@ -89,12 +87,12 @@ static int un7z(char * path, const char * outdir) {
 		waitpid(pid, &returnValue, 0);
 
 		if(returnValue != 0) {
-			printf("\nFailed to decompress archive\n");
-			returnValue = EXIT_FAILURE;
+			fprintf(stderr, "\nFailed to decompress archive\n");
+			return returnValue;
 		}
 		//make everything lowercase since 7z don't have an argument for that.
 		casefold(outdir);
-		return EXIT_SUCCESS;
+		return returnValue;
 	}
 }
 
@@ -124,14 +122,14 @@ int addMod(char * filePath, int appId) {
 	int returnValue = EXIT_SUCCESS;
 
 	if (access(filePath, F_OK) != 0) {
-		printf("File not found\n");
+		fprintf(stderr, "File not found\n");
 		returnValue = EXIT_FAILURE;
 		goto exit;
 	}
 
 	char * configFolder = g_build_filename(getenv("HOME"), MANAGER_FILES, NULL);
 	if(g_mkdir_with_parents(configFolder, 0755) < 0) {
-		printf("Could not create mod folder");
+		fprintf(stderr, "Could not create mod folder");
 		returnValue = EXIT_FAILURE;
 		goto exit2;
 	}
@@ -153,7 +151,7 @@ int addMod(char * filePath, int appId) {
 	} else if (strcmp(lowercaseExtension, "7z") == 0) {
 		returnValue = un7z(filePath, outdir);
 	} else {
-		printf("Unsupported format only zip/7z/rar are supported\n");
+		fprintf(stderr, "Unsupported format only zip/7z/rar are supported\n");
 		returnValue = EXIT_FAILURE;
 	}
 
