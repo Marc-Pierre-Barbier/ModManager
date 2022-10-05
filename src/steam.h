@@ -1,6 +1,8 @@
 #ifndef __STEAM_H__
 #define __STEAM_H__
 
+#include "macro.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <sys/types.h>
@@ -23,29 +25,22 @@ typedef struct ValveLibraries {
 	size_t appsCount;
 } ValveLibraries_t;
 
-// relative to the home directory
-const static char * steamLibraries[] = {
-	"/.steam/root/",
-	"/.steam/steam/",
-	"/.local/share/steam",
-	//flatpack steam.
-	"/.var/app/com.valvesoftware.Steam/.local/share/Steam"
-};
-
 //todo add the older games
 // order has to be the same as in GAMES_NAMES
-const static u_int32_t GAMES_APPIDS[] = {
+static const u_int32_t GAMES_APPIDS[] = {
 	489830,
 	22330,
 	377160
 };
 
 //the name of the game in the steamapps/common folder
-const static char * GAMES_NAMES[] = {
+static const char * GAMES_NAMES[] = {
 	"Skyrim Special Edition",
 	"Oblivion",
 	"Fallout 4"
 };
+
+_Static_assert(LEN(GAMES_APPIDS) == LEN(GAMES_NAMES), "Game APPIDS and Game Names doesn't match");
 
 /**
  * @brief list all installed games and the paths to the game's files

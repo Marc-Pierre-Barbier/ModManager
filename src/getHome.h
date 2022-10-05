@@ -5,4 +5,4 @@
  *
  * @return char* path to the home dir
  */
-char * getHome();
+char * getHome(void);

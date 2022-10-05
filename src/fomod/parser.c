@@ -8,12 +8,12 @@
 void freeFOMod(FOMod_t * fomod) {
 	for(int i = 0; i < fomod->condFilesCount; i++) {
 		FOModCondFile_t * condFile = &(fomod->condFiles[i]);
-		for(int fileId = 0; fileId < condFile->fileCount; fileId++) {
+		for(long fileId = 0; fileId < condFile->fileCount; fileId++) {
 			free(condFile->files[fileId].destination);
 			free(condFile->files[fileId].source);
 		}
 
-		for(int flagId = 0; flagId < condFile->flagCount; flagId++) {
+		for(long flagId = 0; flagId < condFile->flagCount; flagId++) {
 			FOModFlag_t * flag = &(condFile->requiredFlags[flagId]);
 			free(flag->name);
 			free(flag->value);

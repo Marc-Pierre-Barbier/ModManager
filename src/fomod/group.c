@@ -90,7 +90,6 @@ static int parseConditionFlags(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
 }
 
 static int parseGroupFiles(FOModPlugin_t * plugin, xmlNodePtr nodeElement) {
-	FOModFile_t * files = NULL;
 	xmlNodePtr fileNode = nodeElement->children;
 	while(fileNode != NULL) {
 		if(!validateNode(&fileNode, true, "folder", "file", NULL)) {

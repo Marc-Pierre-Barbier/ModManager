@@ -21,7 +21,7 @@ static int getInputCount(const char * input) {
 	int elementCount = 0;
 	bool prevWasValue = false;
 
-	for(int i = 0; input + i != NULL && input[i] != '\0' && input[i] != '\n'; i++) {
+	for(int i = 0; input[i] != '\0' && input[i] != '\n'; i++) {
 		buff[0] = input[i];
 
 		//if the character is a valid character
@@ -156,7 +156,7 @@ GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendin
 		bool areAllFlagsValid = true;
 
 		//checking if all flags are valid
-		for(int flagId = 0; flagId < condFile->flagCount; flagId++) {
+		for(long flagId = 0; flagId < condFile->flagCount; flagId++) {
 			const GList * link = g_list_find_custom(flagList, &(condFile->requiredFlags[flagId]), (GCompareFunc)flagEqual);
 			if(link == NULL) {
 				areAllFlagsValid = false;
@@ -165,7 +165,7 @@ GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendin
 		}
 
 		if(areAllFlagsValid) {
-			for(int fileId = 0; fileId < condFile->flagCount; fileId++) {
+			for(long fileId = 0; fileId < condFile->flagCount; fileId++) {
 				const FOModFile_t * file = &(condFile->files[fileId]);
 
 				FOModFile_t * fileCopy = malloc(sizeof(*file));

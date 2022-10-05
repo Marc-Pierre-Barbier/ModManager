@@ -12,6 +12,15 @@
 
 enum FieldIds { FIELD_PATH, FIELD_LABEL, FIELD_CONTENT_ID, FIELD_TOTAL_SIZE, FIELD_CLEAN_BYTES, FIELD_CORRUPTION, FIELD_APPS };
 
+// relative to the home directory
+static const char * steamLibraries[] = {
+	"/.steam/root/",
+	"/.steam/steam/",
+	"/.local/share/steam",
+	//flatpack steam.
+	"/.var/app/com.valvesoftware.Steam/.local/share/Steam"
+};
+
 static int getFiledId(const char * field) {
 	//replace with a hash + switch
 	if(strcmp(field, "path") == 0) {
@@ -38,7 +47,6 @@ static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * statu
 	FILE * fd = fopen(path, "r");
 	char * line = NULL;
 	size_t len = 0;
-	ssize_t read;
 
 	*status = EXIT_SUCCESS;
 
@@ -185,7 +193,7 @@ GHashTable* search_games(int * status) {
 	char * home = getHome();
 	*status = EXIT_SUCCESS;
 
-	for(int i = 0; i < LEN(steamLibraries); i++) {
+	for(unsigned long i = 0; i < LEN(steamLibraries); i++) {
 		char * path = g_build_filename(home, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
 		if (access(path, F_OK) == 0) {
 			int parserStatus;
@@ -208,8 +216,8 @@ GHashTable* search_games(int * status) {
 	GHashTable* table = g_hash_table_new_full(g_int_hash, g_int_equal, free, free);
 
 	//fill the table
-	for(int i = 0; i < size; i++) {
-		for(int j = 0; j < libraries[i].appsCount; j++) {
+	for(unsigned long i = 0; i < size; i++) {
+		for(unsigned long j = 0; j < libraries[i].appsCount; j++) {
 			int gameId = getGameIdFromAppId(libraries[i].apps[j].appid);
 			if(gameId >= 0) {
 				int * key = malloc(sizeof(int));
@@ -225,7 +233,7 @@ GHashTable* search_games(int * status) {
 
 
 int getGameIdFromAppId(u_int32_t appid) {
-	for(int k = 0; k < LEN(GAMES_APPIDS); k++) {
+	for(unsigned long k = 0; k < LEN(GAMES_APPIDS); k++) {
 		if(appid == GAMES_APPIDS[k]) {
 			return k;
 		}

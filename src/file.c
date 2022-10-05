@@ -26,10 +26,12 @@ int copy(const char * path, const char * dest, u_int32_t flags) {
 		return -1;
 	}
 	//flags + cp + path + dest
-	const char * args[flagCount + 4];
+	char * args[flagCount + 4];
 	args[0] = "/bin/cp";
-	args[1] = path;
-	args[2] = dest;
+	args[1] = alloca((strlen(path) + 1) * sizeof(char));
+	strcpy(args[1], path);
+	args[2] = alloca((strlen(dest) + 1) * sizeof(char));
+	strcpy(args[2], dest);
 	int argIndex = 3;
 
 	if(flags & CP_LINK) {
@@ -50,7 +52,7 @@ int copy(const char * path, const char * dest, u_int32_t flags) {
 	int pid = fork();
 	if(pid == 0) {
 		//discard the const. since we are in a fork we don't care.
-		execv("/bin/cp", (char **)args);
+		execv("/bin/cp", args);
 		return 0;
 	} else {
 		int returnValue;

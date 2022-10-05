@@ -190,7 +190,7 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 	GList * mods = listFilesInFolder(modFolder);
 	GList * modsFirstPointer = mods;
 
-	for(int i = 0; i < modId; i++) {
+	for(unsigned long i = 0; i < modId; i++) {
 		mods = g_list_next(mods);
 	}
 
@@ -427,7 +427,7 @@ static int removeMod(int argc, char ** argv) {
 	GList * mods = listFilesInFolder(modFolder);
 	GList * modsFirstPointer = mods;
 
-	for(int i = 0; i < modId; i++) {
+	for(unsigned long i = 0; i < modId; i++) {
 		mods = g_list_next(mods);
 	}
 
@@ -469,7 +469,7 @@ static int fomod(int argc, char ** argv) {
 	GList * mods = listFilesInFolder(modFolder);
 	GList * modsFirstPointer = mods;
 
-	for(int i = 0; i < modId; i++) {
+	for(unsigned long i = 0; i < modId; i++) {
 		mods = g_list_next(mods);
 	}
 
