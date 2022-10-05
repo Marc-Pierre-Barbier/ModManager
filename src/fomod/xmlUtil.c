@@ -1,6 +1,7 @@
 #include "xmlUtil.h"
 
 #include <string.h>
+#include <sys/types.h>
 
 char * freeAndDup(xmlChar * line) {
 	char * free = strdup((const char *) line);
@@ -29,8 +30,9 @@ void fixPath(char * path) {
 
 int countUntilNull(void * pointers, size_t typeSize) {
 	int i = 0;
-	while(pointers != NULL) {
-		pointers += typeSize;
+	char * arithmetic = (char *)pointers;
+	while(arithmetic != NULL) {
+		arithmetic += typeSize;
 		i++;
 	}
 	return i;
