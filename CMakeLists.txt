@@ -16,7 +16,7 @@ set(CMAKE_C_FLAGS_RELEASE "-O2")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
 # set the project name
-project(ModManager)
+project(mod-manager)
 
 
 set(SOURCES
@@ -33,20 +33,20 @@ set(SOURCES
 )
 
 # add the executable
-add_executable(ModManager src/main.c ${SOURCES})
+add_executable(mod-manager src/main.c ${SOURCES})
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLIB REQUIRED glib-2.0)
 pkg_search_module(AUDIT REQUIRED audit)
 pkg_search_module(LIBXML REQUIRED libxml-2.0)
 
-target_include_directories(ModManager PRIVATE ${GLIB_INCLUDE_DIRS} ${LIBXML_INCLUDE_DIRS} ${AUDIT_INCLUDE_DIRS})
+target_include_directories(mod-manager PRIVATE ${GLIB_INCLUDE_DIRS} ${LIBXML_INCLUDE_DIRS} ${AUDIT_INCLUDE_DIRS})
 
 
-target_link_libraries(ModManager ${GLIB_LDFLAGS})
-target_link_libraries(ModManager ${LIBXML_LIBRARIES})
-target_link_libraries(ModManager ${AUDIT_LIBRARIES})
+target_link_libraries(mod-manager ${GLIB_LDFLAGS})
+target_link_libraries(mod-manager ${LIBXML_LIBRARIES})
+target_link_libraries(mod-manager ${AUDIT_LIBRARIES})
 
-install(TARGETS ModManager DESTINATION bin)
+install(TARGETS mod-manager DESTINATION bin)
 
-set_property(TARGET ModManager PROPERTY C_STANDARD 23)
+set_property(TARGET mod-manager PROPERTY C_STANDARD 23)
