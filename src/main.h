@@ -11,3 +11,5 @@
 #define GAME_UPPER_DIR_NAME "UPPER_DIRS"
 //overlayfs temporary dir.
 #define GAME_WORK_DIR_NAME "WORK_DIRS"
+
+#define VERSION "0.1"

@@ -66,6 +66,7 @@ static int usage() {
 	printf("Use --unbind <APPID> to rollback a deployment\n");
 	printf("Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod\n");
 	printf("Use --swap <APPID> <MODID A> MODID B> to swap two mod in the loading order\n");
+	printf("Use --version or -v to get the version number\n");
 	return EXIT_FAILURE;
 }
 
@@ -634,6 +635,16 @@ int main(int argc, char ** argv) {
 			returnValue = noRoot();
 		else
 			returnValue = swapMod(argc, argv);
+
+	} else if(strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
+		returnValue = EXIT_SUCCESS;
+		#ifdef __clang__
+			printf("%s: Clang: %d.%d.%d\n", VERSION, __clang_major__, __clang_minor__, __clang_patchlevel__);
+		#elifdef __GNUC__
+			printf("%s: GCC: %d.%d.%d\n", VERSION, __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+		#else
+			printf("%s: unknown compiler\n", VERSION);
+		#endif
 
 	} else {
 		usage();
