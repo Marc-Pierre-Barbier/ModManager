@@ -47,15 +47,20 @@ static GList * listFilesInFolder(const char * path) {
 
 static int usage() {
 	printf("Use --list-games or -l to list compatible games\n");
+
+	printf("Use --bind or -d <APPID> to deploy the mods for the game\n");
+	printf("Use --unbind <APPID> to rollback a deployment\n");
+
 	printf("Use --add or -a <APPID> <FILENAME> to add a mod to a game\n");
+	printf("Use --remove or -r <APPID> <MODID> to remove a mod\n");
+	printf("Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod\n");
+
 	printf("Use --list-mods or -m <APPID> to list all mods for a game\n");
 	printf("Use --install or -i <APPID> <MODID> to add a mod to a game\n");
 	printf("Use --uninstall or -u <APPID> <MODID> to uninstall a mod from a game\n");
-	printf("Use --remove or -r <APPID> <MODID> to remove a mod\n");
-	printf("Use --deploy or -d <APPID> to deploy the mods for the game\n");
-	printf("Use --unbind <APPID> to rollback a deployment\n");
-	printf("Use --fomod <APPID> <MODID> to create a new mod using the result from the FOMod\n");
+
 	printf("Use --swap <APPID> <MODID A> MODID B> to swap two mod in the loading order\n");
+
 	printf("Use --version or -v to get the version number\n");
 	return EXIT_FAILURE;
 }
@@ -576,7 +581,7 @@ int main(int argc, char ** argv) {
 	else if(strcmp(argv[1], "--uninstall") == 0 || strcmp(argv[1], "-u") == 0)
 		returnValue = installAndUninstallMod(argc, argv, false);
 
-	else if(strcmp(argv[1], "--deploy") == 0 || strcmp(argv[1], "-d") == 0)
+	else if(strcmp(argv[1], "--bind") == 0 || strcmp(argv[1], "-d") == 0)
 		returnValue = deploy(argc, argv);
 
 	else if(strcmp(argv[1], "--unbind") == 0)
