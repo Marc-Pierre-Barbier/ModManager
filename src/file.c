@@ -128,3 +128,25 @@ void casefold(const char * folder) {
 		closedir(d);
 	}
 }
+
+const char * extractLastPart(const char * filePath, const char delimeter) {
+	const int length = strlen(filePath);
+	long index = -1;
+	for(long i= length - 1; i >= 0; i--) {
+		if(filePath[i] == delimeter) {
+			index = i + 1;
+			break;
+		}
+	}
+
+	if(index <= 0 || index == length) return NULL;
+	return &filePath[index];
+}
+
+const char * extractExtension(const char * filePath) {
+	return extractLastPart(filePath, '.');
+}
+
+const char * extractFileName(const char * filePath) {
+	return extractLastPart(filePath, '/');
+}

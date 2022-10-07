@@ -7,28 +7,7 @@
 #include "install.h"
 #include "main.h"
 #include "archives.h"
-
-static const char * extractLastPart(const char * filePath, const char delimeter) {
-	const int length = strlen(filePath);
-	long index = -1;
-	for(long i= length - 1; i >= 0; i--) {
-		if(filePath[i] == delimeter) {
-			index = i + 1;
-			break;
-		}
-	}
-
-	if(index <= 0 || index == length) return NULL;
-	return &filePath[index];
-}
-
-static const char * extractExtension(const char * filePath) {
-	return extractLastPart(filePath, '.');
-}
-
-static const char * extractFileName(const char * filePath) {
-	return extractLastPart(filePath, '/');
-}
+#include "file.h"
 
 error_t addMod(char * filePath, int appId) {
 	error_t resultError = ERR_SUCCESS;

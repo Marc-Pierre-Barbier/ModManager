@@ -45,4 +45,21 @@ int move(const char * source, const char * destination);
  */
 void casefold(const char * folder);
 
+
+const char * extractLastPart(const char * filePath, const char delimeter);
+
+/**
+ * @brief Return the extension of a file by looking for the character '.'
+ * @param filePath
+ * @return return a pointer to the address after the '.' or null if it was not found;
+ */
+const char * extractExtension(const char * filePath);
+
+/**
+ * @brief Return the file name by looking for the last character '/'
+ * @param filePath
+ * @return return a pointer to the address after the last '/' or null if it was not found (the path might not be a path in this case)
+ */
+const char * extractFileName(const char * filePath);
+
 #endif
