@@ -45,12 +45,14 @@ _Static_assert(LEN(GAMES_APPIDS) == LEN(GAMES_NAMES), "Game APPIDS and Game Name
 
 /**
  * @brief list all installed games and the paths to the game's files
+ * This method has a singleton so after the first execution it will no rescan for new games.
  *
  * @param status pointer to a status variable that will be modified to EXIT_SUCCESS or EXIT_FAILURE
- * @return GHashTable* a map appid(int) => path(char *)
+ * @return GHashTable* a map appid(int) => path(char *) to the corresponding steam library
  */
- //TODO: flip the return value and parameter
-GHashTable* search_games(int * status);
+error_t search_games(GHashTable** tablePointer);
+
+void freeGameTableSingleton(void);
 
 /**
  * @brief search the index of the game inside GAMES_NAMES or GAMES_APPIDS

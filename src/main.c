@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <glib.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -20,8 +19,6 @@
 
 #define ENABLED_COLOR "\033[0;32m"
 #define DISABLED_COLOR "\033[0;31m"
-
-GHashTable * gamePaths;
 
 static bool isRoot() {
 	return getuid() == 0;
@@ -65,7 +62,13 @@ static int usage() {
 	return EXIT_FAILURE;
 }
 
-static int validateAppId(const char * appIdStr) {
+static error_t validateAppId(const char * appIdStr) {
+	GHashTable * gamePaths;
+	error_t status = search_games(&gamePaths);
+	if(status == ERR_FAILURE) {
+		return ERR_FAILURE;
+	}
+
 	char * strtoulSentinel;
 	//strtoul set EINVAL(after C99) if the string is invalid
 	unsigned long appid = strtoul(appIdStr, &strtoulSentinel, 10);
@@ -91,6 +94,13 @@ static int validateAppId(const char * appIdStr) {
 
 static int listGames(int argc, char **) {
 	if(argc != 2) return usage();
+
+	GHashTable * gamePaths;
+	error_t status = search_games(&gamePaths);
+	if(status == ERR_FAILURE) {
+		return EXIT_FAILURE;
+	}
+
 	GList * gamesIds = g_hash_table_get_keys(gamePaths);
 	GList * gamesIdsFirstPointer = gamesIds;
 	if(g_list_length(gamesIds) == 0) {
@@ -103,7 +113,7 @@ static int listGames(int argc, char **) {
 		}
 	}
 	g_list_free(gamesIdsFirstPointer);
-	return EXIT_SUCCESS;
+	return EXIT_FAILURE;
 }
 
 static int add(int argc, char ** argv) {
@@ -303,6 +313,15 @@ static int deploy(int argc, char ** argv) {
 	modsToInstall[modCount + 1] = NULL;
 	printf("Mounting the overlay\n");
 	int gameId = getGameIdFromAppId(appid);
+
+	GHashTable * gamePaths;
+	error_t lookup_status = search_games(&gamePaths);
+	if(lookup_status == ERR_FAILURE) {
+		free(home);
+		return ERR_FAILURE;
+	}
+
+
 	const char * path = g_hash_table_lookup(gamePaths, &gameId);
 	char * steamGameFolder = g_build_path("/", path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
 
@@ -353,6 +372,13 @@ static int setup(int argc, char ** argv) {
 	free(gameUpperDir);
 	free(gameWorkDir);
 
+	GHashTable * gamePaths;
+	error_t status = search_games(&gamePaths);
+	if(status == ERR_FAILURE) {
+		free(home);
+		return ERR_FAILURE;
+	}
+
 	const char * path = g_hash_table_lookup(gamePaths, &gameId);
 	char * steamGameFolder = g_build_path("/", path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
 
@@ -393,6 +419,12 @@ static int unbind(int argc, char ** argv) {
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
+
+	GHashTable * gamePaths;
+	error_t status = search_games(&gamePaths);
+	if(status == ERR_FAILURE)
+		return EXIT_FAILURE;
+
 	int gameId = getGameIdFromAppId(appid);
 	const char * path = g_hash_table_lookup(gamePaths, &gameId);
 	char * steamGameFolder = g_build_path("/", path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
@@ -531,17 +563,7 @@ int main(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	int searchStatus;
-	gamePaths = search_games(&searchStatus);
-
-
 	int returnValue = EXIT_SUCCESS;
-	if(searchStatus == EXIT_FAILURE) {
-		returnValue = EXIT_FAILURE;
-		fprintf(stderr, "Error while looking up libraries, do you have steam installed ?");
-		goto exit;
-	}
-
 	char * home = getHome();
 	char * configFolder = g_build_filename(home, MANAGER_FILES, NULL);
 	free(home);
@@ -554,17 +576,16 @@ int main(int argc, char ** argv) {
 		if(getuid() == 0) {
 			fprintf(stderr, "For the first run please avoid sudo\n");
 			returnValue = EXIT_FAILURE;
-			goto exit2;
+			goto exit;
 		} else {
 			//leading 0 == octal
 			int i = g_mkdir_with_parents(configFolder, 0755);
 			if(i < 0) {
 				fprintf(stderr, "Could not create configs, check access rights for this path: %s", configFolder);
-				goto exit2;
+				goto exit;
 			}
 		}
 	}
-
 
 	if(strcmp(argv[1], "--list-games") == 0 || strcmp(argv[1], "-l") == 0)
 		returnValue = listGames(argc, argv);
@@ -613,9 +634,8 @@ int main(int argc, char ** argv) {
 		returnValue = EXIT_FAILURE;
 	}
 
-exit2:
-	g_free(configFolder);
-	g_hash_table_destroy(gamePaths);
 exit:
+	g_free(configFolder);
+	freeGameTableSingleton();
 	return returnValue;
 }

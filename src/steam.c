@@ -1,6 +1,7 @@
 #include "steam.h"
 #include "macro.h"
 #include "getHome.h"
+#include "main.h"
 #include <unistd.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -190,11 +191,21 @@ static void freeLibraries(ValveLibraries_t * libraries, int size) {
 	free(libraries);
 }
 
-GHashTable* search_games(int * status) {
+static GHashTable* gameTableSingleton = NULL;
+
+void freeGameTableSingleton() {
+	if(gameTableSingleton != NULL)g_hash_table_destroy(gameTableSingleton);
+}
+
+error_t search_games(GHashTable ** p_hashTable) {
+	if(gameTableSingleton != NULL) {
+		*p_hashTable = gameTableSingleton;
+		return ERR_SUCCESS;
+	}
+
 	ValveLibraries_t * libraries = NULL;
 	size_t size = 0;
 	char * home = getHome();
-	*status = EXIT_SUCCESS;
 
 	for(unsigned long i = 0; i < LEN(steamLibraries); i++) {
 		char * path = g_build_filename(home, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
@@ -212,8 +223,7 @@ GHashTable* search_games(int * status) {
 
 	free(home);
 	if(libraries == NULL) {
-		*status = EXIT_FAILURE;
-		return NULL;
+		return ERR_FAILURE;
 	}
 
 	GHashTable* table = g_hash_table_new_full(g_int_hash, g_int_equal, free, free);
@@ -231,7 +241,9 @@ GHashTable* search_games(int * status) {
 	}
 
 	freeLibraries(libraries, size);
-	return table;
+	*p_hashTable = table;
+	gameTableSingleton = table;
+	return ERR_SUCCESS;
 }
 
 
