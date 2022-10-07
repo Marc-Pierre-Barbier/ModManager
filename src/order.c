@@ -94,7 +94,7 @@ GList * listMods(int appid) {
 }
 
 
-int swapPlace(int appid, int modIdA, int modIdB) {
+error_t swapPlace(int appid, int modIdA, int modIdB) {
 	char appidStr[10];
 	sprintf(appidStr, "%d", appid);
 
@@ -116,7 +116,7 @@ int swapPlace(int appid, int modIdA, int modIdB) {
 
 	if(listA == NULL || listB == NULL) {
 		fprintf(stderr, "Invalid modId\n");
-		return EXIT_FAILURE;
+		return ERR_FAILURE;
 	}
 
 	char * modAFolder = g_build_filename(modFolder, listA->data, ORDER_FILE, NULL);
@@ -131,7 +131,7 @@ int swapPlace(int appid, int modIdA, int modIdB) {
 
 	if(fileA == NULL || fileB == NULL) {
 		fprintf(stderr, "Error could not open order file\n");
-		return EXIT_FAILURE;
+		return ERR_FAILURE;
 	}
 
 	fprintf(fileA, "%d", modIdB);
@@ -141,5 +141,5 @@ int swapPlace(int appid, int modIdA, int modIdB) {
 	fclose(fileB);
 
 	g_list_free_full(list, free);
-	return EXIT_SUCCESS;
+	return ERR_SUCCESS;
 }

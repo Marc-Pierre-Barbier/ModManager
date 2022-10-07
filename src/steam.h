@@ -2,6 +2,7 @@
 #define __STEAM_H__
 
 #include "macro.h"
+#include "main.h"
 
 #include <stdbool.h>
 #include <stddef.h>

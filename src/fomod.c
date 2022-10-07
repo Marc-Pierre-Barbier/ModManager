@@ -14,6 +14,7 @@
 #include "file.h"
 #include "fomod/fomodTypes.h"
 #include "libxml/globals.h"
+#include "main.h"
 
 static int getInputCount(const char * input) {
 	char buff[2];
@@ -121,7 +122,7 @@ static void sortGroup(FOModGroup_t * group) {
 }
 
 //TODO: handle error
-int processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination) {
+error_t processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination) {
 	//priority higher a less important and should be processed first.
 	*pendingFileOperations = g_list_sort(*pendingFileOperations, priorityCmp);
 	GList * currentFileOperation = *pendingFileOperations;
@@ -148,7 +149,7 @@ int processFileOperations(GList ** pendingFileOperations, const char * modFolder
 
 		currentFileOperation = g_list_next(currentFileOperation);
 	}
-	return EXIT_SUCCESS;
+	return ERR_SUCCESS;
 }
 
 GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendingFileOperations) {
@@ -199,7 +200,7 @@ void freeFileOperations(GList * fileOperations) {
 	g_list_free_full(fileOperationsStart, free);
 }
 
-int installFOMod(const char * modFolder, const char * destination) {
+error_t installFOMod(const char * modFolder, const char * destination) {
 	//everything should be lowercase since we use casefold() before calling any install function
 	char * fomodFolder = g_build_path("/", modFolder, "fomod", NULL);
 	char * fomodFile = g_build_filename(fomodFolder, "moduleconfig.xml", NULL);
@@ -208,14 +209,14 @@ int installFOMod(const char * modFolder, const char * destination) {
 		fprintf(stderr, "FOMod file not found, are you sure this is a fomod mod ?\n");
 		g_free(fomodFolder);
 		g_free(fomodFile);
-		return EXIT_FAILURE;
+		return ERR_FAILURE;
 	}
 
 	FOMod_t fomod;
 	int returnValue = parseFOMod(fomodFile, &fomod);
-	if(returnValue != EXIT_SUCCESS) {
-		return returnValue;
-	}
+	if(returnValue == ERR_FAILURE)
+		return ERR_FAILURE;
+
 	g_free(fomodFile);
 
 	GList * flagList = NULL;
@@ -283,7 +284,7 @@ int installFOMod(const char * modFolder, const char * destination) {
 				default:
 					//never happen;
 					fprintf(stderr, "unexpected type please report this issue %d, %d", group.type, __LINE__);
-					return EXIT_FAILURE;
+					return ERR_FAILURE;
 				}
 
 
@@ -351,5 +352,5 @@ int installFOMod(const char * modFolder, const char * destination) {
 	freeFileOperations(pendingFileOperations);
 	freeFOMod(&fomod);
 	g_free(fomodFolder);
-	return EXIT_SUCCESS;
+	return ERR_SUCCESS;
 }

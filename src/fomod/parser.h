@@ -3,6 +3,7 @@
 
 
 #include "group.h"
+#include "../main.h"
 
 //combine installStep and optionalFileGroups
 typedef struct FOModStep {
@@ -30,9 +31,8 @@ typedef struct FOMod {
  *
  * @param fomodFile path to the moduleconfig.xml
  * @param fomod pointer to a new FOMod_t
- * @return error code.
  */
-int parseFOMod(const char * fomodFile, FOMod_t* fomod);
+error_t parseFOMod(const char * fomodFile, FOMod_t* fomod);
 
 /**
  * @brief Free content of a fomod file.

@@ -239,7 +239,7 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 	return EXIT_SUCCESS;
 }
 
-int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
+error_t parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	xmlDocPtr doc;
 	xmlNodePtr cur;
 
@@ -256,7 +256,7 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 
 	if(doc == NULL) {
 		fprintf(stderr, "Document is not a valid xml file\n");
-		return EXIT_FAILURE;
+		return ERR_FAILURE;
 	}
 
 
@@ -264,12 +264,13 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	if(cur == NULL) {
 		fprintf(stderr, "emptyDocument");
 		xmlFreeDoc(doc);
-		return EXIT_FAILURE;
+		return ERR_FAILURE;
 	}
 
 	if(xmlStrcmp(cur->name, (const xmlChar *) "config") != 0) {
 		fprintf(stderr, "document of the wrong type, root node is '%s' instead of config\n", cur->name);
-		return EXIT_FAILURE;
+		xmlFreeDoc(doc);
+		return ERR_FAILURE;
 	}
 
 	cur = cur->children;
@@ -286,7 +287,7 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 				if(validateNode(&requiredInstallFile, true, "folder", "file", NULL)) {
 					//TODO: handle error
 					printf("%d\n", __LINE__);
-					exit(EXIT_FAILURE);
+					exit(ERR_FAILURE);
 				}
 
 				int size = countUntilNull(fomod->requiredInstallFiles, sizeof(char **)) + 2;
@@ -301,7 +302,7 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 			if(fomod->steps != NULL) {
 				fprintf(stderr, "Multiple 'installSteps' tags");
 				//TODO: handle error
-				return EXIT_FAILURE;
+				return ERR_FAILURE;
 			}
 
 			xmlChar * stepOrder = xmlGetProp(cur, (xmlChar *)"order");
@@ -315,7 +316,7 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 				fprintf(stderr, "Failed to parse the install steps\n");
 
 				//TODO: manage the error properly
-				return EXIT_FAILURE;
+				return ERR_FAILURE;
 			}
 
 			fomod->steps = steps;
@@ -327,5 +328,5 @@ int parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	}
 
 	xmlFreeDoc(doc);
-	return EXIT_SUCCESS;
+	return ERR_SUCCESS;
 }

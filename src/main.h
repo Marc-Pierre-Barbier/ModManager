@@ -1,3 +1,6 @@
+#ifndef __MAIN_H__
+#define __MAIN_H__
+
 //no function should ever be put here, only keep important macros here
 
 #define APP_NAME "modmanager"
@@ -13,3 +16,7 @@
 #define GAME_WORK_DIR_NAME "WORK_DIRS"
 
 #define VERSION "0.1"
+
+typedef enum { ERR_SUCCESS, ERR_FAILURE } error_t;
+
+#endif

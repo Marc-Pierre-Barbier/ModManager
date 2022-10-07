@@ -3,8 +3,9 @@
 
 #include <stdbool.h>
 #include <glib.h>
-#include "fomod/parser.h"
 
+#include "main.h"
+#include "fomod/parser.h"
 #include "fomod/group.h"
 #include "fomod/xmlUtil.h"
 
@@ -15,7 +16,7 @@
  * @param destination folder of the new mod that contains the result of the fomod process.
  * @return int
  */
-int installFOMod(const char * modFolder, const char * destination);
+error_t installFOMod(const char * modFolder, const char * destination);
 
 /**
  * @brief In fomod there is file operations which depends on multiple flags this function find the ones that mach our current flags and append them to a list.
@@ -35,7 +36,7 @@ GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendin
  * @param destination folder of the new mod that contains the result of the process.
  * @return error code
  */
-int processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination);
+error_t processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination);
 
 /**
  * @brief

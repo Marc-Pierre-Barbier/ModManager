@@ -26,6 +26,7 @@ set(SOURCES
 	src/getHome.c
 	src/file.c
 	src/order.c
+	src/archives.c
 	src/fomod.c
 	src/fomod/group.c
 	src/fomod/xmlUtil.c

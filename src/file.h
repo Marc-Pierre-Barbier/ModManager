@@ -1,8 +1,9 @@
-#include <stdbool.h>
-#include <sys/types.h>
-
 #ifndef __FILE_H__
 #define __FILE_H__
+
+#include <stdbool.h>
+#include <sys/types.h>
+#include "main.h"
 
 
 //valid copy flags
@@ -16,7 +17,7 @@
  * @param source path to the source files
  * @param dest path to the destination folder
  * @param flags refer to the "valid copy flags" use them like this CP_LINK | CP_RECURSIVE
- * @return status code
+ * @return cp return value
  */
 int copy(const char * source, const char * dest, u_int32_t flags);
 
@@ -25,7 +26,7 @@ int copy(const char * source, const char * dest, u_int32_t flags);
  * @param source path to the source files
  * @param dest path to the destination folder
 *  @param bool enable recursive rm -r
- * @return status code
+ * @return rm return value
  */
 int delete(const char * path, bool recursive);
 

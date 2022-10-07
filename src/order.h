@@ -2,6 +2,7 @@
 #define __ORDER_H__
 
 #include <glib.h>
+#include "main.h"
 
 #define ORDER_FILE "__ORDER__"
 
@@ -24,6 +25,6 @@ GList * listMods(int appid);
  * @param modId
  * @param modId2
  */
-int swapPlace(int appid, int modId, int modId2);
+error_t swapPlace(int appid, int modId, int modId2);
 
 #endif
