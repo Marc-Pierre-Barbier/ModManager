@@ -1,6 +1,9 @@
 #ifndef __OVERLAY_H__
 #define __OVERLAY_H__
 
+enum overlayErrors { SUCESS, NOT_INSTALLED, FAILURE };
+
+
 /**
  * @brief Overlayfs is what make it possible to deploy to the game files without altering anything.
  * it allows us to overlay multiple folder over the game files. like appling filters to an image.
@@ -10,6 +13,6 @@
  * @param workdir a directory that will contains only temporary files.
  * @return int error code
  */
-int overlayMount(char ** sources, const char * dest, const char * upperdir, const char * workdir);
+enum overlayErrors overlayMount(char ** sources, const char * dest, const char * upperdir, const char * workdir);
 
 #endif

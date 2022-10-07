@@ -45,16 +45,6 @@ static GList * listFilesInFolder(const char * path) {
 	return list;
 }
 
-static int noRoot() {
-	fprintf(stderr, "Don't run this argument as root\n");
-	return EXIT_FAILURE;
-}
-
-static int needRoot() {
-	fprintf(stderr, "Root is needed to bind with the game files\n");
-	return EXIT_FAILURE;
-}
-
 static int usage() {
 	printf("Use --list-games or -l to list compatible games\n");
 	printf("Use --add or -a <APPID> <FILENAME> to add a mod to a game\n");
@@ -320,14 +310,14 @@ static int deploy(int argc, char ** argv) {
 	//it might crash / corrupt game file if the user do it while the game is running
 	//but it's still very unlikely
 	while(umount2(steamGameFolder, MNT_FORCE | MNT_DETACH) == 0);
-	int status = overlayMount(modsToInstall, steamGameFolder, gameUpperDir, gameWorkDir);
-	if(status == 0) {
+	enum overlayErrors status = overlayMount(modsToInstall, steamGameFolder, gameUpperDir, gameWorkDir);
+	if(status == SUCESS) {
 		printf("Everything is ready, just launch the game\n");
-	} else if(status == -1) {
-		fprintf(stderr, "Could not mount the mods overlay, try to install fuse-overlay\n");
-		return EXIT_FAILURE;
-	} else if(status == -2) {
+	} else if(status == FAILURE) {
 		fprintf(stderr, "Could not mount the mods overlay\n");
+		return EXIT_FAILURE;
+	} else if(status == NOT_INSTALLED) {
+		fprintf(stderr, "Please install fuse-overlayfs\n");
 		return EXIT_FAILURE;
 	} else {
 		fprintf(stderr, "%d bug detected, please report this.\n", __LINE__);
@@ -531,8 +521,8 @@ static int swapMod(int argc, char ** argv) {
 int main(int argc, char ** argv) {
 	if(argc < 2 ) return usage();
 
-	if(audit_getloginuid() == 0) {
-		fprintf(stderr, "The root user should not be using this\n");
+	if(audit_getloginuid() == 0 || isRoot()) {
+		fprintf(stderr, "Please don't run this software as root\n");
 		return EXIT_FAILURE;
 	}
 
@@ -571,72 +561,40 @@ int main(int argc, char ** argv) {
 	}
 
 
-	if(strcmp(argv[1], "--list-games") == 0 || strcmp(argv[1], "-l") == 0) {
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = listGames(argc, argv);
+	if(strcmp(argv[1], "--list-games") == 0 || strcmp(argv[1], "-l") == 0)
+		returnValue = listGames(argc, argv);
 
-	} else if(strcmp(argv[1], "--add") == 0 || strcmp(argv[1], "-a") == 0) {
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = add(argc, argv);
+	else if(strcmp(argv[1], "--add") == 0 || strcmp(argv[1], "-a") == 0)
+		returnValue = add(argc, argv);
 
-	} else if(strcmp(argv[1], "--list-mods") == 0 || strcmp(argv[1], "-m") == 0) {
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = listAllMods(argc, argv);
+	else if(strcmp(argv[1], "--list-mods") == 0 || strcmp(argv[1], "-m") == 0)
+		returnValue = listAllMods(argc, argv);
 
-	} else if(strcmp(argv[1], "--install") == 0 || strcmp(argv[1], "-i") == 0) {
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = installAndUninstallMod(argc, argv, true);
+	else if(strcmp(argv[1], "--install") == 0 || strcmp(argv[1], "-i") == 0)
+		returnValue = installAndUninstallMod(argc, argv, true);
 
-	} else if(strcmp(argv[1], "--uninstall") == 0 || strcmp(argv[1], "-u") == 0) {
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = installAndUninstallMod(argc, argv, false);
+	else if(strcmp(argv[1], "--uninstall") == 0 || strcmp(argv[1], "-u") == 0)
+		returnValue = installAndUninstallMod(argc, argv, false);
 
-	} else if(strcmp(argv[1], "--deploy") == 0 || strcmp(argv[1], "-d") == 0) {
-		if(!isRoot())
-			returnValue = needRoot();
-		else
-			returnValue = deploy(argc, argv);
+	else if(strcmp(argv[1], "--deploy") == 0 || strcmp(argv[1], "-d") == 0)
+		returnValue = deploy(argc, argv);
 
-	} else if(strcmp(argv[1], "--unbind") == 0){
-		if(!isRoot())
-			returnValue = needRoot();
-		else
-			returnValue = unbind(argc, argv);
+	else if(strcmp(argv[1], "--unbind") == 0)
+		returnValue = unbind(argc, argv);
 
-	} else if(strcmp(argv[1], "--setup") == 0) {
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = setup(argc, argv);
-	} else if(strcmp(argv[1], "--fomod") == 0){
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = fomod(argc, argv);
+	else if(strcmp(argv[1], "--setup") == 0)
+		returnValue = setup(argc, argv);
 
-	} else if(strcmp(argv[1], "--remove") == 0 || strcmp(argv[1], "-r") == 0) {
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = removeMod(argc, argv);
+	else if(strcmp(argv[1], "--fomod") == 0)
+		returnValue = fomod(argc, argv);
 
-	} else if(strcmp(argv[1], "--swap") == 0 || strcmp(argv[1], "-s") == 0) {
-		if(isRoot())
-			returnValue = noRoot();
-		else
-			returnValue = swapMod(argc, argv);
+	else if(strcmp(argv[1], "--remove") == 0 || strcmp(argv[1], "-r") == 0)
+		returnValue = removeMod(argc, argv);
 
-	} else if(strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
+	else if(strcmp(argv[1], "--swap") == 0 || strcmp(argv[1], "-s") == 0)
+		returnValue = swapMod(argc, argv);
+
+	else if(strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
 		returnValue = EXIT_SUCCESS;
 		#ifdef __clang__
 			printf("%s: Clang: %d.%d.%d\n", VERSION, __clang_major__, __clang_minor__, __clang_patchlevel__);
@@ -645,7 +603,6 @@ int main(int argc, char ** argv) {
 		#else
 			printf("%s: unknown compiler\n", VERSION);
 		#endif
-
 	} else {
 		usage();
 		returnValue = EXIT_FAILURE;
