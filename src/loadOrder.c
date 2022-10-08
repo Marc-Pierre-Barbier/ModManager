@@ -4,19 +4,16 @@
 #include "file.h"
 
 #include <stdio.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-error_t listPlugins(int appid, GList ** plugins) {
-	GHashTable * gamePaths;
-	error_t status = search_games(&gamePaths);
-	if(status == ERR_FAILURE) {
-		return ERR_FAILURE;
-	}
+#include "getDataPath.h"
 
-	int gameId = getGameIdFromAppId(appid);
-	if(gameId < 0 ) {
-		return ERR_FAILURE;
-	}
+//TODO: detect if the game is running
+//TODO: deploy the game
+
+error_t listPlugins(int appid, GList ** plugins) {
+
 
 	//save appid parsing
 	//TODO: apply a similar mechanism everywhere
@@ -24,13 +21,14 @@ error_t listPlugins(int appid, GList ** plugins) {
 	char appidStr[appidStrLen];
 	sprintf(appidStr, "%d", appid);
 
-
-
-	const char * path = g_hash_table_lookup(gamePaths, &appid);
-	char * steamGameFolder = g_build_filename(path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
+	char * dataFolder = NULL;
+	error_t error = getDataPath(appid, &dataFolder);
+	if(error != ERR_SUCCESS) {
+		return ERR_FAILURE;
+	}
 
 	//esp && esm files are loadable
-	DIR * d = opendir(steamGameFolder);
+	DIR * d = opendir(dataFolder);
 	struct dirent *dir;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
@@ -41,7 +39,7 @@ error_t listPlugins(int appid, GList ** plugins) {
 		}
 	}
 
-	g_free(steamGameFolder);
+	free(dataFolder);
 	return ERR_SUCCESS;
 }
 
@@ -137,5 +135,63 @@ error_t setLoadOrder(int appid, GList * loadOrder) {
 	}
 	fclose(f_loadOrder);
 
+	return ERR_SUCCESS;
+}
+
+//TODO: support compression since it can change how we read the file
+//https://en.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Records
+//https://www.mwmythicmods.com/argent/tech/es_format.html
+error_t getModDependencies(const char * esmPath, GList ** dependencies) {
+	FILE * file = fopen(esmPath, "r");
+
+	char sectionName[5];
+	sectionName[4] = '\0';
+	fread(sectionName, sizeof(char), 4, file);
+
+	size_t sizeFieldSize = 0;
+	u_int8_t recordHeaderToIgnore = 0;
+
+	//the field "length" in the sub-record change between games.
+	//TES4 => Fallout4 Oblivion Skyrim(+SE)
+	//TES3 => Morrowind
+	if(strcmp(sectionName, "TES3") == 0) {
+		printf("Using tes3 file format\n");
+		recordHeaderToIgnore = 8;
+		sizeFieldSize = 4;
+	} else if(strcmp(sectionName, "TES4") == 0) {
+		printf("Using tes4 file format\n");
+		recordHeaderToIgnore = 16;
+		sizeFieldSize = 2;
+	} else {
+		fprintf(stderr, "Unrecognized file format %s\n", sectionName);
+		fclose(file);
+		return ERR_FAILURE;
+	}
+
+
+	u_int32_t lengthVal = 0;
+	fread(&lengthVal, 4, 1, file);
+	//ignore the rest of the data
+	fseek(file, recordHeaderToIgnore, SEEK_CUR);
+
+	int64_t length = lengthVal;
+	while(length > 0) {
+		char sectionName[5];
+		sectionName[4] = '\0';
+		fread(sectionName, sizeof(char), 4, file);
+		unsigned long subsectionLength = 0;
+		fread(&subsectionLength, sizeFieldSize, 1, file);
+
+		length -= 8 + subsectionLength;
+		if(strcmp(sectionName, "MAST") == 0) {
+			char * dependency = malloc(subsectionLength + 1);
+			dependency[subsectionLength] = '\0';
+			fread(dependency, sizeof(char), subsectionLength, file);
+			*dependencies = g_list_append(*dependencies, dependency);
+		} else {
+			fseek(file, subsectionLength, SEEK_CUR);
+		}
+	}
+	fclose(file);
 	return ERR_SUCCESS;
 }

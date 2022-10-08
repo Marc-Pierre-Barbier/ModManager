@@ -21,8 +21,10 @@ project(mod-manager)
 
 set(SOURCES
 	src/steam.c
+	src/loadOrder.c
 	src/install.c
 	src/overlayfs.c
+	src/getDataPath.c
 	src/getHome.c
 	src/file.c
 	src/order.c

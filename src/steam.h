@@ -31,14 +31,16 @@ typedef struct ValveLibraries {
 static const u_int32_t GAMES_APPIDS[] = {
 	489830,
 	22330,
-	377160
+	377160,
+	22320
 };
 
 //the name of the game in the steamapps/common folder
 static const char * GAMES_NAMES[] = {
 	"Skyrim Special Edition",
 	"Oblivion",
-	"Fallout 4"
+	"Fallout 4",
+	"Morrowind"
 };
 
 _Static_assert(LEN(GAMES_APPIDS) == LEN(GAMES_NAMES), "Game APPIDS and Game Names doesn't match");

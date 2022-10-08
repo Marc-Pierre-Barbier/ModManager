@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <libaudit.h>
 
+#include "getDataPath.h"
 #include "overlayfs.h"
 #include "install.h"
 #include "getHome.h"
@@ -312,18 +313,13 @@ static int deploy(int argc, char ** argv) {
 	modsToInstall[modCount] = gameFolder;
 	modsToInstall[modCount + 1] = NULL;
 	printf("Mounting the overlay\n");
-	int gameId = getGameIdFromAppId(appid);
 
-	GHashTable * gamePaths;
-	error_t lookup_status = search_games(&gamePaths);
-	if(lookup_status == ERR_FAILURE) {
+	char * dataFolder = NULL;
+	error_t error = getDataPath(appid, &dataFolder);
+	if(error != ERR_SUCCESS) {
 		free(home);
 		return ERR_FAILURE;
 	}
-
-
-	const char * path = g_hash_table_lookup(gamePaths, &gameId);
-	char * steamGameFolder = g_build_path("/", path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
 
 	char * gameUpperDir = g_build_filename(home, MANAGER_FILES, GAME_UPPER_DIR_NAME, appIdStr, NULL);
 	char * gameWorkDir = g_build_filename(home, MANAGER_FILES, GAME_WORK_DIR_NAME, appIdStr, NULL);
@@ -333,8 +329,8 @@ static int deploy(int argc, char ** argv) {
 	//DETACH + FORCE allow us to be sure it will be unload.
 	//it might crash / corrupt game file if the user do it while the game is running
 	//but it's still very unlikely
-	while(umount2(steamGameFolder, MNT_FORCE | MNT_DETACH) == 0);
-	enum overlayErrors status = overlayMount(modsToInstall, steamGameFolder, gameUpperDir, gameWorkDir);
+	while(umount2(dataFolder, MNT_FORCE | MNT_DETACH) == 0);
+	enum overlayErrors status = overlayMount(modsToInstall, dataFolder, gameUpperDir, gameWorkDir);
 	if(status == SUCESS) {
 		printf("Everything is ready, just launch the game\n");
 	} else if(status == FAILURE) {
@@ -348,7 +344,7 @@ static int deploy(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	g_free(steamGameFolder);
+	g_free(dataFolder);
 	g_free(gameUpperDir);
 	g_free(gameWorkDir);
 
@@ -362,7 +358,6 @@ static int setup(int argc, char ** argv) {
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
-	int gameId = getGameIdFromAppId(appid);
 	char * home = getHome();
 
 	char * gameUpperDir = g_build_filename(home, MANAGER_FILES, GAME_UPPER_DIR_NAME, appIdStr, NULL);
@@ -372,15 +367,11 @@ static int setup(int argc, char ** argv) {
 	free(gameUpperDir);
 	free(gameWorkDir);
 
-	GHashTable * gamePaths;
-	error_t status = search_games(&gamePaths);
-	if(status == ERR_FAILURE) {
-		free(home);
+	char * dataFolder = NULL;
+	error_t error = getDataPath(appid, &dataFolder);
+	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
-
-	const char * path = g_hash_table_lookup(gamePaths, &gameId);
-	char * steamGameFolder = g_build_path("/", path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
 
 	char * gameFolder = g_build_filename(home, MANAGER_FILES, GAME_FOLDER_NAME, appIdStr, NULL);
 	if(access(gameFolder, F_OK) == 0) {
@@ -392,20 +383,20 @@ static int setup(int argc, char ** argv) {
 
 	//links don't conflict with overlayfs and avoid coping 17Gb of files.
 	//but links require the files to be on the same filesystem
-	int returnValue = copy(steamGameFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR | CP_LINK);
+	int returnValue = copy(dataFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR | CP_LINK);
 	if(returnValue < 0) {
 		printf("Coping game files.  HINT: having the game on the same partition as you home director will make this operation use zero extra space");
-		returnValue = copy(steamGameFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR);
+		returnValue = copy(dataFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR);
 		if(returnValue < 0) {
 			fprintf(stderr, "Copy failed make sure you have enough space on your device.");
-			free(steamGameFolder);
+			free(dataFolder);
 			free(gameFolder);
 			return EXIT_FAILURE;
 		}
 	}
 	casefold(gameFolder);
 
-	free(steamGameFolder);
+	free(dataFolder);
 	free(gameFolder);
 	printf("Done\n");
 	return EXIT_SUCCESS;
@@ -420,18 +411,15 @@ static int unbind(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	GHashTable * gamePaths;
-	error_t status = search_games(&gamePaths);
-	if(status == ERR_FAILURE)
-		return EXIT_FAILURE;
+	char * dataFolder = NULL;
+	error_t error = getDataPath(appid, &dataFolder);
+	if(error != ERR_SUCCESS) {
+		return ERR_FAILURE;
+	}
 
-	int gameId = getGameIdFromAppId(appid);
-	const char * path = g_hash_table_lookup(gamePaths, &gameId);
-	char * steamGameFolder = g_build_path("/", path, "steamapps/common", GAMES_NAMES[gameId], "Data", NULL);
+	while(umount2(dataFolder, MNT_FORCE | MNT_DETACH) == 0);
 
-	while(umount2(steamGameFolder, MNT_FORCE | MNT_DETACH) == 0);
-
-	free(steamGameFolder);
+	free(dataFolder);
 	return EXIT_SUCCESS;
 }
 
