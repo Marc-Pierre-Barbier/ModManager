@@ -44,7 +44,7 @@ static int getFiledId(const char * field) {
 	}
 }
 
-static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * status) {
+static steam_Libraries_t * parseVDF(const char * path, size_t * size, int * status) {
 	FILE * fd = fopen(path, "r");
 	char * line = NULL;
 	size_t len = 0;
@@ -53,7 +53,7 @@ static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * statu
 
 	bool inQuotes = false;
 
-	ValveLibraries_t * libraries = NULL;
+	steam_Libraries_t * libraries = NULL;
 	*size = 0;
 
 	//skip the "libraryfolders" label & the first opening brace
@@ -90,7 +90,7 @@ static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * statu
 
 						} else {
 							char * value = strndup(buffer, bufferIndex);
-							ValveLibraries_t * library = &libraries[*size - 1];
+							steam_Libraries_t * library = &libraries[*size - 1];
 							switch (nextFieldToFill) {
 							case FIELD_PATH:
 								library->path = value;
@@ -120,7 +120,7 @@ static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * statu
 							case FIELD_APPS:
 								if(isAppId) {
 									library->appsCount++;
-									library->apps = realloc(library->apps, library->appsCount * sizeof(ValveApp_t));
+									library->apps = realloc(library->apps, library->appsCount * sizeof(steam_App_t));
 									unsigned int appid = strtoul(value, NULL, 10);
 									library->apps[library->appsCount - 1].appid = appid;
 								} else {
@@ -146,8 +146,8 @@ static ValveLibraries_t * parseVDF(const char * path, size_t * size, int * statu
 				braceDepth++;
 				if(braceDepth == 1) {
 					*size += 1;
-					libraries = realloc(libraries, sizeof(ValveLibraries_t) * (*size));
-					memset(&libraries[*size - 1], 0, sizeof(ValveLibraries_t));
+					libraries = realloc(libraries, sizeof(steam_Libraries_t) * (*size));
+					memset(&libraries[*size - 1], 0, sizeof(steam_Libraries_t));
 				}
 				break;
 			case '}':
@@ -179,7 +179,7 @@ exit:
 	return libraries;
 }
 
-static void freeLibraries(ValveLibraries_t * libraries, int size) {
+static void freeLibraries(steam_Libraries_t * libraries, int size) {
 	for(int i = 0; i < size; i++) {
 		free(libraries[i].path);
 		free(libraries[i].label);
@@ -193,17 +193,17 @@ static void freeLibraries(ValveLibraries_t * libraries, int size) {
 
 static GHashTable* gameTableSingleton = NULL;
 
-void freeGameTableSingleton() {
+void steam_freeGameTable() {
 	if(gameTableSingleton != NULL)g_hash_table_destroy(gameTableSingleton);
 }
 
-error_t search_games(GHashTable ** p_hashTable) {
+error_t steam_searchGames(GHashTable ** p_hashTable) {
 	if(gameTableSingleton != NULL) {
 		*p_hashTable = gameTableSingleton;
 		return ERR_SUCCESS;
 	}
 
-	ValveLibraries_t * libraries = NULL;
+	steam_Libraries_t * libraries = NULL;
 	size_t size = 0;
 	char * home = getHome();
 
@@ -231,7 +231,7 @@ error_t search_games(GHashTable ** p_hashTable) {
 	//fill the table
 	for(unsigned long i = 0; i < size; i++) {
 		for(unsigned long j = 0; j < libraries[i].appsCount; j++) {
-			int gameId = getGameIdFromAppId(libraries[i].apps[j].appid);
+			int gameId = steam_gameIdFromAppId(libraries[i].apps[j].appid);
 			if(gameId >= 0) {
 				int * key = malloc(sizeof(int));
 				*key = gameId;
@@ -247,7 +247,7 @@ error_t search_games(GHashTable ** p_hashTable) {
 }
 
 
-int getGameIdFromAppId(u_int32_t appid) {
+int steam_gameIdFromAppId(u_int32_t appid) {
 	for(unsigned long k = 0; k < LEN(GAMES_APPIDS); k++) {
 		if(appid == GAMES_APPIDS[k]) {
 			return k;

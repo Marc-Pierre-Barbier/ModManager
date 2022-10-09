@@ -10,6 +10,6 @@
  * @param filePath path to the mod file
  * @param appId game for which the mod is destined to be used with.
  */
-error_t addMod(char * filePath, int appId);
+error_t install_addMod(char * filePath, int appId);
 
 #endif

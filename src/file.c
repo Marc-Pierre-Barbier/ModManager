@@ -19,7 +19,7 @@ static u_int32_t countSetBits(u_int32_t n) {
 
 //TODO: add interruption support
 //simplest way to copy a file in c(linux)
-int copy(const char * path, const char * dest, u_int32_t flags) {
+int file_copy(const char * path, const char * dest, u_int32_t flags) {
 	int flagCount = countSetBits(flags);
 	if(flagCount > 3) {
 		fprintf(stderr, "Invalid flags for cp command\n");
@@ -34,15 +34,15 @@ int copy(const char * path, const char * dest, u_int32_t flags) {
 	strcpy(args[2], dest);
 	int argIndex = 3;
 
-	if(flags & CP_LINK) {
+	if(flags & FILE_CP_LINK) {
 		args[argIndex] = "--link";
 		argIndex += 1;
 	}
-	if(flags & CP_RECURSIVE) {
+	if(flags & FILE_CP_RECURSIVE) {
 		args[argIndex] = "-r";
 		argIndex += 1;
 	}
-	if(flags & CP_NO_TARGET_DIR) {
+	if(flags & FILE_CP_NO_TARGET_DIR) {
 		args[argIndex] = "-T";
 		argIndex += 1;
 	}
@@ -61,7 +61,7 @@ int copy(const char * path, const char * dest, u_int32_t flags) {
 	}
 }
 
-int delete(const char * path, bool recursive) {
+int file_delete(const char * path, bool recursive) {
 	int pid = fork();
 	if(pid == 0) {
 		if(recursive) {
@@ -77,7 +77,7 @@ int delete(const char * path, bool recursive) {
 	}
 }
 
-int move(const char * source, const char * destination) {
+int file_move(const char * source, const char * destination) {
 	int pid = fork();
 	if(pid == 0) {
 		execl("/bin/mv", "/bin/mv", source, destination, NULL);
@@ -92,7 +92,7 @@ int move(const char * source, const char * destination) {
 
 //rename a folder and all subfolder and files to lowercase
 //TODO: error handling
-void casefold(const char * folder) {
+void file_casefold(const char * folder) {
 	DIR * d = opendir(folder);
 	struct dirent *dir;
 	if (d) {
@@ -108,7 +108,7 @@ void casefold(const char * folder) {
 
 				if(strcmp(destinationName, dir->d_name) != 0) {
 
-					int result = move(file, destination);
+					int result = file_move(file, destination);
 					if(result != EXIT_SUCCESS) {
 						fprintf(stderr, "Move failed: %s => %s \n", dir->d_name, destinationName);
 					}
@@ -119,7 +119,7 @@ void casefold(const char * folder) {
 				g_free(destinationName);
 
 				if(dir->d_type == DT_DIR) {
-					casefold(destination);
+					file_casefold(destination);
 				}
 
 				g_free(destination);
@@ -129,7 +129,7 @@ void casefold(const char * folder) {
 	}
 }
 
-const char * extractLastPart(const char * filePath, const char delimeter) {
+const char * file_extractLastPart(const char * filePath, const char delimeter) {
 	const int length = strlen(filePath);
 	long index = -1;
 	for(long i= length - 1; i >= 0; i--) {
@@ -143,10 +143,10 @@ const char * extractLastPart(const char * filePath, const char delimeter) {
 	return &filePath[index];
 }
 
-const char * extractExtension(const char * filePath) {
-	return extractLastPart(filePath, '.');
+const char * file_extractExtension(const char * filePath) {
+	return file_extractLastPart(filePath, '.');
 }
 
-const char * extractFileName(const char * filePath) {
-	return extractLastPart(filePath, '/');
+const char * file_extractFileName(const char * filePath) {
+	return file_extractLastPart(filePath, '/');
 }

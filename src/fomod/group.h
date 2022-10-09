@@ -3,32 +3,33 @@
 
 #include <libxml/parser.h>
 #include "fomodTypes.h"
+#include "xmlUtil.h"
 
 typedef enum GroupType_t { ONE_ONLY, ANY, AT_LEAST_ONE, AT_MOST_ONE, ALL } GroupType_t;
 typedef enum TypeDescriptor { OPTIONAL, MAYBE_USABLE, NOT_USABLE, REQUIRED, RECOMMENDED } TypeDescriptor_t;
 
-typedef struct FOModPlugin {
+typedef struct fomod_Plugin {
 	char * description;
 	char * image;
-	FOModFlag_t * flags;
+	fomod_Flag_t * flags;
 	int flagCount;
-	FOModFile_t * files;
+	fomod_File_t * files;
 	int fileCount;
 	TypeDescriptor_t type;
 	char * name;
-} FOModPlugin_t;
+} fomod_Plugin_t;
 
 //combine group and "plugins"
-typedef struct FOModGroup {
-	FOModPlugin_t * plugins;
+typedef struct fomod_Group {
+	fomod_Plugin_t * plugins;
 	int pluginCount;
 	GroupType_t type;
 	char * name;
-	FOModOrder_t order;
-} FOModGroup_t;
+	fomod_Order_t order;
+} fomod_Group_t;
 
-int parseGroup(xmlNodePtr groupNode, FOModGroup_t* group);
-void freeGroup(FOModGroup_t * group);
+int grp_parseGroup(xmlNodePtr groupNode, fomod_Group_t* group);
+void grp_freeGroup(fomod_Group_t * group);
 
 
 #endif

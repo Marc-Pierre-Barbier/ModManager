@@ -22,7 +22,7 @@ static gint compareOrder(const void * a, const void * b) {
 	return ModA->modId - ModB->modId;
 }
 
-GList * listMods(int appid) {
+GList * order_listMods(int appid) {
 	char appidStr[10];
 	sprintf(appidStr, "%d", appid);
 
@@ -94,7 +94,7 @@ GList * listMods(int appid) {
 }
 
 
-error_t swapPlace(int appid, int modIdA, int modIdB) {
+error_t order_swapPlace(int appid, int modIdA, int modIdB) {
 	char appidStr[10];
 	sprintf(appidStr, "%d", appid);
 
@@ -102,7 +102,7 @@ error_t swapPlace(int appid, int modIdA, int modIdB) {
 	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appidStr, NULL);
 	free(home);
 
-	GList * list = listMods(appid);
+	GList * list = order_listMods(appid);
 	GList * listA = list;
 	GList * listB = list;
 

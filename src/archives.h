@@ -9,7 +9,7 @@
  * @param outdir output director
  * @return int return code
  */
-int unzip(char * path, char * outdir);
+int archive_unzip(char * path, char * outdir);
 
 /**
  * @brief Execute the unrar command
@@ -17,7 +17,7 @@ int unzip(char * path, char * outdir);
  * @param outdir output director
  * @return int return code
  */
-int unrar(char * path, char * outdir);
+int archive_unrar(char * path, char * outdir);
 
 /**
  * @brief Execute the 7z command
@@ -25,6 +25,6 @@ int unrar(char * path, char * outdir);
  * @param outdir output director
  * @return int return code
  */
-int un7z(char * path, const char * outdir);
+int archive_un7z(char * path, const char * outdir);
 
 #endif

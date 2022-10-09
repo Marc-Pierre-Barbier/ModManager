@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 
-typedef enum FOModOrder { ASC, DESC, ORD } FOModOrder_t;
+typedef enum FOModOrder { ASC, DESC, ORD } fomod_Order_t;
 
 /**
  * @brief
@@ -15,21 +15,21 @@ typedef enum FOModOrder { ASC, DESC, ORD } FOModOrder_t;
  * @param names variadic of the valid names.
  * @return return true if it found a valid node
  */
-bool validateNode(xmlNodePtr * node, bool skipText, const char * names, ...);
+bool xml_validateNode(xmlNodePtr * node, bool skipText, const char * names, ...);
 
 /**
  * @brief Free memory of and xmlChar and return a strdup version. just to make sure there is nothing remaining in libxml
  */
-char * freeAndDup(xmlChar * line);
+char * xml_freeAndDup(xmlChar * line);
 
 
-FOModOrder_t getFOModOrder(const char * order);
+fomod_Order_t fomod_getOrder(const char * order);
 
 /**
  * @brief replace / by \
  * @param path
  */
-void fixPath(char * path);
+void xml_fixPath(char * path);
 
 /**
  * @brief Count the number of step before null
@@ -38,6 +38,6 @@ void fixPath(char * path);
  * @param typeSize size of each element of the list
  * @return size
  */
-int countUntilNull(void * pointers, size_t typeSize);
+int fomod_countUntilNull(void * pointers, size_t typeSize);
 
 #endif

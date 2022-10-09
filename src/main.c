@@ -65,7 +65,7 @@ static int usage() {
 
 static error_t validateAppId(const char * appIdStr) {
 	GHashTable * gamePaths;
-	error_t status = search_games(&gamePaths);
+	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
@@ -78,7 +78,7 @@ static error_t validateAppId(const char * appIdStr) {
 		return -1;
 	}
 
-	int gameId = getGameIdFromAppId((int)appid);
+	int gameId = steam_gameIdFromAppId((int)appid);
 	if(gameId < 0) {
 		fprintf(stderr, "Game is not compatible\n");
 		return -1;
@@ -97,7 +97,7 @@ static int listGames(int argc, char **) {
 	if(argc != 2) return usage();
 
 	GHashTable * gamePaths;
-	error_t status = search_games(&gamePaths);
+	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {
 		return EXIT_FAILURE;
 	}
@@ -126,7 +126,7 @@ static int add(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	addMod(argv[3], appid);
+	install_addMod(argv[3], appid);
 	return EXIT_SUCCESS;
 }
 
@@ -143,7 +143,7 @@ static int listAllMods(int argc, char ** argv) {
 	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
 
-	GList * mods = listMods(appid);
+	GList * mods = order_listMods(appid);
 	GList * p_mods = mods;
 	unsigned short index = 0;
 
@@ -330,7 +330,7 @@ static int deploy(int argc, char ** argv) {
 	//it might crash / corrupt game file if the user do it while the game is running
 	//but it's still very unlikely
 	while(umount2(dataFolder, MNT_FORCE | MNT_DETACH) == 0);
-	enum overlayErrors status = overlayMount(modsToInstall, dataFolder, gameUpperDir, gameWorkDir);
+	overlay_errors_t status = overlay_mount(modsToInstall, dataFolder, gameUpperDir, gameWorkDir);
 	if(status == SUCESS) {
 		printf("Everything is ready, just launch the game\n");
 	} else if(status == FAILURE) {
@@ -377,16 +377,16 @@ static int setup(int argc, char ** argv) {
 	if(access(gameFolder, F_OK) == 0) {
 		//if the game folder alredy exists just delete it
 		//this will allow the removal of dlcs and language change
-		delete(gameFolder, true);
+		file_delete(gameFolder, true);
 	}
 	g_mkdir_with_parents(gameFolder, 0755);
 
 	//links don't conflict with overlayfs and avoid coping 17Gb of files.
 	//but links require the files to be on the same filesystem
-	int returnValue = copy(dataFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR | CP_LINK);
+	int returnValue = file_copy(dataFolder, gameFolder, FILE_CP_RECURSIVE | FILE_CP_NO_TARGET_DIR | FILE_CP_LINK);
 	if(returnValue < 0) {
 		printf("Coping game files.  HINT: having the game on the same partition as you home director will make this operation use zero extra space");
-		returnValue = copy(dataFolder, gameFolder, CP_RECURSIVE | CP_NO_TARGET_DIR);
+		returnValue = file_copy(dataFolder, gameFolder, FILE_CP_RECURSIVE | FILE_CP_NO_TARGET_DIR);
 		if(returnValue < 0) {
 			fprintf(stderr, "Copy failed make sure you have enough space on your device.");
 			free(dataFolder);
@@ -394,7 +394,7 @@ static int setup(int argc, char ** argv) {
 			return EXIT_FAILURE;
 		}
 	}
-	casefold(gameFolder);
+	file_casefold(gameFolder);
 
 	free(dataFolder);
 	free(gameFolder);
@@ -457,7 +457,7 @@ static int removeMod(int argc, char ** argv) {
 
 	gchar * filename = g_build_filename(modFolder, mods->data, NULL);
 
-	delete(filename, true);
+	file_delete(filename, true);
 
 	g_free(filename);
 	g_free(modFolder);
@@ -500,13 +500,13 @@ static int fomod(int argc, char ** argv) {
 	char * destination = g_strconcat(mods->data, "__FOMOD", NULL);
 
 	if(access(destination, F_OK) == 0) {
-		delete(destination, true);
+		file_delete(destination, true);
 	}
 	char * modDestination = g_build_filename(modFolder, destination, NULL);
 	char * modPath = g_build_filename(modFolder, mods->data, NULL);
 
 	//TODO: add error handling
-	int returnValue = installFOMod(modPath, modDestination);
+	int returnValue = fomod_installFOMod(modPath, modDestination);
 
 	free(destination);
 	g_list_free_full(modsFirstPointer, free);
@@ -540,7 +540,7 @@ static int swapMod(int argc, char ** argv) {
 	}
 
 	printf("%d, %d\n", modIdA, modIdB);
-	return swapPlace(appid, modIdA, modIdB);
+	return order_swapPlace(appid, modIdA, modIdB);
 }
 
 int main(int argc, char ** argv) {
@@ -609,7 +609,6 @@ int main(int argc, char ** argv) {
 		returnValue = swapMod(argc, argv);
 
 	else if(strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
-		returnValue = EXIT_SUCCESS;
 		#ifdef __clang__
 			printf("%s: Clang: %d.%d.%d\n", VERSION, __clang_major__, __clang_minor__, __clang_patchlevel__);
 		#elifdef __GNUC__
@@ -624,6 +623,6 @@ int main(int argc, char ** argv) {
 
 exit:
 	g_free(configFolder);
-	freeGameTableSingleton();
+	steam_freeGameTable();
 	return returnValue;
 }

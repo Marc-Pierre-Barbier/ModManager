@@ -3,13 +3,13 @@
 #include <string.h>
 #include <sys/types.h>
 
-char * freeAndDup(xmlChar * line) {
+char * xml_freeAndDup(xmlChar * line) {
 	char * free = strdup((const char *) line);
 	xmlFree(line);
 	return free;
 }
 
-FOModOrder_t getFOModOrder(const char * order) {
+fomod_Order_t fomod_getOrder(const char * order) {
 	if(order == NULL || strcmp(order, "Ascending") == 0) {
 		return ASC;
 	} else if(strcmp(order, "Explicit") == 0) {
@@ -21,14 +21,14 @@ FOModOrder_t getFOModOrder(const char * order) {
 }
 
 //replace \ in the path by /
-void fixPath(char * path) {
+void xml_fixPath(char * path) {
 	while(*path != '\0') {
 		if(*path == '\\')*path = '/';
 		path++;
 	}
 }
 
-int countUntilNull(void * pointers, size_t typeSize) {
+int fomod_countUntilNull(void * pointers, size_t typeSize) {
 	int i = 0;
 	char * arithmetic = (char *)pointers;
 	while(arithmetic != NULL) {
@@ -40,7 +40,7 @@ int countUntilNull(void * pointers, size_t typeSize) {
 
 //names cannot contain false
 //need to be null terminated
-bool validateNode(xmlNodePtr * node, bool skipText, const char * names, ...) {
+bool xml_validateNode(xmlNodePtr * node, bool skipText, const char * names, ...) {
 	va_list namesPtr;
 
 	while(*node != NULL && xmlStrcmp((*node)->name, (const xmlChar *)"text") == 0) {

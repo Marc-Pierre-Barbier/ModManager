@@ -8,12 +8,12 @@
 
 error_t getDataPath(int appid, char ** destination) {
     GHashTable * gamePaths;
-	error_t status = search_games(&gamePaths);
+	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
 
-	int gameId = getGameIdFromAppId(appid);
+	int gameId = steam_gameIdFromAppId(appid);
 	if(gameId < 0 ) {
 		return ERR_FAILURE;
 	}

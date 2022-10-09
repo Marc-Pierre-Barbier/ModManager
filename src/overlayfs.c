@@ -6,11 +6,11 @@
 #include "overlayfs.h"
 #include <stdio.h>
 
-enum overlayErrors overlayMount(char ** sources, const char * dest, const char * upperdir, const char * workdir) {
+overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * upperdir, const char * workdir) {
 	char * lowerdir = g_strjoinv(":", sources);
 	char * mountData = g_strjoin("", "lowerdir=", lowerdir, ",workdir=", workdir, ",upperdir=", upperdir, NULL);
 
-	enum overlayErrors result = SUCESS;
+	overlay_errors_t result = SUCESS;
 
 	if(access("/usr/bin/fuse-overlayfs", F_OK) == 0) {
 		int pid = fork();

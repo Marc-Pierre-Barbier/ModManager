@@ -15,7 +15,7 @@
  *
  * @return GList of char containing the name of the mod folder in order
  */
-GList * listMods(int appid);
+GList * order_listMods(int appid);
 
 /**
  * @brief Change the mod order by swaping two mod
@@ -25,6 +25,6 @@ GList * listMods(int appid);
  * @param modId
  * @param modId2
  */
-error_t swapPlace(int appid, int modId, int modId2);
+error_t order_swapPlace(int appid, int modId, int modId2);
 
 #endif

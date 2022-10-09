@@ -2,16 +2,17 @@
 #define __FOMOD_PARSER_H__
 
 
+#include "fomodTypes.h"
 #include "group.h"
 #include "../main.h"
 
 //combine installStep and optionalFileGroups
 typedef struct FOModStep {
-	FOModOrder_t optionOrder;
-	FOModGroup_t * groups;
+	fomod_Order_t optionOrder;
+	fomod_Group_t * groups;
 	int groupCount;
 	char * name;
-	FOModFlag_t * requiredFlags;
+	fomod_Flag_t * requiredFlags;
 	int flagCount;
 } FOModStep_t;
 
@@ -19,10 +20,10 @@ typedef struct FOMod {
 	char * moduleName;
 	char * moduleImage;
 	char ** requiredInstallFiles;
-	FOModOrder_t stepOrder;
+	fomod_Order_t stepOrder;
 	FOModStep_t * steps;
 	int stepCount;
-	FOModCondFile_t * condFiles;
+	fomod_CondFile_t * condFiles;
 	int condFilesCount;
 } FOMod_t;
 
@@ -32,12 +33,6 @@ typedef struct FOMod {
  * @param fomodFile path to the moduleconfig.xml
  * @param fomod pointer to a new FOMod_t
  */
-error_t parseFOMod(const char * fomodFile, FOMod_t* fomod);
-
-/**
- * @brief Free content of a fomod file.
- * @param fomod
- */
-void freeFOMod(FOMod_t * fomod);
+error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod);
 
 #endif

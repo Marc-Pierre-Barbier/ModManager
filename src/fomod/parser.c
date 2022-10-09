@@ -1,63 +1,17 @@
 #include "parser.h"
+#include "fomodTypes.h"
+#include "group.h"
 #include "libxml/tree.h"
 #include "xmlUtil.h"
 #include <stdlib.h>
 #include <string.h>
-
-//Maybe integrate this into the rest of the code instead of freeing after the fact
-void freeFOMod(FOMod_t * fomod) {
-	for(int i = 0; i < fomod->condFilesCount; i++) {
-		FOModCondFile_t * condFile = &(fomod->condFiles[i]);
-		for(long fileId = 0; fileId < condFile->fileCount; fileId++) {
-			free(condFile->files[fileId].destination);
-			free(condFile->files[fileId].source);
-		}
-
-		for(long flagId = 0; flagId < condFile->flagCount; flagId++) {
-			FOModFlag_t * flag = &(condFile->requiredFlags[flagId]);
-			free(flag->name);
-			free(flag->value);
-		}
-		free(condFile->files);
-		free(condFile->requiredFlags);
-	}
-	free(fomod->condFiles);
-	free(fomod->moduleImage);
-	free(fomod->moduleName);
-
-	int size = countUntilNull(fomod->requiredInstallFiles, sizeof(char **));
-	for(int i = 0; i < size; i++) {
-		free(fomod->requiredInstallFiles[i]);
-	}
-	free(fomod->requiredInstallFiles);
-
-	for(int i = 0; i < fomod->stepCount; i++) {
-		FOModStep_t * step = &fomod->steps[i];
-		for(int groupId = 0; groupId < step->groupCount; groupId++) {
-			FOModGroup_t * group = &step->groups[groupId];
-			freeGroup(group);
-		}
-		for(int flagId = 0; flagId < step->flagCount; flagId++) {
-			FOModFlag_t * flag = &(step->requiredFlags[flagId]);
-			free(flag->name);
-			free(flag->value);
-		}
-		free(step->groups);
-		free(step->requiredFlags);
-		free(step->name);
-	}
-	free(fomod->steps);
-
-	//set every counter to zero and every pointer to null
-	memset(fomod, 0, sizeof(FOMod_t));
-}
 
 static int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
 	xmlNodePtr requiredFlagsNode = node->children;
 
 	while (requiredFlagsNode != NULL) {
 
-		if(!validateNode(&requiredFlagsNode, true, "flagDependency", NULL)) {
+		if(!xml_validateNode(&requiredFlagsNode, true, "flagDependency", NULL)) {
 			//TODO: handle error
 			printf("%d\n", __LINE__);
 			return EXIT_FAILURE;
@@ -66,10 +20,10 @@ static int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
 		if(requiredFlagsNode == NULL)break;
 
 		step->flagCount += 1;
-		step->requiredFlags = realloc(step->requiredFlags, step->flagCount * sizeof(FOModFlag_t));
-		FOModFlag_t * flag = &(step->requiredFlags[step->flagCount - 1]);
-		flag->name = freeAndDup(xmlGetProp(requiredFlagsNode, (const xmlChar *) "flag"));
-		flag->value = freeAndDup(xmlGetProp(requiredFlagsNode, (const xmlChar *) "value"));
+		step->requiredFlags = realloc(step->requiredFlags, step->flagCount * sizeof(fomod_Flag_t));
+		fomod_Flag_t * flag = &(step->requiredFlags[step->flagCount - 1]);
+		flag->name = xml_freeAndDup(xmlGetProp(requiredFlagsNode, (const xmlChar *) "flag"));
+		flag->value = xml_freeAndDup(xmlGetProp(requiredFlagsNode, (const xmlChar *) "value"));
 
 		requiredFlagsNode = requiredFlagsNode->next;
 	}
@@ -79,11 +33,11 @@ static int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
 
 static int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
 	xmlChar * optionOrder = xmlGetProp(node, (const xmlChar *)"order");
-	step->optionOrder = getFOModOrder((char *)optionOrder);
+	step->optionOrder = fomod_getOrder((char *)optionOrder);
 	xmlFree(optionOrder);
 	xmlNodePtr group = node->children;
 	while(group != NULL) {
-		if(!validateNode(&group, true, "group", NULL)) {
+		if(!xml_validateNode(&group, true, "group", NULL)) {
 			//TODO: handle error
 			printf("%d\n", __LINE__);
 			return EXIT_FAILURE;
@@ -92,8 +46,8 @@ static int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
 		if(group == NULL)break;
 
 		step->groupCount += 1;
-		step->groups = realloc(step->groups, step->groupCount * sizeof(FOModGroup_t));
-		int status = parseGroup(group, &step->groups[step->groupCount - 1]);
+		step->groups = realloc(step->groups, step->groupCount * sizeof(fomod_Group_t));
+		int status = grp_parseGroup(group, &step->groups[step->groupCount - 1]);
 
 		if(status != EXIT_SUCCESS) {
 			//TODO: handle error
@@ -113,7 +67,7 @@ static FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCo
 	xmlNodePtr stepNode = installStepsNode->children;
 	while(stepNode != NULL) {
 		//skipping the text node
-		if(!validateNode(&stepNode, true, "installStep", NULL)) {
+		if(!xml_validateNode(&stepNode, true, "installStep", NULL)) {
 			//TODO: handle error
 			printf("%d\n", __LINE__);
 			exit(EXIT_FAILURE);
@@ -125,7 +79,7 @@ static FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCo
 		steps = realloc(steps, *stepCount * sizeof(FOModStep_t));
 
 		FOModStep_t * step = &steps[*stepCount - 1];
-		step->name = freeAndDup(xmlGetProp(stepNode, (const xmlChar *)"name"));
+		step->name = xml_freeAndDup(xmlGetProp(stepNode, (const xmlChar *)"name"));
 		step->requiredFlags = NULL;
 		step->flagCount = 0;
 		step->groupCount = 0;
@@ -147,10 +101,10 @@ static FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCo
 	return steps;
 }
 
-static int parseDependencies(xmlNodePtr node, FOModCondFile_t * condFile) {
+static int parseDependencies(xmlNodePtr node, fomod_CondFile_t * condFile) {
 	xmlNodePtr flagNode = node->children;
 
-	if(!validateNode(&flagNode, true, "flagDependency", NULL)) {
+	if(!xml_validateNode(&flagNode, true, "flagDependency", NULL)) {
 		//TODO: handle error
 		printf("%d\n", __LINE__);
 		return EXIT_FAILURE;
@@ -158,32 +112,32 @@ static int parseDependencies(xmlNodePtr node, FOModCondFile_t * condFile) {
 
 	while(flagNode != NULL) {
 		condFile->flagCount += 1;
-		condFile->requiredFlags = realloc(condFile->requiredFlags, condFile->flagCount * sizeof(FOModFlag_t));
-		FOModFlag_t * flag = &(condFile->requiredFlags[condFile->flagCount - 1]);
-		flag->name = freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "flag"));
-		flag->value = freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "value"));
+		condFile->requiredFlags = realloc(condFile->requiredFlags, condFile->flagCount * sizeof(fomod_Flag_t));
+		fomod_Flag_t * flag = &(condFile->requiredFlags[condFile->flagCount - 1]);
+		flag->name = xml_freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "flag"));
+		flag->value = xml_freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "value"));
 
 		flagNode = flagNode->next;
 	}
 	return EXIT_SUCCESS;
 }
 
-static int parseFiles(xmlNodePtr node, FOModCondFile_t * condFile) {
+static int parseFiles(xmlNodePtr node, fomod_CondFile_t * condFile) {
 	xmlNodePtr filesNode = node->children;
 
 
 	while(filesNode != NULL) {
-		if(!validateNode(&filesNode, true, "folder", "file", NULL)) {
+		if(!xml_validateNode(&filesNode, true, "folder", "file", NULL)) {
 			//TODO: handle error
 			printf("%d\n", __LINE__);
 			return EXIT_FAILURE;
 		}
 
 		condFile->fileCount += 1;
-		condFile->files = realloc(condFile->files, condFile->fileCount * sizeof(FOModFile_t));
-		FOModFile_t * flag = &(condFile->files[condFile->fileCount - 1]);
-		flag->source = freeAndDup(xmlGetProp(filesNode, (const xmlChar *) "source"));
-		flag->destination = freeAndDup(xmlGetProp(filesNode, (const xmlChar *) "destination"));
+		condFile->files = realloc(condFile->files, condFile->fileCount * sizeof(fomod_File_t));
+		fomod_File_t * flag = &(condFile->files[condFile->fileCount - 1]);
+		flag->source = xml_freeAndDup(xmlGetProp(filesNode, (const xmlChar *) "source"));
+		flag->destination = xml_freeAndDup(xmlGetProp(filesNode, (const xmlChar *) "destination"));
 		flag->priority = 0;
 		flag->isFolder = xmlStrcmp(filesNode->name, (xmlChar *) "folder") == 0;
 
@@ -196,7 +150,7 @@ static int parseFiles(xmlNodePtr node, FOModCondFile_t * condFile) {
 static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 	xmlNodePtr patterns = node->children;
 	if(patterns != NULL) {
-		if(!validateNode(&patterns, true, "patterns", NULL)) {
+		if(!xml_validateNode(&patterns, true, "patterns", NULL)) {
 			//TODO: handle error
 			printf("%d\n", __LINE__);
 			return EXIT_FAILURE;
@@ -205,7 +159,7 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 		while(currentPattern != NULL) {
 			xmlNodePtr patternChild = currentPattern->children;
 
-			if(!validateNode(&patternChild, true, "pattern", NULL)) {
+			if(!xml_validateNode(&patternChild, true, "pattern", NULL)) {
 				//TODO: handle error
 				printf("%d\n", __LINE__);
 				return EXIT_FAILURE;
@@ -213,8 +167,8 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 
 			while(patternChild != NULL) {
 				fomod->condFilesCount += 1;
-				fomod->condFiles = realloc(fomod->condFiles, fomod->condFilesCount * sizeof(FOModCondFile_t));
-				FOModCondFile_t * condFile = &(fomod->condFiles[fomod->condFilesCount - 1]);
+				fomod->condFiles = realloc(fomod->condFiles, fomod->condFilesCount * sizeof(fomod_CondFile_t));
+				fomod_CondFile_t * condFile = &(fomod->condFiles[fomod->condFilesCount - 1]);
 
 				condFile->fileCount = 0;
 				condFile->files = NULL;
@@ -239,7 +193,7 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 	return EXIT_SUCCESS;
 }
 
-error_t parseFOMod(const char * fomodFile, FOMod_t* fomod) {
+error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	xmlDocPtr doc;
 	xmlNodePtr cur;
 
@@ -279,22 +233,22 @@ error_t parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 			//might cause some issues. when will c finally support utf-8
 			fomod->moduleName = (char *)cur->content;
 		} else if(xmlStrcmp(cur->name, (const xmlChar *) "moduleImage") == 0) {
-			fomod->moduleImage = freeAndDup(xmlGetProp(cur, (const xmlChar *)"path"));
+			fomod->moduleImage = xml_freeAndDup(xmlGetProp(cur, (const xmlChar *)"path"));
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"requiredInstallFiles") == 0) {
 			//TODO: support non empty destination.
 			xmlNodePtr requiredInstallFile = cur->children;
 			while(requiredInstallFile != NULL) {
-				if(validateNode(&requiredInstallFile, true, "folder", "file", NULL)) {
+				if(xml_validateNode(&requiredInstallFile, true, "folder", "file", NULL)) {
 					//TODO: handle error
 					printf("%d\n", __LINE__);
 					exit(ERR_FAILURE);
 				}
 
-				int size = countUntilNull(fomod->requiredInstallFiles, sizeof(char **)) + 2;
+				int size = fomod_countUntilNull(fomod->requiredInstallFiles, sizeof(char **)) + 2;
 				fomod->requiredInstallFiles = realloc(fomod->requiredInstallFiles, sizeof(char *) * size);
 				//ensure it is null terminated
 				fomod->requiredInstallFiles[size - 1] = NULL;
-				fomod->requiredInstallFiles[size - 2] = freeAndDup(xmlGetProp(requiredInstallFile, (const xmlChar *)"source"));
+				fomod->requiredInstallFiles[size - 2] = xml_freeAndDup(xmlGetProp(requiredInstallFile, (const xmlChar *)"source"));
 
 				requiredInstallFile = cur->children;
 			}
@@ -306,7 +260,7 @@ error_t parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 			}
 
 			xmlChar * stepOrder = xmlGetProp(cur, (xmlChar *)"order");
-			fomod->stepOrder = getFOModOrder((char *)stepOrder);
+			fomod->stepOrder = fomod_getOrder((char *)stepOrder);
 			xmlFree(stepOrder);
 
 			int stepCount = 0;

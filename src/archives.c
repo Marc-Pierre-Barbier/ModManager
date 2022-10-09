@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <glib.h>
 
-int unzip(char * path, char * outdir) {
+int archive_unzip(char * path, char * outdir) {
 	char * const args[] = {
 		"unzip",
 		"-LL", // to lowercase
@@ -35,7 +35,7 @@ int unzip(char * path, char * outdir) {
 	}
 }
 
-int unrar(char * path, char * outdir) {
+int archive_unrar(char * path, char * outdir) {
 	char * const args[] = {
 		"unrar",
 		"x",
@@ -63,7 +63,7 @@ int unrar(char * path, char * outdir) {
 }
 
 
-int un7z(char * path, const char * outdir) {
+int archive_un7z(char * path, const char * outdir) {
 	gchar * outParameter = g_strjoin("", "-o", outdir, NULL);
 
 	char * const args[] = {
@@ -90,7 +90,7 @@ int un7z(char * path, const char * outdir) {
 			return returnValue;
 		}
 		//make everything lowercase since 7z don't have an argument for that.
-		casefold(outdir);
+		file_casefold(outdir);
 		return returnValue;
 	}
 }

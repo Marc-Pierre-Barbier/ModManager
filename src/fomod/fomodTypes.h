@@ -4,25 +4,25 @@
 #include "stdbool.h"
 #include "xmlUtil.h"
 
-typedef struct FOModFlag {
+typedef struct fomod_Flag {
 	char * name;
 	char * value;
-} FOModFlag_t;
+} fomod_Flag_t;
 
-typedef struct FOModFile {
+typedef struct fomod_File {
 	char * source;
 	char * destination;
 	int priority;
 	bool isFolder;
-} FOModFile_t;
+} fomod_File_t;
 
 
 
-typedef struct FOModCondFile {
-	FOModFlag_t * requiredFlags;
+typedef struct fomod_CondFile {
+	fomod_Flag_t * requiredFlags;
 	unsigned int flagCount;
-	FOModFile_t * files;
+	fomod_File_t * files;
 	unsigned int fileCount;
-} FOModCondFile_t;
+} fomod_CondFile_t;
 
 #endif

@@ -12,7 +12,7 @@
 //TODO: detect if the game is running
 //TODO: deploy the game
 
-error_t listPlugins(int appid, GList ** plugins) {
+error_t order_listPlugins(int appid, GList ** plugins) {
 
 
 	//save appid parsing
@@ -32,7 +32,7 @@ error_t listPlugins(int appid, GList ** plugins) {
 	struct dirent *dir;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
-			const char * extension = extractExtension(dir->d_name);
+			const char * extension = file_extractExtension(dir->d_name);
 			if(strcmp(extension, "esp") == 0 || strcmp(extension, "esm") == 0) {
 				*plugins = g_list_append(*plugins, strdup(dir->d_name));
 			}
@@ -43,21 +43,21 @@ error_t listPlugins(int appid, GList ** plugins) {
 	return ERR_SUCCESS;
 }
 
-error_t getLoadOrder(int appid, GList ** order) {
+error_t order_getLoadOrder(int appid, GList ** order) {
 
 	GHashTable * gamePaths;
-	error_t status = search_games(&gamePaths);
+	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
 
 	GList * l_plugins = NULL;
-	error_t error = listPlugins(appid, &l_plugins);
+	error_t error = order_listPlugins(appid, &l_plugins);
 	if(error == ERR_FAILURE)
 		return ERR_FAILURE;
 
 
-	int gameId = getGameIdFromAppId(appid);
+	int gameId = steam_gameIdFromAppId(appid);
 	if(gameId < 0 ) {
 		return ERR_FAILURE;
 	}
@@ -109,14 +109,14 @@ error_t getLoadOrder(int appid, GList ** order) {
 	return ERR_SUCCESS;
 }
 
-error_t setLoadOrder(int appid, GList * loadOrder) {
+error_t order_setLoadOrder(int appid, GList * loadOrder) {
 	GHashTable * gamePaths;
-	error_t status = search_games(&gamePaths);
+	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
 
-	int gameId = getGameIdFromAppId(appid);
+	int gameId = steam_gameIdFromAppId(appid);
 	if(gameId < 0 ) {
 		return ERR_FAILURE;
 	}
@@ -141,7 +141,7 @@ error_t setLoadOrder(int appid, GList * loadOrder) {
 //TODO: support compression since it can change how we read the file
 //https://en.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Records
 //https://www.mwmythicmods.com/argent/tech/es_format.html
-error_t getModDependencies(const char * esmPath, GList ** dependencies) {
+error_t order_getModDependencies(const char * esmPath, GList ** dependencies) {
 	FILE * file = fopen(esmPath, "r");
 
 	char sectionName[5];

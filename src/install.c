@@ -9,7 +9,7 @@
 #include "archives.h"
 #include "file.h"
 
-error_t addMod(char * filePath, int appId) {
+error_t install_addMod(char * filePath, int appId) {
 	error_t resultError = ERR_SUCCESS;
 	if (access(filePath, F_OK) != 0) {
 		fprintf(stderr, "File not found\n");
@@ -24,8 +24,8 @@ error_t addMod(char * filePath, int appId) {
 		goto exit2;
 	}
 
-	const char * filename = extractFileName(filePath);
-	const char * extension = extractExtension(filename);
+	const char * filename = file_extractFileName(filePath);
+	const char * extension = file_extractExtension(filename);
 	char * lowercaseExtension = g_ascii_strdown(extension, -1);
 
 	char appIdStr[20];
@@ -37,11 +37,11 @@ error_t addMod(char * filePath, int appId) {
 	int returnValue = EXIT_SUCCESS;
 	printf("Adding mod, this process can be slow depending on your hardware\n");
 	if(strcmp(lowercaseExtension, "rar") == 0) {
-		returnValue = unrar(filePath, outdir);
+		returnValue = archive_unrar(filePath, outdir);
 	} else if (strcmp(lowercaseExtension, "zip") == 0) {
-		returnValue = unzip(filePath, outdir);
+		returnValue = archive_unzip(filePath, outdir);
 	} else if (strcmp(lowercaseExtension, "7z") == 0) {
-		returnValue = un7z(filePath, outdir);
+		returnValue = archive_un7z(filePath, outdir);
 	} else {
 		fprintf(stderr, "Unsupported format only zip/7z/rar are supported\n");
 		returnValue = EXIT_FAILURE;

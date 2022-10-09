@@ -10,21 +10,21 @@
 #include <unistd.h>
 #include <glib.h>
 
-typedef struct ValveApp {
+typedef struct steam_App {
 	unsigned int appid;
 	unsigned int update;
-} ValveApp_t;
+} steam_App_t;
 
-typedef struct ValveLibraries {
+typedef struct steam_Libraries {
 	char * path;
 	char * label;
 	char * contentId;
 	unsigned long totalSize;
 	char * update_clean_bytes_tally;
 	char * time_last_update_corruption;
-	ValveApp_t * apps;
+	steam_App_t * apps;
 	size_t appsCount;
-} ValveLibraries_t;
+} steam_Libraries_t;
 
 //todo add the older games
 // order has to be the same as in GAMES_NAMES
@@ -52,9 +52,9 @@ _Static_assert(LEN(GAMES_APPIDS) == LEN(GAMES_NAMES), "Game APPIDS and Game Name
  * @param status pointer to a status variable that will be modified to EXIT_SUCCESS or EXIT_FAILURE
  * @return GHashTable* a map appid(int) => path(char *) to the corresponding steam library
  */
-error_t search_games(GHashTable** tablePointer);
+error_t steam_searchGames(GHashTable** tablePointer);
 
-void freeGameTableSingleton(void);
+void steam_freeGameTable(void);
 
 /**
  * @brief search the index of the game inside GAMES_NAMES or GAMES_APPIDS
@@ -62,6 +62,6 @@ void freeGameTableSingleton(void);
  * @param appid
  * @return -1 in case of failure or the index of the game.
  */
-int getGameIdFromAppId(u_int32_t appid);
+int steam_gameIdFromAppId(u_int32_t appid);
 
 #endif

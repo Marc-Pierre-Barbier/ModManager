@@ -13,6 +13,7 @@
 #include "fomod.h"
 #include "file.h"
 #include "fomod/fomodTypes.h"
+#include "fomod/group.h"
 #include "libxml/globals.h"
 #include "main.h"
 
@@ -43,20 +44,20 @@ static int getInputCount(const char * input) {
 }
 
 static gint priorityCmp(gconstpointer a, gconstpointer b) {
-	const FOModFile_t * fileA = (const FOModFile_t *)a;
-	const FOModFile_t * fileB = (const FOModFile_t *)b;
+	const fomod_File_t * fileA = (const fomod_File_t *)a;
+	const fomod_File_t * fileB = (const fomod_File_t *)b;
 
 	return fileB->priority - fileA->priority;
 }
 
-static void printfOptionsInOrder(FOModGroup_t group) {
+static void fomod_printOptionsInOrder(fomod_Group_t group) {
 	for(int i = 0; i < group.pluginCount; i++) {
 		printf("%d, %s\n", i, group.plugins[i].name);
 		printf("%s\n", group.plugins[i].description);
 	}
 }
 
-static gint flagEqual(const FOModFlag_t * a, const FOModFlag_t * b) {
+static gint fomod_flagEqual(const fomod_Flag_t * a, const fomod_Flag_t * b) {
 	int nameCmp = strcmp(a->name, b->name);
 	if(nameCmp == 0) {
 		if(strcmp(a->value, b->value) == 0)
@@ -81,7 +82,7 @@ static int stepCmpDesc(const void * stepA, const void * stepB) {
 }
 
 
-static void sortSteps(FOMod_t * fomod) {
+static void fomod_sortSteps(FOMod_t * fomod) {
 	switch(fomod->stepOrder) {
 	case ASC:
 		qsort(fomod->steps, fomod->stepCount, sizeof(*fomod->steps), stepCmpAsc);
@@ -95,25 +96,25 @@ static void sortSteps(FOMod_t * fomod) {
 	}
 }
 
-static int groupCmpAsc(const void * stepA, const void * stepB) {
-	const FOModGroup_t * step1 = (const FOModGroup_t *)stepA;
-	const FOModGroup_t * step2 = (const FOModGroup_t *)stepB;
+static int fomod_groupCmpAsc(const void * stepA, const void * stepB) {
+	const fomod_Group_t * step1 = (const fomod_Group_t *)stepA;
+	const fomod_Group_t * step2 = (const fomod_Group_t *)stepB;
 	return strcmp(step1->name, step2->name);
 }
 
-static int groupCmpDesc(const void * stepA, const void * stepB) {
-	const FOModGroup_t * step1 = (const FOModGroup_t *)stepA;
-	const FOModGroup_t * step2 = (const FOModGroup_t *)stepB;
+static int fomod_groupCmpDesc(const void * stepA, const void * stepB) {
+	const fomod_Group_t * step1 = (const fomod_Group_t *)stepA;
+	const fomod_Group_t * step2 = (const fomod_Group_t *)stepB;
 	return 1 - strcmp(step1->name, step2->name);
 }
 
-static void sortGroup(FOModGroup_t * group) {
+static void fomod_sortGroup(fomod_Group_t * group) {
 	switch(group->order) {
 	case ASC:
-		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), groupCmpAsc);
+		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), fomod_groupCmpAsc);
 		break;
 	case DESC:
-		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), groupCmpDesc);
+		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), fomod_groupCmpDesc);
 		break;
 	case ORD:
 		//ord mean that we keep the curent order, so no need to sort anything.
@@ -122,7 +123,7 @@ static void sortGroup(FOModGroup_t * group) {
 }
 
 //TODO: handle error
-error_t processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination) {
+error_t fomod_processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination) {
 	//priority higher a less important and should be processed first.
 	*pendingFileOperations = g_list_sort(*pendingFileOperations, priorityCmp);
 	GList * currentFileOperation = *pendingFileOperations;
@@ -130,17 +131,17 @@ error_t processFileOperations(GList ** pendingFileOperations, const char * modFo
 	while(currentFileOperation != NULL) {
 		//TODO: support destination
 		//no using link since priority is made to override files and link is annoying to deal with when overriding files.
-		const FOModFile_t * file = (const FOModFile_t *)currentFileOperation->data;
+		const fomod_File_t * file = (const fomod_File_t *)currentFileOperation->data;
 		char * source = g_build_path("/", modFolder, file->source, NULL);
 
 		//fix the / and \ windows - unix paths
-		fixPath(source);
+		xml_fixPath(source);
 
 		int copyResult;
 		if(file->isFolder) {
-			copyResult = copy(source, destination, CP_NO_TARGET_DIR | CP_RECURSIVE);
+			copyResult = file_copy(source, destination, FILE_CP_NO_TARGET_DIR | FILE_CP_RECURSIVE);
 		} else {
-			copyResult = copy(source, destination, 0);
+			copyResult = file_copy(source, destination, 0);
 		}
 		if(copyResult != EXIT_SUCCESS) {
 			fprintf(stderr, "Copy failed, some file might be corrupted\n");
@@ -152,15 +153,15 @@ error_t processFileOperations(GList ** pendingFileOperations, const char * modFo
 	return ERR_SUCCESS;
 }
 
-GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendingFileOperations) {
+GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendingFileOperations) {
 	for(int condId = 0; condId < fomod->condFilesCount; condId++) {
-		const FOModCondFile_t *condFile = &fomod->condFiles[condId];
+		const fomod_CondFile_t *condFile = &fomod->condFiles[condId];
 
 		bool areAllFlagsValid = true;
 
 		//checking if all flags are valid
 		for(long flagId = 0; flagId < condFile->flagCount; flagId++) {
-			const GList * link = g_list_find_custom(flagList, &(condFile->requiredFlags[flagId]), (GCompareFunc)flagEqual);
+			const GList * link = g_list_find_custom(flagList, &(condFile->requiredFlags[flagId]), (GCompareFunc)fomod_flagEqual);
 			if(link == NULL) {
 				areAllFlagsValid = false;
 				break;
@@ -169,9 +170,9 @@ GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendin
 
 		if(areAllFlagsValid) {
 			for(long fileId = 0; fileId < condFile->flagCount; fileId++) {
-				const FOModFile_t * file = &(condFile->files[fileId]);
+				const fomod_File_t * file = &(condFile->files[fileId]);
 
-				FOModFile_t * fileCopy = malloc(sizeof(*file));
+				fomod_File_t * fileCopy = malloc(sizeof(*file));
 				*fileCopy = *file;
 
 				//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
@@ -188,10 +189,10 @@ GList * processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendin
 	return pendingFileOperations;
 }
 
-void freeFileOperations(GList * fileOperations) {
+void fomod_freeFileOperations(GList * fileOperations) {
 	GList * fileOperationsStart = fileOperations;
 	while(fileOperations != NULL) {
-		FOModFile_t * file = (FOModFile_t *)fileOperations->data;
+		fomod_File_t * file = (fomod_File_t *)fileOperations->data;
 		if(file->destination != NULL)free(file->destination);
 		if(file->source != NULL)free(file->source);
 		fileOperations = g_list_next(fileOperations);
@@ -200,7 +201,7 @@ void freeFileOperations(GList * fileOperations) {
 	g_list_free_full(fileOperationsStart, free);
 }
 
-error_t installFOMod(const char * modFolder, const char * destination) {
+error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 	//everything should be lowercase since we use casefold() before calling any install function
 	char * fomodFolder = g_build_path("/", modFolder, "fomod", NULL);
 	char * fomodFile = g_build_filename(fomodFolder, "moduleconfig.xml", NULL);
@@ -213,7 +214,7 @@ error_t installFOMod(const char * modFolder, const char * destination) {
 	}
 
 	FOMod_t fomod;
-	int returnValue = parseFOMod(fomodFile, &fomod);
+	int returnValue = parser_parseFOMod(fomodFile, &fomod);
 	if(returnValue == ERR_FAILURE)
 		return ERR_FAILURE;
 
@@ -222,14 +223,14 @@ error_t installFOMod(const char * modFolder, const char * destination) {
 	GList * flagList = NULL;
 	GList * pendingFileOperations = NULL;
 
-	sortSteps(&fomod);
+	fomod_sortSteps(&fomod);
 
 	for(int i = 0; i < fomod.stepCount; i++) {
 		const FOModStep_t * step = &fomod.steps[i];
 
 		bool validFlags = true;
 		for(int flagId = 0; flagId < step->flagCount; flagId++) {
-			const GList * flagLink = g_list_find_custom(flagList, &step->requiredFlags[flagId], (GCompareFunc)flagEqual);
+			const GList * flagLink = g_list_find_custom(flagList, &step->requiredFlags[flagId], (GCompareFunc)fomod_flagEqual);
 			if(flagLink == NULL) {
 				validFlags = false;
 				break;
@@ -239,9 +240,9 @@ error_t installFOMod(const char * modFolder, const char * destination) {
 		if(!validFlags) continue;
 
 		for(int groupId = 0; groupId < step->groupCount; groupId++ ) {
-			FOModGroup_t group = step->groups[groupId];
+			fomod_Group_t group = step->groups[groupId];
 
-			sortGroup(&group);
+			fomod_sortGroup(&group);
 
 			u_int8_t min;
 			u_int8_t max;
@@ -250,7 +251,7 @@ error_t installFOMod(const char * modFolder, const char * destination) {
 			size_t bufferSize = 0;
 
 			while(true) {
-				printfOptionsInOrder(group);
+				fomod_printOptionsInOrder(group);
 				switch(group.type) {
 				case ONE_ONLY:
 					printf("Select one :\n");
@@ -312,16 +313,16 @@ error_t installFOMod(const char * modFolder, const char * destination) {
 			for(int choiceId = 0; choices[choiceId] != NULL; choiceId++) {
 				//TODO: safer user input
 				int choice = atoi(choices[choiceId]);
-				FOModPlugin_t plugin = group.plugins[choice];
+				fomod_Plugin_t plugin = group.plugins[choice];
 				for(int flagId = 0; flagId < plugin.flagCount; flagId++) {
 					flagList = g_list_append(flagList, &plugin.flags[flagId]);
 				}
 
 				//do the install
 				for(int pluginId = 0; pluginId < plugin.fileCount; pluginId++) {
-					const FOModFile_t * file = &plugin.files[pluginId];
+					const fomod_File_t * file = &plugin.files[pluginId];
 
-					FOModFile_t * fileCopy = malloc(sizeof(FOModFile_t));
+					fomod_File_t * fileCopy = malloc(sizeof(fomod_File_t));
 					*fileCopy = *file;
 
 					//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
@@ -344,13 +345,61 @@ error_t installFOMod(const char * modFolder, const char * destination) {
 
 	//TODO: manage multiple files with the same name
 
-	pendingFileOperations = processCondFiles(&fomod, flagList, pendingFileOperations);
-	processFileOperations(&pendingFileOperations, modFolder, destination);
+	pendingFileOperations = fomod_processCondFiles(&fomod, flagList, pendingFileOperations);
+	fomod_processFileOperations(&pendingFileOperations, modFolder, destination);
 
 	printf("FOMod successfully installed!\n");
 	g_list_free(flagList);
-	freeFileOperations(pendingFileOperations);
-	freeFOMod(&fomod);
+	fomod_freeFileOperations(pendingFileOperations);
+	fomod_freeFOMod(&fomod);
 	g_free(fomodFolder);
 	return ERR_SUCCESS;
+}
+
+
+void fomod_freeFOMod(FOMod_t * fomod) {
+	for(int i = 0; i < fomod->condFilesCount; i++) {
+		fomod_CondFile_t * condFile = &(fomod->condFiles[i]);
+		for(long fileId = 0; fileId < condFile->fileCount; fileId++) {
+			free(condFile->files[fileId].destination);
+			free(condFile->files[fileId].source);
+		}
+
+		for(long flagId = 0; flagId < condFile->flagCount; flagId++) {
+			fomod_Flag_t * flag = &(condFile->requiredFlags[flagId]);
+			free(flag->name);
+			free(flag->value);
+		}
+		free(condFile->files);
+		free(condFile->requiredFlags);
+	}
+	free(fomod->condFiles);
+	free(fomod->moduleImage);
+	free(fomod->moduleName);
+
+	int size = fomod_countUntilNull(fomod->requiredInstallFiles, sizeof(char **));
+	for(int i = 0; i < size; i++) {
+		free(fomod->requiredInstallFiles[i]);
+	}
+	free(fomod->requiredInstallFiles);
+
+	for(int i = 0; i < fomod->stepCount; i++) {
+		FOModStep_t * step = &fomod->steps[i];
+		for(int groupId = 0; groupId < step->groupCount; groupId++) {
+			fomod_Group_t * group = &step->groups[groupId];
+			grp_freeGroup(group);
+		}
+		for(int flagId = 0; flagId < step->flagCount; flagId++) {
+			fomod_Flag_t * flag = &(step->requiredFlags[flagId]);
+			free(flag->name);
+			free(flag->value);
+		}
+		free(step->groups);
+		free(step->requiredFlags);
+		free(step->name);
+	}
+	free(fomod->steps);
+
+	//set every counter to zero and every pointer to null
+	memset(fomod, 0, sizeof(FOMod_t));
 }
