@@ -3,6 +3,7 @@
 #include "steam.h"
 #include "file.h"
 
+#include <dirent.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -13,8 +14,6 @@
 //TODO: deploy the game
 
 error_t order_listPlugins(int appid, GList ** plugins) {
-
-
 	//save appid parsing
 	//TODO: apply a similar mechanism everywhere
 	size_t appidStrLen = snprintf(NULL, 0, "%d", appid) + 1;
@@ -30,17 +29,30 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 	//esp && esm files are loadable
 	DIR * d = opendir(dataFolder);
 	struct dirent *dir;
-	if (d) {
+	if (d != NULL) {
 		while ((dir = readdir(d)) != NULL) {
 			const char * extension = file_extractExtension(dir->d_name);
+			//folder don't have file extensions
+			if(extension == NULL)
+				continue;
+
 			if(strcmp(extension, "esp") == 0 || strcmp(extension, "esm") == 0) {
 				*plugins = g_list_append(*plugins, strdup(dir->d_name));
 			}
 		}
+		closedir(d);
 	}
 
 	free(dataFolder);
 	return ERR_SUCCESS;
+}
+
+static void removeCRLF_CR_LF(char * string) {
+	int size = strlen(string);
+	if(string[size - 1] == '\r') size--;
+	if(string[size - 1] == '\n') size--;
+	if(string[size - 1] == '\r') size--;
+	string[size] = '\0';
 }
 
 error_t order_getLoadOrder(int appid, GList ** order) {
@@ -66,11 +78,15 @@ error_t order_getLoadOrder(int appid, GList ** order) {
 	char appidStr[appidStrLen];
 	sprintf(appidStr, "%d", appid);
 
-	const char * path = g_hash_table_lookup(gamePaths, &appid);
-	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
+	const char * path = g_hash_table_lookup(gamePaths, &gameId);
+
+
+	//this is the path i would use in windows but it seems it is not avaliable in all wine versions.
+	//char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
+	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/Local Settings/Application Data/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
 
 	GList * l_currentLoadOrder = NULL;
-	if(access(loadOrderPath, F_OK)) {
+	if(access(loadOrderPath, R_OK) == 0) {
 		FILE * f_loadOrder = fopen(loadOrderPath, "r");
 
 		size_t length = 0;
@@ -80,8 +96,11 @@ error_t order_getLoadOrder(int appid, GList ** order) {
 			if(line[0] == '#' || line[0] == '\n')
 				continue;
 
+			removeCRLF_CR_LF(line);
+
 			l_currentLoadOrder = g_list_append(l_currentLoadOrder, strdup(line));
 		}
+		if(line != NULL)free(line);
 	}
 
 
@@ -125,7 +144,7 @@ error_t order_setLoadOrder(int appid, GList * loadOrder) {
 	char appidStr[appidStrLen];
 	sprintf(appidStr, "%d", appid);
 
-	const char * path = g_hash_table_lookup(gamePaths, &appid);
+	const char * path = g_hash_table_lookup(gamePaths, &gameId);
 	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
 
 	FILE * f_loadOrder = fopen(loadOrderPath, "w");

@@ -9,6 +9,7 @@
 #include <libaudit.h>
 
 #include "getDataPath.h"
+#include "loadOrder.h"
 #include "overlayfs.h"
 #include "install.h"
 #include "getHome.h"
@@ -60,6 +61,9 @@ static int usage() {
 	printf("Use --swap <APPID> <MODID A> MODID B> to swap two mod in the loading order\n");
 
 	printf("Use --version or -v to get the version number\n");
+
+	printf("Use --show-load-order <APPID>\n");
+	printf("Use --list-plugins <APPID>\n");
 	return EXIT_FAILURE;
 }
 
@@ -543,6 +547,62 @@ static int swapMod(int argc, char ** argv) {
 	return order_swapPlace(appid, modIdA, modIdB);
 }
 
+static int printLoadOrder(int argc, char ** argv) {
+	if(argc != 3) return usage();
+
+	char * appIdStr = argv[2];
+	int appid = validateAppId(appIdStr);
+	if(appid < 0) {
+		fprintf(stderr, "Invalid appid");
+		return EXIT_FAILURE;
+	}
+
+	GList * order = NULL;
+	error_t status = order_getLoadOrder(appid, &order);
+	if(status != ERR_SUCCESS) {
+		fprintf(stderr, "Could not fetch the load order\n");
+		return EXIT_FAILURE;
+	}
+
+	printf("If the load order is empty that mean it wasn't set\n");
+
+	GList * cur_order = order;
+	while (cur_order != NULL) {
+		printf("%s\n", (char *)cur_order->data);
+		cur_order = g_list_next(cur_order);
+	}
+
+	g_list_free_full(order, free);
+	return EXIT_SUCCESS;
+}
+
+static int printPlugins(int argc, char ** argv) {
+	if(argc != 3) return usage();
+
+	char * appIdStr = argv[2];
+	int appid = validateAppId(appIdStr);
+	if(appid < 0) {
+		fprintf(stderr, "Invalid appid");
+		return EXIT_FAILURE;
+	}
+
+	GList * mods = NULL;
+	error_t status = order_listPlugins(appid, &mods);
+	if(status != ERR_SUCCESS) {
+		fprintf(stderr, "Could not list plugins\n");
+		return EXIT_FAILURE;
+	}
+
+	GList * cur_mods = mods;
+	while (cur_mods != NULL) {
+		printf("%s\n", (char *)cur_mods->data);
+		cur_mods = g_list_next(cur_mods);
+	}
+
+	g_list_free_full(mods, free);
+	return EXIT_SUCCESS;
+}
+
 int main(int argc, char ** argv) {
 	if(argc < 2 ) return usage();
 
@@ -607,6 +667,12 @@ int main(int argc, char ** argv) {
 
 	else if(strcmp(argv[1], "--swap") == 0 || strcmp(argv[1], "-s") == 0)
 		returnValue = swapMod(argc, argv);
+
+	else if(strcmp(argv[1], "--list-plugins") == 0)
+		returnValue = printPlugins(argc, argv);
+
+	else if(strcmp(argv[1], "--show-load-order") == 0)
+		returnValue = printLoadOrder(argc, argv);
 
 	else if(strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
 		#ifdef __clang__

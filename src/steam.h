@@ -50,7 +50,7 @@ _Static_assert(LEN(GAMES_APPIDS) == LEN(GAMES_NAMES), "Game APPIDS and Game Name
  * This method has a singleton so after the first execution it will no rescan for new games.
  *
  * @param status pointer to a status variable that will be modified to EXIT_SUCCESS or EXIT_FAILURE
- * @return GHashTable* a map appid(int) => path(char *) to the corresponding steam library
+ * @return GHashTable* a map gameId(int) => path(char *) to the corresponding steam library
  */
 error_t steam_searchGames(GHashTable** tablePointer);
 

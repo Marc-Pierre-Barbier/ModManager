@@ -10,7 +10,7 @@ endif()
 
 set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wmaybe-uninitialized")
 set(CMAKE_C_FLAGS_DEBUG "-g -fsanitize=address -Werror -O0")
-set(CMAKE_C_FLAGS_RELEASE "-O2")
+set(CMAKE_C_FLAGS_RELEASE "-g")
 
 # generate the compile_commands for vscode / clang
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
