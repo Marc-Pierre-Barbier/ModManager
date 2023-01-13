@@ -262,13 +262,13 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 				case ANY:
 					printf("Select any (space separated) (leave empty for nothing) :\n");
 					min = 0;
-					max = (u_int8_t)group.pluginCount - 1;
+					max = (u_int8_t)group.pluginCount;
 					break;
 
 				case AT_LEAST_ONE:
 					printf("Select at least one (space separated) (leave empty for nothing) :\n");
 					min = 1;
-					max = (u_int8_t)group.pluginCount - 1;
+					max = (u_int8_t)group.pluginCount;
 					break;
 
 				case AT_MOST_ONE:
