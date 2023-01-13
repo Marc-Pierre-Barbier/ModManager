@@ -9,8 +9,8 @@ if(CMAKE_BUILD_TYPE MATCHES DEBUG)
 endif()
 
 set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wmaybe-uninitialized")
-set(CMAKE_C_FLAGS_DEBUG "-g -fsanitize=address -Werror -O0")
-set(CMAKE_C_FLAGS_RELEASE "-g")
+set(CMAKE_C_FLAGS_DEBUG "-g -Werror -O0")
+set(CMAKE_C_FLAGS_RELEASE "")
 
 # generate the compile_commands for vscode / clang
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")

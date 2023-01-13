@@ -2,17 +2,18 @@
 
 ## Function names
 
-### shared functions
+### header functions
 
 function should start by the name of their module in camelCase followed by an underscore and the name of the function in camelCase
 
 example:
     steam_searchGames()
 
+if the function has the same name as the module then it doesn't need to be repeated.
 
 ### static functions
 
-there is no rule for now
+all static functions should be in camelCase and they should not mention their module.
 
 ## Struct names
 
