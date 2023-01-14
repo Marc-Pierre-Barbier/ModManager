@@ -59,7 +59,6 @@ set(CLI_SOURCES
 # add the executable
 add_executable(mod-manager ${CLI_SOURCES})
 add_library(libmod-manager SHARED ${LIB_SOURCES})
-set_target_properties(libmod-manager PROPERTIES PUBLIC_HEADER ${LIB_PUBLIC_HEADERS})
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLIB REQUIRED glib-2.0)
@@ -79,9 +78,14 @@ target_include_directories(mod-manager PRIVATE ${GLIB_INCLUDE_DIRS})
 
 install(TARGETS mod-manager OPTIONAL DESTINATION bin)
 
+target_sources(libmod-manager PUBLIC FILE_SET HEADERS
+	BASE_DIRS src/include/
+	FILES ${LIB_PUBLIC_HEADERS}
+)
+
 install(TARGETS libmod-manager
 	LIBRARY DESTINATION lib
-	PUBLIC_HEADER DESTINATION include/mod-manager
+	FILE_SET HEADERS DESTINATION include/mod-manager
 )
 
 set_property(TARGET mod-manager PROPERTY C_STANDARD 23)
