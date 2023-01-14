@@ -54,4 +54,4 @@ cmake ..
 make
 ```
 
-then copy the "ModManager" file to wherever you want. (i recommend ~/.local/bin/)
+then copy the "mod-manager" file to wherever you want. (i recommend ~/.local/bin/)
