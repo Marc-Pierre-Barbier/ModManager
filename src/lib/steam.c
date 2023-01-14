@@ -1,7 +1,9 @@
 #include "steam.h"
 #include "macro.h"
 #include "getHome.h"
-#include "main.h"
+
+#include <constants.h>
+
 #include <unistd.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -254,4 +256,34 @@ int steam_gameIdFromAppId(u_int32_t appid) {
 		}
 	}
 	return -1;
+}
+
+int steam_parseAppId(const char * appIdStr) {
+	GHashTable * gamePaths;
+	error_t status = steam_searchGames(&gamePaths);
+	if(status == ERR_FAILURE) {
+		return -1;
+	}
+
+	char * strtoulSentinel;
+	//strtoul set EINVAL(after C99) if the string is invalid
+	unsigned long appid = strtoul(appIdStr, &strtoulSentinel, 10);
+	if(errno == EINVAL || strtoulSentinel == appIdStr) {
+		fprintf(stderr, "Appid has to be a valid number\n");
+		return -1;
+	}
+
+	int gameId = steam_gameIdFromAppId((int)appid);
+	if(gameId < 0) {
+		fprintf(stderr, "Game is not compatible\n");
+		return -1;
+	}
+
+	if(!g_hash_table_contains(gamePaths, &gameId)) {
+		fprintf(stderr, "Game not found\n");
+		return -1;
+	}
+
+	//no valid appid goes far enough to justify long
+	return (int)appid;
 }

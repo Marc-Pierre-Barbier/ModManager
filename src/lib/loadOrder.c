@@ -1,5 +1,6 @@
+#include <constants.h>
+
 #include "loadOrder.h"
-#include "main.h"
 #include "steam.h"
 #include "file.h"
 
@@ -8,7 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "getDataPath.h"
+#include "gameData.h"
 
 //TODO: detect if the game is running
 //TODO: deploy the game
@@ -21,7 +22,7 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 	sprintf(appidStr, "%d", appid);
 
 	char * dataFolder = NULL;
-	error_t error = getDataPath(appid, &dataFolder);
+	error_t error = gameData_getDataPath(appid, &dataFolder);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}

@@ -1,14 +1,12 @@
 #ifndef __STEAM_H__
 #define __STEAM_H__
 
-#include "macro.h"
-#include "main.h"
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <glib.h>
+#include <errorType.h>
 
 typedef struct steam_App {
 	unsigned int appid;
@@ -43,7 +41,8 @@ static const char * GAMES_NAMES[] = {
 	"Morrowind"
 };
 
-_Static_assert(LEN(GAMES_APPIDS) == LEN(GAMES_NAMES), "Game APPIDS and Game Names doesn't match");
+_Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+	"Game APPIDS and Game Names doesn't match");
 
 /**
  * @brief list all installed games and the paths to the game's files
@@ -63,5 +62,13 @@ void steam_freeGameTable(void);
  * @return -1 in case of failure or the index of the game.
  */
 int steam_gameIdFromAppId(u_int32_t appid);
+
+/**
+ * @brief Parse the steamId string
+ *
+ * @param appIdStr steamId string
+ * @return int -1 if failures or an int containing the steamId
+ */
+int steam_parseAppId(const char * appIdStr);
 
 #endif

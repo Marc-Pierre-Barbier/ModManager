@@ -3,9 +3,7 @@
 
 #include <libxml/parser.h>
 #include <stdbool.h>
-
-
-typedef enum FOModOrder { ASC, DESC, ORD } fomod_Order_t;
+#include <fomod.h>
 
 /**
  * @brief

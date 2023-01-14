@@ -3,7 +3,8 @@
 #include "order.h"
 
 //no function are declared in main it's just macros
-#include "main.h"
+#include <constants.h>
+
 #include "getHome.h"
 
 typedef struct Mod {
@@ -27,7 +28,7 @@ GList * order_listMods(int appid) {
 	sprintf(appidStr, "%d", appid);
 
 	char * home = getHome();
-	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appidStr, NULL);
+	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidStr, NULL);
 	free(home);
 
 	GList * list = NULL;
@@ -99,7 +100,7 @@ error_t order_swapPlace(int appid, int modIdA, int modIdB) {
 	sprintf(appidStr, "%d", appid);
 
 	char * home = getHome();
-	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appidStr, NULL);
+	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidStr, NULL);
 	free(home);
 
 	GList * list = order_listMods(appid);

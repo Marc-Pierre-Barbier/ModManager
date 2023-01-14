@@ -1,14 +1,14 @@
 
-#include "getDataPath.h"
-#include "main.h"
-#include "steam.h"
+#include <constants.h>
+#include <gameData.h>
+#include <steam.h>
 
 #include <glib.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <stdio.h>
 
-error_t getDataPath(int appid, char ** destination) {
+error_t gameData_getDataPath(int appid, char ** destination) {
     GHashTable * gamePaths;
 	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {

@@ -1,7 +1,8 @@
-#ifndef __DATA_PATH_H__
-#define __DATA_PATH_H__
+#ifndef __GAME_DATA_H__
+#define __GAME_DATA_H__
 
-#include "main.h"
+
+#include "errorType.h"
 
 /**
  * @brief Get the path to the data folder
@@ -9,7 +10,6 @@
  * @param destination pointer to a null char * variable. it's value will be allocated with malloc
  * @return error_t
  */
-error_t getDataPath(int appid, char ** destination);
-
+error_t gameData_getDataPath(int appid, char ** destination);
 
 #endif

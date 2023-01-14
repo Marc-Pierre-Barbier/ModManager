@@ -8,40 +8,29 @@
 #include <sys/wait.h>
 #include <libaudit.h>
 
-#include "getDataPath.h"
-#include "loadOrder.h"
-#include "overlayfs.h"
-#include "install.h"
-#include "getHome.h"
-#include "steam.h"
-#include "main.h"
-#include "file.h"
+#include <gameData.h>
+#include <loadOrder.h>
+#include <deploy.h>
+#include <steam.h>
+#include <install.h>
+#include <getHome.h>
+#include <steam.h>
+#include <file.h>
+#include <fomod.h>
+#include <order.h>
+#include <constants.h>
+#include <deploy.h>
+#include <errorType.h>
+
+#include "cli.h"
 #include "fomod.h"
-#include "order.h"
+
 
 #define ENABLED_COLOR "\033[0;32m"
 #define DISABLED_COLOR "\033[0;31m"
 
 static bool isRoot() {
 	return getuid() == 0;
-}
-
-static GList * listFilesInFolder(const char * path) {
-	GList * list = NULL;
-	DIR *d;
-	struct dirent *dir;
-	d = opendir(path);
-	if (d) {
-		while ((dir = readdir(d)) != NULL) {
-			//removes .. & . from the list
-			if(strcmp(dir->d_name, "..") != 0 && strcmp(dir->d_name, ".") != 0) {
-				list = g_list_append(list, strdup(dir->d_name));
-			}
-		}
-		closedir(d);
-	}
-
-	return list;
 }
 
 static int usage() {
@@ -65,36 +54,6 @@ static int usage() {
 	printf("Use --show-load-order <APPID>\n");
 	printf("Use --list-plugins <APPID>\n");
 	return EXIT_FAILURE;
-}
-
-static error_t validateAppId(const char * appIdStr) {
-	GHashTable * gamePaths;
-	error_t status = steam_searchGames(&gamePaths);
-	if(status == ERR_FAILURE) {
-		return ERR_FAILURE;
-	}
-
-	char * strtoulSentinel;
-	//strtoul set EINVAL(after C99) if the string is invalid
-	unsigned long appid = strtoul(appIdStr, &strtoulSentinel, 10);
-	if(errno == EINVAL || strtoulSentinel == appIdStr) {
-		fprintf(stderr, "Appid has to be a valid number\n");
-		return -1;
-	}
-
-	int gameId = steam_gameIdFromAppId((int)appid);
-	if(gameId < 0) {
-		fprintf(stderr, "Game is not compatible\n");
-		return -1;
-	}
-
-	if(!g_hash_table_contains(gamePaths, &gameId)) {
-		fprintf(stderr, "Game not found\n");
-		return -1;
-	}
-
-	//no valid appid goes far enough to justify long
-	return (int)appid;
 }
 
 static int listGames(int argc, char **) {
@@ -125,7 +84,7 @@ static int add(int argc, char ** argv) {
 	if(argc != 4) return usage();
 	const char * appIdStr = argv[2];
 
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
@@ -137,14 +96,14 @@ static int add(int argc, char ** argv) {
 static int listAllMods(int argc, char ** argv) {
 	if(argc != 3) return usage();
 	char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if( appid < 0) {
 		return EXIT_FAILURE;
 	}
 
 	//might crash if no mods were installed
 	char * home = getHome();
-	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
 
 	GList * mods = order_listMods(appid);
@@ -183,7 +142,7 @@ static int listAllMods(int argc, char ** argv) {
 static int installAndUninstallMod(int argc, char ** argv, bool install) {
 	if(argc != 4) return usage();
 	char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
@@ -199,9 +158,9 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 
 	//might crash if no mods were installed
 	char * home = getHome();
-	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
-	GList * mods = listFilesInFolder(modFolder);
+	GList * mods = order_listMods(appid);
 	GList * modsFirstPointer = mods;
 
 	for(unsigned long i = 0; i < modId; i++) {
@@ -255,129 +214,63 @@ exit:
 	return returnValue;
 }
 
-static int deploy(int argc, char ** argv) {
+static error_t cli_deploy(int argc, char ** argv) {
 	if(argc != 3) return usage();
 
 	char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
 
-	char * home = getHome();
-	char * gameFolder = g_build_filename(home, MANAGER_FILES, GAME_FOLDER_NAME, appIdStr, NULL);
+	GList * ignoredMods = NULL;
 
-	if(access(gameFolder, F_OK) != 0) {
-		free(home);
-		g_free(gameFolder);
-		printf("Please run '%s --setup %d' first", APP_NAME, appid);
-		return EXIT_FAILURE;
-	}
-
-	//unmount everything beforhand
-	//might crash if no mods were installed
-	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
-
-	GList * mods = listFilesInFolder(modFolder);
-	//since the priority is by alphabetical order
-	//and we need to bind the least important first
-	//and the most important last
-	//we have to reverse the list
-	mods = g_list_reverse(mods);
-
-	//probably over allocating but this doesn't matter that much
-	char * modsToInstall[g_list_length(mods) + 2];
-	int modCount = 0;
-
-	while(true) {
-		if(mods == NULL)break;
-		char * modName = (char *)mods->data;
-		char * modPath = g_build_path("/", modFolder, modName, NULL);
-		char * modFlag = g_build_filename(modPath, INSTALLED_FLAG_FILE, NULL);
-
-		//if the mod is not marked to be deployed then don't
-		if(access(modFlag, F_OK) != 0) {
-			printf("ignoring mod %s\n", modName);
-			mods = g_list_next(mods);
-			continue;
-		}
-
-		//this is made to leave the first case empty so i can put lowerdir in it before feeding it to g_strjoinv
-		printf("Installing %s\n", modName);
-		modsToInstall[modCount] = modPath;
-		modCount += 1;
-
-		mods = g_list_next(mods);
-		free(modFlag);
-	}
-
-	g_free(modFolder);
-
-	//const char * data = "lowerdir=gameFolder,gameFolder2,gameFolder3..."
-	modsToInstall[modCount] = gameFolder;
-	modsToInstall[modCount + 1] = NULL;
-	printf("Mounting the overlay\n");
-
-	char * dataFolder = NULL;
-	error_t error = getDataPath(appid, &dataFolder);
-	if(error != ERR_SUCCESS) {
-		free(home);
+	deploymentErrors_t errors = deploy(appIdStr, &ignoredMods);
+	switch(errors) {
+	//we prevalidate the appid so it is a bug
+	default:
+	case INVALID_APPID:
+	case BUG:
+		fprintf(stderr, "A bug was detected during the deployment\n");
 		return ERR_FAILURE;
+	case CANNOT_MOUNT:
+		fprintf(stderr, "Failed to mount the game files");
+		return ERR_FAILURE;
+	case FUSE_NOT_INSTALLED:
+		fprintf(stderr, "This software requires fuse-overlayfs to be installed");
+		return ERR_FAILURE;
+	case GAME_NOT_FOUND:
+		fprintf(stderr, "Could not find the game files");
+		return ERR_FAILURE;
+	case OK:
+		printf("Success");
+		return ERR_SUCCESS;
 	}
-
-	char * gameUpperDir = g_build_filename(home, MANAGER_FILES, GAME_UPPER_DIR_NAME, appIdStr, NULL);
-	char * gameWorkDir = g_build_filename(home, MANAGER_FILES, GAME_WORK_DIR_NAME, appIdStr, NULL);
-	free(home);
-
-	//unmount the game folder
-	//DETACH + FORCE allow us to be sure it will be unload.
-	//it might crash / corrupt game file if the user do it while the game is running
-	//but it's still very unlikely
-	while(umount2(dataFolder, MNT_FORCE | MNT_DETACH) == 0);
-	overlay_errors_t status = overlay_mount(modsToInstall, dataFolder, gameUpperDir, gameWorkDir);
-	if(status == SUCESS) {
-		printf("Everything is ready, just launch the game\n");
-	} else if(status == FAILURE) {
-		fprintf(stderr, "Could not mount the mods overlay\n");
-		return EXIT_FAILURE;
-	} else if(status == NOT_INSTALLED) {
-		fprintf(stderr, "Please install fuse-overlayfs\n");
-		return EXIT_FAILURE;
-	} else {
-		fprintf(stderr, "%d bug detected, please report this.\n", __LINE__);
-		return EXIT_FAILURE;
-	}
-
-	g_free(dataFolder);
-	g_free(gameUpperDir);
-	g_free(gameWorkDir);
-
-	return EXIT_SUCCESS;
 }
 
 static int setup(int argc, char ** argv) {
 	if(argc != 3 ) return usage();
 	const char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
 	char * home = getHome();
 
-	char * gameUpperDir = g_build_filename(home, MANAGER_FILES, GAME_UPPER_DIR_NAME, appIdStr, NULL);
-	char * gameWorkDir = g_build_filename(home, MANAGER_FILES, GAME_WORK_DIR_NAME, appIdStr, NULL);
+	char * gameUpperDir = g_build_filename(home, MODLIB_WORKING_DIR, GAME_UPPER_DIR_NAME, appIdStr, NULL);
+	char * gameWorkDir = g_build_filename(home, MODLIB_WORKING_DIR, GAME_WORK_DIR_NAME, appIdStr, NULL);
 	g_mkdir_with_parents(gameUpperDir, 0755);
 	g_mkdir_with_parents(gameWorkDir, 0755);
 	free(gameUpperDir);
 	free(gameWorkDir);
 
 	char * dataFolder = NULL;
-	error_t error = getDataPath(appid, &dataFolder);
+	error_t error = gameData_getDataPath(appid, &dataFolder);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
 
-	char * gameFolder = g_build_filename(home, MANAGER_FILES, GAME_FOLDER_NAME, appIdStr, NULL);
+	char * gameFolder = g_build_filename(home, MODLIB_WORKING_DIR, GAME_FOLDER_NAME, appIdStr, NULL);
 	if(access(gameFolder, F_OK) == 0) {
 		//if the game folder alredy exists just delete it
 		//this will allow the removal of dlcs and language change
@@ -410,13 +303,13 @@ static int setup(int argc, char ** argv) {
 static int unbind(int argc, char ** argv) {
 	if(argc != 3 ) return usage();
 	const char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
 
 	char * dataFolder = NULL;
-	error_t error = getDataPath(appid, &dataFolder);
+	error_t error = gameData_getDataPath(appid, &dataFolder);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
@@ -430,7 +323,7 @@ static int unbind(int argc, char ** argv) {
 static int removeMod(int argc, char ** argv) {
 	if(argc != 4) return usage();
 	const char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		fprintf(stderr, "Invalid appid");
 		return EXIT_FAILURE;
@@ -445,9 +338,9 @@ static int removeMod(int argc, char ** argv) {
 
 	//might crash if no mods were installed
 	char * home = getHome();
-	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
-	GList * mods = listFilesInFolder(modFolder);
+	GList * mods = order_listMods(appid);
 	GList * modsFirstPointer = mods;
 
 	for(unsigned long i = 0; i < modId; i++) {
@@ -472,7 +365,7 @@ static int removeMod(int argc, char ** argv) {
 static int fomod(int argc, char ** argv) {
 	if(argc != 4) return usage();
 	char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		fprintf(stderr, "Invalid appid");
 		return EXIT_FAILURE;
@@ -487,9 +380,9 @@ static int fomod(int argc, char ** argv) {
 
 	//might crash if no mods were installed
 	char * home = getHome();
-	char * modFolder = g_build_filename(home, MANAGER_FILES, MOD_FOLDER_NAME, appIdStr, NULL);
+	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
-	GList * mods = listFilesInFolder(modFolder);
+	GList * mods = order_listMods(appid);
 	GList * modsFirstPointer = mods;
 
 	for(unsigned long i = 0; i < modId; i++) {
@@ -523,7 +416,7 @@ static int fomod(int argc, char ** argv) {
 static int swapMod(int argc, char ** argv) {
 	if(argc != 5) return usage();
 	char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		fprintf(stderr, "Invalid appid");
 		return EXIT_FAILURE;
@@ -551,7 +444,7 @@ static int printLoadOrder(int argc, char ** argv) {
 	if(argc != 3) return usage();
 
 	char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		fprintf(stderr, "Invalid appid");
 		return EXIT_FAILURE;
@@ -580,7 +473,7 @@ static int printPlugins(int argc, char ** argv) {
 	if(argc != 3) return usage();
 
 	char * appIdStr = argv[2];
-	int appid = validateAppId(appIdStr);
+	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		fprintf(stderr, "Invalid appid");
 		return EXIT_FAILURE;
@@ -613,7 +506,7 @@ int main(int argc, char ** argv) {
 
 	int returnValue = EXIT_SUCCESS;
 	char * home = getHome();
-	char * configFolder = g_build_filename(home, MANAGER_FILES, NULL);
+	char * configFolder = g_build_filename(home, MODLIB_WORKING_DIR, NULL);
 	free(home);
 	if(access(configFolder, F_OK) != 0) {
 
@@ -651,7 +544,7 @@ int main(int argc, char ** argv) {
 		returnValue = installAndUninstallMod(argc, argv, false);
 
 	else if(strcmp(argv[1], "--bind") == 0 || strcmp(argv[1], "-d") == 0)
-		returnValue = deploy(argc, argv);
+		returnValue = cli_deploy(argc, argv);
 
 	else if(strcmp(argv[1], "--unbind") == 0)
 		returnValue = unbind(argc, argv);

@@ -2,7 +2,7 @@
 #define __ORDER_H__
 
 #include <glib.h>
-#include "main.h"
+#include <errorType.h>
 
 #define ORDER_FILE "__ORDER__"
 

@@ -4,8 +4,9 @@
 #include <unistd.h>
 #include <glib.h>
 
-#include "install.h"
-#include "main.h"
+#include <install.h>
+
+#include <constants.h>
 #include "archives.h"
 #include "file.h"
 
@@ -17,7 +18,7 @@ error_t install_addMod(char * filePath, int appId) {
 		goto exit;
 	}
 
-	char * configFolder = g_build_filename(getenv("HOME"), MANAGER_FILES, NULL);
+	char * configFolder = g_build_filename(getenv("HOME"), MODLIB_WORKING_DIR, NULL);
 	if(g_mkdir_with_parents(configFolder, 0755) < 0) {
 		fprintf(stderr, "Could not create mod folder");
 		resultError = ERR_FAILURE;

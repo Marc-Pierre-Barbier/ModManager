@@ -1,22 +1,17 @@
-#ifndef __FOMOD_H__
-#define __FOMOD_H__
+#ifndef __PUBLIC_FOMOD_H__
+#define __PUBLIC_FOMOD_H__
 
-#include <stdbool.h>
+#include "errorType.h"
 #include <glib.h>
-
-#include "main.h"
-#include "fomod/parser.h"
-#include "fomod/group.h"
-#include "fomod/xmlUtil.h"
+#include "fomodTypes.h"
 
 /**
- * @brief Start a terminal based install process for fomod.
+ * @brief parse a fomod xml file (found inside the mod folder /fomod/moduleconfig.xml (everything should be lowercase))
  *
- * @param modFolder folder of the fomod file.
- * @param destination folder of the new mod that contains the result of the fomod process.
- * @return int
+ * @param fomodFile path to the moduleconfig.xml
+ * @param fomod pointer to a new FOMod_t
  */
-error_t fomod_installFOMod(const char * modFolder, const char * destination);
+error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod);
 
 /**
  * @brief In fomod there is file operations which depends on multiple flags this function find the ones that mach our current flags and append them to a list.

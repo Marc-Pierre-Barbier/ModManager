@@ -1,7 +1,9 @@
 #ifndef __INSTALL_H__
 #define __INSTALL_H__
+
 #include <stdlib.h>
-#include "main.h"
+#include <errorType.h>
+
 #define INSTALLED_FLAG_FILE "__DO_NOT_REMOVE__"
 
 /**

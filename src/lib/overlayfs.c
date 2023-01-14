@@ -16,7 +16,7 @@ overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * 
 		int pid = fork();
 		if(pid == 0) {
 			//exit is used to get the return value when using waitpid
-			exit(execl("/usr/bin/fuse-overlayfs", "/usr/bin/fuse-overlayfs", "-r", "-o", mountData, dest, NULL));
+			exit(execl("/usr/bin/fuse-overlayfs", "/usr/bin/fuse-overlayfs", "-o", mountData, dest, NULL));
 		} else {
 
 			int returnValue = 0;

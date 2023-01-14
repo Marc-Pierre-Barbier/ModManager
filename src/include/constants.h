@@ -1,14 +1,12 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include <glib.h>
-
+#define MODLIB_NAME "mod-manager"
 //no function should ever be put here, only keep important macros and globals here
 
-#define APP_NAME "mod-manager"
 //relative to home the url is not preprocessed so ../ might create some issues
 // in c "A" "B" is the same as "AB"
-#define MANAGER_FILES ".local/share/" APP_NAME
+#define MODLIB_WORKING_DIR ".local/share/" MODLIB_NAME
 #define MOD_FOLDER_NAME "MOD_FOLDER"
 //the folder in which the games file will be linked or copied
 #define GAME_FOLDER_NAME "GAME_FOLDER"
@@ -17,8 +15,5 @@
 //overlayfs temporary dir.
 #define GAME_WORK_DIR_NAME "WORK_DIRS"
 
-#define VERSION "0.1"
-
-typedef enum { ERR_SUCCESS, ERR_FAILURE } error_t;
-
+#define MODLIB_VERSION "0.1"
 #endif

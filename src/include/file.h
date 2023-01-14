@@ -2,8 +2,10 @@
 #define __FILE_H__
 
 #include <stdbool.h>
+#include <glib.h>
 #include <sys/types.h>
-#include "main.h"
+
+#include "constants.h"
 
 
 //valid copy flags
@@ -62,4 +64,6 @@ const char * file_extractExtension(const char * filePath);
  */
 const char * file_extractFileName(const char * filePath);
 
+
+GList * file_listFolderContent(const char * path);
 #endif

@@ -1,5 +1,4 @@
-#include "parser.h"
-#include "fomodTypes.h"
+#include <fomod.h>
 #include "group.h"
 #include "libxml/tree.h"
 #include "xmlUtil.h"
@@ -193,6 +192,58 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 	return EXIT_SUCCESS;
 }
 
+static int stepCmpAsc(const void * stepA, const void * stepB) {
+	const FOModStep_t * step1 = (const FOModStep_t *)stepA;
+	const FOModStep_t * step2 = (const FOModStep_t *)stepB;
+	return strcmp(step1->name, step2->name);
+}
+
+static int stepCmpDesc(const void * stepA, const void * stepB) {
+	const FOModStep_t * step1 = (const FOModStep_t *)stepA;
+	const FOModStep_t * step2 = (const FOModStep_t *)stepB;
+	return 1 - strcmp(step1->name, step2->name);
+}
+
+static void fomod_sortSteps(FOMod_t * fomod) {
+	switch(fomod->stepOrder) {
+	case ASC:
+		qsort(fomod->steps, fomod->stepCount, sizeof(*fomod->steps), stepCmpAsc);
+		break;
+	case DESC:
+		qsort(fomod->steps, fomod->stepCount, sizeof(*fomod->steps), stepCmpDesc);
+		break;
+	case ORD:
+		//ord mean that we keep the curent order, so no need to sort anything.
+		break;
+	}
+}
+
+static int fomod_groupCmpAsc(const void * stepA, const void * stepB) {
+	const fomod_Group_t * step1 = (const fomod_Group_t *)stepA;
+	const fomod_Group_t * step2 = (const fomod_Group_t *)stepB;
+	return strcmp(step1->name, step2->name);
+}
+
+static int fomod_groupCmpDesc(const void * stepA, const void * stepB) {
+	const fomod_Group_t * step1 = (const fomod_Group_t *)stepA;
+	const fomod_Group_t * step2 = (const fomod_Group_t *)stepB;
+	return 1 - strcmp(step1->name, step2->name);
+}
+
+static void fomod_sortGroup(fomod_Group_t * group) {
+	switch(group->order) {
+	case ASC:
+		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), fomod_groupCmpAsc);
+		break;
+	case DESC:
+		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), fomod_groupCmpDesc);
+		break;
+	case ORD:
+		//ord mean that we keep the curent order, so no need to sort anything.
+		break;
+	}
+}
+
 error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	xmlDocPtr doc;
 	xmlNodePtr cur;
@@ -280,6 +331,14 @@ error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 		}
 		cur = cur->next;
 	}
+
+	//steps are in a specific order in fomod config. we need to make sure we respected this order
+	fomod_sortSteps(fomod);
+
+	//same for the plugins inside the groups
+	for(int i = 0; i < fomod->stepCount; i++)
+		for(int j = 0; j < fomod->steps[i].groupCount; j++)
+			fomod_sortGroup(&(fomod->steps[i].groups[j]));
 
 	xmlFreeDoc(doc);
 	return ERR_SUCCESS;

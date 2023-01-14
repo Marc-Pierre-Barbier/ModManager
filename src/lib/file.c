@@ -150,3 +150,21 @@ const char * file_extractExtension(const char * filePath) {
 const char * file_extractFileName(const char * filePath) {
 	return file_extractLastPart(filePath, '/');
 }
+
+GList * file_listFolderContent(const char * path) {
+	GList * list = NULL;
+	DIR *d;
+	struct dirent *dir;
+	d = opendir(path);
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			//removes .. & . from the list
+			if(strcmp(dir->d_name, "..") != 0 && strcmp(dir->d_name, ".") != 0) {
+				list = g_list_append(list, strdup(dir->d_name));
+			}
+		}
+		closedir(d);
+	}
+
+	return list;
+}

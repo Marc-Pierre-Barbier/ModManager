@@ -2,7 +2,7 @@
 #define __LOAD_ORDER_H__
 
 #include <glib.h>
-#include "main.h"
+#include <errorType.h>
 
 /**
  * @brief find all plugins in the data folder of the game

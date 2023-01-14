@@ -6,7 +6,7 @@ pkgdesc="a Mod manager for bethesda games"
 arch=('x86_64') # might work on other archs but i can not try
 url='https://gitlab.marcbarbier.fr/Marc/modmanager'
 license=('GPL2')
-source=( 'git+https://gitlab.marcbarbier.fr/Marc/modmanager.git' )
+source=( 'git+https://github.com/Marc-Pierre-Barbier/ModManager.git' )
 md5sums=( 'SKIP' )
 
 optdepends=('fuse-overlayfs: special filesystem support' )
