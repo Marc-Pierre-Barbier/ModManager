@@ -273,7 +273,7 @@ error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 
 	cur = xmlDocGetRootElement(doc);
 	if(cur == NULL) {
-		fprintf(stderr, "emptyDocument");
+		fprintf(stderr, "emptyDocument\n");
 		xmlFreeDoc(doc);
 		return ERR_FAILURE;
 	}
@@ -310,10 +310,9 @@ error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 				fomod->requiredInstallFiles[size - 2] = xml_freeAndDup(xmlGetProp(requiredInstallFile, (const xmlChar *)"source"));
 				requiredInstallFile = requiredInstallFile->next;
 			}
-			printf("Im free\n");
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"installSteps") == 0) {
 			if(fomod->steps != NULL) {
-				fprintf(stderr, "Multiple 'installSteps' tags");
+				fprintf(stderr, "Multiple 'installSteps' tags\n");
 				//TODO: handle error
 				return ERR_FAILURE;
 			}

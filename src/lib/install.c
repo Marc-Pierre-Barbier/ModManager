@@ -21,7 +21,7 @@ error_t install_addMod(char * filePath, int appId) {
 
 	char * configFolder = g_build_filename(getenv("HOME"), MODLIB_WORKING_DIR, NULL);
 	if(g_mkdir_with_parents(configFolder, 0755) < 0) {
-		fprintf(stderr, "Could not create mod folder");
+		fprintf(stderr, "Could not create mod folder\n");
 		resultError = ERR_FAILURE;
 		goto exit2;
 	}

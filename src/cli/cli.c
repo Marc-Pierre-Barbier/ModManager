@@ -28,6 +28,8 @@
 
 #define ENABLED_COLOR "\033[0;32m"
 #define DISABLED_COLOR "\033[0;31m"
+#define DISABLED_FOMOD_COLOR "\033[0;33m"
+#define ENABLED_FOMOD_COLOR "\033[1;34m"
 
 static bool isRoot() {
 	return getuid() == 0;
@@ -115,11 +117,21 @@ static int listAllMods(int argc, char ** argv) {
 	while(mods != NULL) {
 		char * modName = (char*)mods->data;
 		char * modPath = g_build_filename(modFolder, modName, INSTALLED_FLAG_FILE, NULL);
+		char * fomodmodName = g_strconcat(mods->data, "__FOMOD", NULL);
+		char * fomodFolder = g_build_filename(modFolder, fomodmodName, INSTALLED_FLAG_FILE, NULL);
+		char * fomodPath = g_build_filename(modFolder, fomodmodName, INSTALLED_FLAG_FILE, NULL);
+
 
 		if(access(modPath, F_OK) == 0) {
 			printf(ENABLED_COLOR " %d | ✓ | %s\n", index, modName);
 		} else {
-			printf(DISABLED_COLOR " %d | ✕ | %s\n", index, modName);
+			if(access(fomodFolder, F_OK) == 0)
+				if(access(fomodPath, F_OK) == 0)
+					printf(ENABLED_FOMOD_COLOR " %d | ✕ | %s\n", index, modName);
+				else
+					printf(DISABLED_FOMOD_COLOR " %d | ✕ | %s\n", index, modName);
+			else
+				printf(DISABLED_COLOR " %d | ✕ | %s\n", index, modName);
 		}
 
 		g_free(modPath);
@@ -241,16 +253,16 @@ static error_t cli_deploy(int argc, char ** argv) {
 		fprintf(stderr, "A bug was detected during the deployment\n");
 		return ERR_FAILURE;
 	case CANNOT_MOUNT:
-		fprintf(stderr, "Failed to mount the game files");
+		fprintf(stderr, "Failed to mount the game files\n");
 		return ERR_FAILURE;
 	case FUSE_NOT_INSTALLED:
-		fprintf(stderr, "This software requires fuse-overlayfs to be installed");
+		fprintf(stderr, "This software requires fuse-overlayfs to be installed\n");
 		return ERR_FAILURE;
 	case GAME_NOT_FOUND:
-		fprintf(stderr, "Could not find the game files");
+		fprintf(stderr, "Could not find the game files\n");
 		return ERR_FAILURE;
 	case OK:
-		printf("Success");
+		printf("Success\n");
 		return ERR_SUCCESS;
 	}
 }
@@ -289,10 +301,10 @@ static int setup(int argc, char ** argv) {
 	//but links require the files to be on the same filesystem
 	int returnValue = file_copy(dataFolder, gameFolder, FILE_CP_RECURSIVE | FILE_CP_NO_TARGET_DIR | FILE_CP_LINK);
 	if(returnValue < 0) {
-		printf("Coping game files.  HINT: having the game on the same partition as you home director will make this operation use zero extra space");
+		printf("Coping game files.  HINT: having the game on the same partition as you home director will make this operation use zero extra space\n");
 		returnValue = file_copy(dataFolder, gameFolder, FILE_CP_RECURSIVE | FILE_CP_NO_TARGET_DIR);
 		if(returnValue < 0) {
-			fprintf(stderr, "Copy failed make sure you have enough space on your device.");
+			fprintf(stderr, "Copy failed make sure you have enough space on your device.\n");
 			free(dataFolder);
 			free(gameFolder);
 			return EXIT_FAILURE;
@@ -332,7 +344,7 @@ static int removeMod(int argc, char ** argv) {
 	const char * appIdStr = argv[2];
 	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
-		fprintf(stderr, "Invalid appid");
+		fprintf(stderr, "Invalid appid\n");
 		return EXIT_FAILURE;
 	}
 
@@ -425,7 +437,7 @@ static int swapMod(int argc, char ** argv) {
 	char * appIdStr = argv[2];
 	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
-		fprintf(stderr, "Invalid appid");
+		fprintf(stderr, "Invalid appid\n");
 		return EXIT_FAILURE;
 	}
 
@@ -453,7 +465,7 @@ static int printLoadOrder(int argc, char ** argv) {
 	char * appIdStr = argv[2];
 	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
-		fprintf(stderr, "Invalid appid");
+		fprintf(stderr, "Invalid appid\n");
 		return EXIT_FAILURE;
 	}
 
@@ -482,7 +494,7 @@ static int printPlugins(int argc, char ** argv) {
 	char * appIdStr = argv[2];
 	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
-		fprintf(stderr, "Invalid appid");
+		fprintf(stderr, "Invalid appid\n");
 		return EXIT_FAILURE;
 	}
 

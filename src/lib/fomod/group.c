@@ -97,7 +97,7 @@ static int parseGroupFiles(fomod_Plugin_t * plugin, xmlNodePtr nodeElement) {
 	xmlNodePtr fileNode = nodeElement->children;
 	while(fileNode != NULL) {
 		if(!xml_validateNode(&fileNode, true, "folder", "file", NULL)) {
-			fprintf(stderr, "Unexpected node in files");
+			fprintf(stderr, "Unexpected node in files\n");
 			//TODO: free
 			return EXIT_FAILURE;
 		}

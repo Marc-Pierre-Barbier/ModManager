@@ -41,7 +41,7 @@ static int getFiledId(const char * field) {
 	} else if(strcmp(field, "apps") == 0) {
 		return FIELD_APPS;
 	} else {
-		fprintf(stderr, "unknown field");
+		fprintf(stderr, "unknown field\n");
 		return -1;
 	}
 }
