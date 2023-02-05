@@ -1,6 +1,6 @@
 # Maintainer: Marc barbier
 pkgname=modmanager
-pkgver=0.1
+pkgver=0.2
 pkgrel=1
 pkgdesc="a Mod manager for bethesda games"
 arch=('x86_64') # might work on other archs but i can not try

@@ -1,2 +1,2 @@
 #define APP_NAME "mod-manager CLI"
-#define VERSION "0.1"
+#define VERSION "0.2"
