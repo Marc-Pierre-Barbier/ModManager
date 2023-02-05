@@ -129,6 +129,7 @@ error_t order_getLoadOrder(int appid, GList ** order) {
 	return ERR_SUCCESS;
 }
 
+//TODO: Check if the default LF format is compatible with windows' CRLF in skyrim
 error_t order_setLoadOrder(int appid, GList * loadOrder) {
 	GHashTable * gamePaths;
 	error_t status = steam_searchGames(&gamePaths);

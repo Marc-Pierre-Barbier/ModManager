@@ -1,18 +1,23 @@
 #include <fomod.h>
 #include "group.h"
-#include "libxml/tree.h"
+#include <libxml/tree.h>
 #include "xmlUtil.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 static int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
+	printf("Warning unsuported function used\n");
+	return EXIT_SUCCESS;
+/*
+this code in one node deeper than it should
 	xmlNodePtr requiredFlagsNode = node->children;
 
 	while (requiredFlagsNode != NULL) {
 
 		if(!xml_validateNode(&requiredFlagsNode, true, "flagDependency", NULL)) {
 			//TODO: handle error
-			printf("%d\n", __LINE__);
+			printf("error in parser.c: %d\n", __LINE__);
 			return EXIT_FAILURE;
 		}
 
@@ -26,7 +31,7 @@ static int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
 
 		requiredFlagsNode = requiredFlagsNode->next;
 	}
-
+*/
 	return EXIT_SUCCESS;
 }
 
@@ -38,7 +43,7 @@ static int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
 	while(group != NULL) {
 		if(!xml_validateNode(&group, true, "group", NULL)) {
 			//TODO: handle error
-			printf("%d\n", __LINE__);
+			printf("parsing error: parser.c: %d\n", __LINE__);
 			return EXIT_FAILURE;
 		}
 
@@ -50,6 +55,7 @@ static int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
 
 		if(status != EXIT_SUCCESS) {
 			//TODO: handle error
+			printf("Parsing error\n");
 			return EXIT_FAILURE;
 		}
 
@@ -68,7 +74,7 @@ static FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCo
 		//skipping the text node
 		if(!xml_validateNode(&stepNode, true, "installStep", NULL)) {
 			//TODO: handle error
-			printf("%d\n", __LINE__);
+			printf("parsing error: parser.c: %d\n", __LINE__);
 			exit(EXIT_FAILURE);
 		}
 
@@ -105,7 +111,7 @@ static int parseDependencies(xmlNodePtr node, fomod_CondFile_t * condFile) {
 
 	if(!xml_validateNode(&flagNode, true, "flagDependency", NULL)) {
 		//TODO: handle error
-		printf("%d\n", __LINE__);
+		printf("parsing error: parser.c: %d\n", __LINE__);
 		return EXIT_FAILURE;
 	}
 
@@ -128,7 +134,7 @@ static int parseFiles(xmlNodePtr node, fomod_CondFile_t * condFile) {
 	while(filesNode != NULL) {
 		if(!xml_validateNode(&filesNode, true, "folder", "file", NULL)) {
 			//TODO: handle error
-			printf("%d\n", __LINE__);
+			printf("parsing error: parser.c: %d\n", __LINE__);
 			return EXIT_FAILURE;
 		}
 
@@ -151,7 +157,7 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 	if(patterns != NULL) {
 		if(!xml_validateNode(&patterns, true, "patterns", NULL)) {
 			//TODO: handle error
-			printf("%d\n", __LINE__);
+			printf("parsing error: parser.c: %d\n", __LINE__);
 			return EXIT_FAILURE;
 		}
 		xmlNodePtr currentPattern = patterns->children;
@@ -160,7 +166,7 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 
 			if(!xml_validateNode(&patternChild, true, "pattern", NULL)) {
 				//TODO: handle error
-				printf("%d\n", __LINE__);
+				printf("parsing error: parser.c: %d\n", __LINE__);
 				return EXIT_FAILURE;
 			}
 
@@ -289,20 +295,22 @@ error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 			//TODO: support non empty destination.
 			xmlNodePtr requiredInstallFile = cur->children;
 			while(requiredInstallFile != NULL) {
-				if(xml_validateNode(&requiredInstallFile, true, "folder", "file", NULL)) {
+				if(!xml_validateNode(&requiredInstallFile, true, "folder", "file", NULL)) {
 					//TODO: handle error
-					printf("%d\n", __LINE__);
+					printf("parsing error: parser.c: %d when parsing line: %d node: %s\n", __LINE__, requiredInstallFile->line, requiredInstallFile->name);
 					exit(ERR_FAILURE);
 				}
+				if(requiredInstallFile == NULL) break;
 
-				int size = fomod_countUntilNull(fomod->requiredInstallFiles, sizeof(char **)) + 2;
+				int size = fomod_countUntilNull(fomod->requiredInstallFiles) + 2;
+
 				fomod->requiredInstallFiles = realloc(fomod->requiredInstallFiles, sizeof(char *) * size);
 				//ensure it is null terminated
 				fomod->requiredInstallFiles[size - 1] = NULL;
 				fomod->requiredInstallFiles[size - 2] = xml_freeAndDup(xmlGetProp(requiredInstallFile, (const xmlChar *)"source"));
-
-				requiredInstallFile = cur->children;
+				requiredInstallFile = requiredInstallFile->next;
 			}
+			printf("Im free\n");
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"installSteps") == 0) {
 			if(fomod->steps != NULL) {
 				fprintf(stderr, "Multiple 'installSteps' tags");

@@ -10,6 +10,7 @@
 #include "archives.h"
 #include "file.h"
 
+//TODO: Replace print with errors
 error_t install_addMod(char * filePath, int appId) {
 	error_t resultError = ERR_SUCCESS;
 	if (access(filePath, F_OK) != 0) {
@@ -48,10 +49,13 @@ error_t install_addMod(char * filePath, int appId) {
 		returnValue = EXIT_FAILURE;
 	}
 
-	if(returnValue == EXIT_FAILURE)
+	if(returnValue == EXIT_FAILURE) {
+		printf("Failed to install mod\n");
+		file_delete(outdir, true);
 		resultError = ERR_FAILURE;
-
-	printf("Done\n");
+	}
+	else
+		printf("Done\n");
 
 	free(lowercaseExtension);
 	free(outdir);

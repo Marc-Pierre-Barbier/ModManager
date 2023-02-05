@@ -53,6 +53,7 @@ static int usage() {
 
 	printf("Use --show-load-order <APPID>\n");
 	printf("Use --list-plugins <APPID>\n");
+	printf("Use --setup <APPID> to configure the game for the first time\n");
 	return EXIT_FAILURE;
 }
 
@@ -175,11 +176,17 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 	char * modName = (char*)mods->data;
 	char * modFlag = g_build_filename(modFolder, modName, INSTALLED_FLAG_FILE, NULL);
 
+	//TODO: move to the library
 	if(install) {
+		char * fomodFolder = g_build_path("/", modFolder, modName, "fomod", NULL);
 		if(access(modFlag, F_OK) == 0) {
 			fprintf(stderr, "The mod is already activated \n");
 			returnValue = EXIT_SUCCESS;
 			goto exit;
+		}
+
+		if(access(fomodFolder, F_OK) == 0) {
+			printf("Warning: fomod sub folder found, maybe you meant to use --fomod\n");
 		}
 
 		//Create activated file

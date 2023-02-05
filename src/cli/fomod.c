@@ -56,7 +56,7 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 	char * fomodFolder = g_build_path("/", modFolder, "fomod", NULL);
 	char * fomodFile = g_build_filename(fomodFolder, "moduleconfig.xml", NULL);
 
-	printf("%s", fomodFile);
+	printf("%s\n", fomodFile);
 	if(access(fomodFile, F_OK) != 0) {
 		fprintf(stderr, "FOMod file not found, are you sure this is a fomod mod ?\n");
 		g_free(fomodFolder);
@@ -98,6 +98,7 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 			size_t bufferSize = 0;
 
 			while(true) {
+				printf("%s\n", group.name);
 				fomod_printOptionsInOrder(group);
 				switch(group.type) {
 				case ONE_ONLY:

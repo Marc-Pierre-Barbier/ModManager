@@ -8,7 +8,7 @@ if(CMAKE_BUILD_TYPE MATCHES DEBUG)
 	add_link_options(-fsanitize=address)
 endif()
 
-set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wmaybe-uninitialized")
+set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wmaybe-uninitialized -O0")
 set(CMAKE_C_FLAGS_DEBUG "-g -Werror -O0")
 set(CMAKE_C_FLAGS_RELEASE "")
 

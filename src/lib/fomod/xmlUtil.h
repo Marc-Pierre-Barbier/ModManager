@@ -33,9 +33,8 @@ void xml_fixPath(char * path);
  * @brief Count the number of step before null
  *
  * @param pointers pointer to the list
- * @param typeSize size of each element of the list
  * @return size
  */
-int fomod_countUntilNull(void * pointers, size_t typeSize);
+int fomod_countUntilNull(char ** pointers);
 
 #endif

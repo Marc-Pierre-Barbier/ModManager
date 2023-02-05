@@ -1,5 +1,7 @@
 #include "group.h"
 #include "fomodTypes.h"
+#include "libxml/tree.h"
+#include "libxml/xmlstring.h"
 #include "xmlUtil.h"
 #include "string.h"
 #include <stdlib.h>
@@ -134,14 +136,23 @@ static int parseNodeElement(fomod_Plugin_t * plugin, xmlNodePtr nodeElement) {
 	} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "files") == 0) {
 		return parseGroupFiles(plugin, nodeElement);
 	} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "typeDescriptor") == 0) {
+		//WEIRD SHIT
 		xmlNodePtr typeNode = nodeElement->children;
-		if(!xml_validateNode(&typeNode, true, "type", NULL)) {
-			fprintf(stderr, "Unexpected node in typeDescriptor");
+		if(!xml_validateNode(&typeNode, true, "type", "dependencyType", NULL)) {
+			fprintf(stderr, "Unexpected node in typeDescriptor: %s at %d\n", typeNode->name, typeNode->line);
 			return EXIT_FAILURE;
 		}
-		xmlChar * name = xmlGetProp(typeNode, (const xmlChar *) "name");
-		plugin->type = getDescriptor((char *) name);
-		xmlFree(name);
+
+		if(xmlStrcmp(nodeElement->name, (const xmlChar *) "dependencyType")) {
+			//TODO: add support for it
+			printf("Warning using unsupported functionnality\n");
+			plugin->type = OPTIONAL;
+		} else {
+			xmlChar * name = xmlGetProp(typeNode, (const xmlChar *) "name");
+			plugin->type = getDescriptor((char *) name);
+			xmlFree(name);
+		}
+
 	}
 	return EXIT_SUCCESS;
 }
@@ -170,7 +181,7 @@ int grp_parseGroup(xmlNodePtr groupNode, fomod_Group_t* group) {
 	while(currentPlugin != NULL) {
 		if(!xml_validateNode(&currentPlugin, true, "plugin", NULL)) {
 			//TODO handle error;
-			printf("%d\n", __LINE__);
+			printf("group.c: %d\n", __LINE__);
 			exit(EXIT_FAILURE);
 		}
 

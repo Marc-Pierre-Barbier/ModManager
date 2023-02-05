@@ -137,7 +137,7 @@ void fomod_freeFOMod(FOMod_t * fomod) {
 	free(fomod->moduleImage);
 	free(fomod->moduleName);
 
-	int size = fomod_countUntilNull(fomod->requiredInstallFiles, sizeof(char **));
+	int size = fomod_countUntilNull(fomod->requiredInstallFiles);
 	for(int i = 0; i < size; i++) {
 		free(fomod->requiredInstallFiles[i]);
 	}

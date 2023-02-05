@@ -1,5 +1,6 @@
 #include "xmlUtil.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -28,11 +29,12 @@ void xml_fixPath(char * path) {
 	}
 }
 
-int fomod_countUntilNull(void * pointers, size_t typeSize) {
+int fomod_countUntilNull(char ** pointers) {
+	if(pointers == NULL) return 0;
 	int i = 0;
-	char * arithmetic = (char *)pointers;
-	while(arithmetic != NULL) {
-		arithmetic += typeSize;
+	char ** arithmetic = pointers;
+	while(*arithmetic != NULL) {
+		arithmetic++;
 		i++;
 	}
 	return i;
@@ -43,6 +45,7 @@ int fomod_countUntilNull(void * pointers, size_t typeSize) {
 bool xml_validateNode(xmlNodePtr * node, bool skipText, const char * names, ...) {
 	va_list namesPtr;
 
+	//skipping text nodes
 	while(*node != NULL && xmlStrcmp((*node)->name, (const xmlChar *)"text") == 0) {
 		if(skipText) {
 			(*node) = (*node)->next;
