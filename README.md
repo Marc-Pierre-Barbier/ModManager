@@ -38,6 +38,7 @@ Use --list-plugins <APPID>
 1. Find a name
 2. add more game to the code, currently i only have Skyrim se.
 3. adding a hook for %command% in steam
+4. Code a GUI
 
 ## How to contribute:
 if you have creation engine based games not listed in src/steam.h
