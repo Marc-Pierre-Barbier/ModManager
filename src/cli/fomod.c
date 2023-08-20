@@ -3,6 +3,7 @@
 #include <constants.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 //match the definirion of gcompare func
@@ -55,6 +56,16 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 	//everything should be lowercase since we use casefold() before calling any install function
 	char * fomodFolder = g_build_path("/", modFolder, "fomod", NULL);
 	char * fomodFile = g_build_filename(fomodFolder, "moduleconfig.xml", NULL);
+
+	if(access(destination, F_OK) != 0) {
+		int status = mkdir(destination, 0700);
+		if(status != 0) {
+			fprintf(stderr, "Could not create output folder\n");
+			g_free(fomodFolder);
+			g_free(fomodFile);
+			return ERR_FAILURE;
+		}
+	}
 
 	printf("%s\n", fomodFile);
 	if(access(fomodFile, F_OK) != 0) {
@@ -174,9 +185,9 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 					*fileCopy = *file;
 
 					//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
-					char * destination = g_ascii_strdown(file->destination, -1);
+					//char * destination = g_ascii_strdown(file->destination, -1);
 					fileCopy->destination = strdup(destination);
-					g_free(destination);
+					//g_free(destination);
 
 					char * source = g_ascii_strdown(file->source, -1);
 					fileCopy->source = strdup(source);
