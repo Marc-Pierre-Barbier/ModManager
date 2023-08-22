@@ -235,7 +235,7 @@ error_t steam_searchGames(GHashTable ** p_hashTable) {
 		for(unsigned long j = 0; j < libraries[i].appsCount; j++) {
 			int gameId = steam_gameIdFromAppId(libraries[i].apps[j].appid);
 			if(gameId >= 0) {
-				int * key = malloc(sizeof(int));
+				int * key = g_malloc(sizeof(int));
 				*key = gameId;
 				g_hash_table_insert(table, key, strdup(libraries[i].path));
 			}

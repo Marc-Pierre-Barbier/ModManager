@@ -181,7 +181,7 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 				for(int pluginId = 0; pluginId < plugin.fileCount; pluginId++) {
 					const fomod_File_t * file = &plugin.files[pluginId];
 
-					fomod_File_t * fileCopy = malloc(sizeof(fomod_File_t));
+					fomod_File_t * fileCopy = g_malloc(sizeof(fomod_File_t));
 					*fileCopy = *file;
 
 					//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it

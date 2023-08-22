@@ -17,19 +17,20 @@
 #include <steam.h>
 #include <file.h>
 #include <fomod.h>
-#include <order.h>
+#include <mods.h>
 #include <constants.h>
 #include <deploy.h>
 #include <errorType.h>
+#include <mods.h>
 
 #include "cli.h"
 #include "fomod.h"
 
 
 #define ENABLED_COLOR "\033[0;32m"
-#define DISABLED_COLOR "\033[0;31m"
-#define DISABLED_FOMOD_COLOR "\033[0;33m"
-#define ENABLED_FOMOD_COLOR "\033[1;34m"
+#define DISABLED_FOMOD_COLOR "\033[0;31m"
+#define ENABLED_FOMOD_COLOR "\033[0;33m"
+#define DISABLED_COLOR "" //no color
 
 static bool isRoot() {
 	return getuid() == 0;
@@ -109,32 +110,26 @@ static int listAllMods(int argc, char ** argv) {
 	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
 
-	GList * mods = order_listMods(appid);
+	GList * mods = mods_list(appid);
 	GList * p_mods = mods;
 	unsigned short index = 0;
 
 	printf("Id | Installed  | Name\n");
 	while(mods != NULL) {
 		char * modName = (char*)mods->data;
-		char * modPath = g_build_filename(modFolder, modName, INSTALLED_FLAG_FILE, NULL);
-		char * fomodmodName = g_strconcat(mods->data, "__FOMOD", NULL);
-		char * fomodFolder = g_build_filename(modFolder, fomodmodName, INSTALLED_FLAG_FILE, NULL);
-		char * fomodPath = g_build_filename(modFolder, fomodmodName, INSTALLED_FLAG_FILE, NULL);
+		mods_mod_detail_t details = mods_mod_details(appid, index);
 
-
-		if(access(modPath, F_OK) == 0) {
-			printf(ENABLED_COLOR " %d | ✓ | %s\n", index, modName);
-		} else {
-			if(access(fomodFolder, F_OK) == 0)
-				if(access(fomodPath, F_OK) == 0)
-					printf(ENABLED_FOMOD_COLOR " %d | ✕ | %s\n", index, modName);
-				else
-					printf(DISABLED_FOMOD_COLOR " %d | ✕ | %s\n", index, modName);
+		if(!details.has_fomodfile) {
+			if(details.is_activated)
+				printf(ENABLED_COLOR " %d | ✓ | %s\n", index, modName);
 			else
 				printf(DISABLED_COLOR " %d | ✕ | %s\n", index, modName);
+		} else {
+			if(details.is_activated)
+				printf(ENABLED_FOMOD_COLOR " %d | ✓ | %s\n", index, modName);
+			else
+				printf(DISABLED_FOMOD_COLOR " %d | ✕ | %s\n", index, modName);
 		}
-
-		g_free(modPath);
 
 		index++;
 		mods = g_list_next(mods);
@@ -160,8 +155,6 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 		return EXIT_FAILURE;
 	}
 
-	int returnValue = EXIT_SUCCESS;
-
 	//strtoul set EINVAL if the string is invalid
 	unsigned long modId = strtoul(argv[3], NULL, 10);
 	if(errno == EINVAL) {
@@ -169,68 +162,18 @@ static int installAndUninstallMod(int argc, char ** argv, bool install) {
 		return -1;
 	}
 
-	//might crash if no mods were installed
-	char * home = getHome();
-	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
-	free(home);
-	GList * mods = order_listMods(appid);
-	GList * modsFirstPointer = mods;
-
-	for(unsigned long i = 0; i < modId; i++) {
-		mods = g_list_next(mods);
+	mods_mod_detail_t details = mods_mod_details(appid, modId);
+	if(!details.is_fomod && details.has_fomodfile) {
+		printf("Warning: mod has a fomod file make sure to use --fomod before install");
 	}
 
-	if(mods == NULL) {
-		fprintf(stderr, "Mod not found\n");
-		return EXIT_FAILURE;
-	}
-
-	char * modName = (char*)mods->data;
-	char * modFlag = g_build_filename(modFolder, modName, INSTALLED_FLAG_FILE, NULL);
-
-	//TODO: move to the library
+	error_t err;
 	if(install) {
-		char * fomodFolder = g_build_path("/", modFolder, modName, "fomod", NULL);
-		if(access(modFlag, F_OK) == 0) {
-			fprintf(stderr, "The mod is already activated \n");
-			returnValue = EXIT_SUCCESS;
-			goto exit;
-		}
-
-		if(access(fomodFolder, F_OK) == 0) {
-			printf("Warning: fomod sub folder found, maybe you meant to use --fomod\n");
-		}
-
-		//Create activated file
-		FILE * fd = fopen(modFlag, "w+");
-		if(fd != NULL) {
-			fwrite("", 1, 1, fd);
-			fclose(fd);
-		} else {
-			printf("Could not interact with the activation file\n");
-			returnValue = EXIT_FAILURE;
-		}
+		err = mods_enable_mod(appid, modId);
 	} else {
-		if(access(modFlag, F_OK) != 0) {
-			printf("The mod is not activated \n");
-			returnValue = EXIT_SUCCESS;
-			goto exit;
-		}
-
-		if(unlink(modFlag) != 0) {
-			fprintf(stderr, "Error could not disable the mod.\n");
-			fprintf(stderr, "please remove this file '%s'\n", modFlag);
-			returnValue = EXIT_FAILURE;
-			goto exit;
-		}
+		err = mods_disable_mod(appid, modId);
 	}
-
-exit:
-
-	g_free(modFolder);
-	g_list_free_full(modsFirstPointer, free);
-	g_free(modFlag);
-	return returnValue;
+	return err != EXIT_SUCCESS;
 }
 
 static error_t cli_deploy(int argc, char ** argv) {
@@ -355,30 +298,7 @@ static int removeMod(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	//might crash if no mods were installed
-	char * home = getHome();
-	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
-	free(home);
-	GList * mods = order_listMods(appid);
-	GList * modsFirstPointer = mods;
-
-	for(unsigned long i = 0; i < modId; i++) {
-		mods = g_list_next(mods);
-	}
-
-	if(mods == NULL) {
-		fprintf(stderr, "Mod not found\n");
-		return EXIT_FAILURE;
-	}
-
-	gchar * filename = g_build_filename(modFolder, mods->data, NULL);
-
-	file_delete(filename, true);
-
-	g_free(filename);
-	g_free(modFolder);
-	g_list_free_full(modsFirstPointer, free);
-	return EXIT_SUCCESS;
+	return mods_remove_mod(appid, modId);
 }
 
 static int fomod(int argc, char ** argv) {
@@ -401,7 +321,7 @@ static int fomod(int argc, char ** argv) {
 	char * home = getHome();
 	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
-	GList * mods = order_listMods(appid);
+	GList * mods = mods_list(appid);
 	GList * modsFirstPointer = mods;
 
 	for(unsigned long i = 0; i < modId; i++) {
@@ -456,7 +376,7 @@ static int swapMod(int argc, char ** argv) {
 	}
 
 	printf("%d, %d\n", modIdA, modIdB);
-	return order_swapPlace(appid, modIdA, modIdB);
+	return mods_swap_place(appid, modIdA, modIdB);
 }
 
 static int printLoadOrder(int argc, char ** argv) {
@@ -478,13 +398,14 @@ static int printLoadOrder(int argc, char ** argv) {
 
 	printf("If the load order is empty that mean it wasn't set\n");
 
-	GList * cur_order = order;
-	while (cur_order != NULL) {
-		printf("%s\n", (char *)cur_order->data);
-		cur_order = g_list_next(cur_order);
+	GList * order_iterator = order;
+	while (order_iterator != NULL) {
+		const order_plugin_entry_t * details = (const order_plugin_entry_t *)order_iterator->data;
+		printf("name: %s active: %s\n", details->filename, details->activated ? "✓" : "✕");
+		order_iterator = g_list_next(order_iterator);
 	}
 
-	g_list_free_full(order, free);
+	g_list_free_full(order, (GDestroyNotify)order_free_plugin_entry);
 	return EXIT_SUCCESS;
 }
 

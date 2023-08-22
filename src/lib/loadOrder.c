@@ -11,9 +11,14 @@
 
 #include "gameData.h"
 
-//TODO: detect if the game is running
-//TODO: deploy the game
+static gint order_find_file_with_name(gconstpointer list_entry, gconstpointer user_data) {
+	const order_plugin_entry_t * entry = (const order_plugin_entry_t *)list_entry;
+	const char * filename = (const char *)user_data;
+	return strcmp(entry->filename, (const char *)filename);
+}
 
+//TODO: detect if the game is running
+//TODO: deploy the game or list undeployed plugins
 error_t order_listPlugins(int appid, GList ** plugins) {
 	//save appid parsing
 	//TODO: apply a similar mechanism everywhere
@@ -84,7 +89,7 @@ error_t order_getLoadOrder(int appid, GList ** order) {
 
 	//this is the path i would use in windows but it seems it is not avaliable in all wine versions.
 	//char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
-	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/Local Settings/Application Data/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
+	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/Local Settings/Application Data/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
 
 	GList * l_currentLoadOrder = NULL;
 	if(access(loadOrderPath, R_OK) == 0) {
@@ -105,20 +110,36 @@ error_t order_getLoadOrder(int appid, GList ** order) {
 	}
 
 
-	GList * l_currentLoadOrderCursor = l_currentLoadOrder;
+	GList * l_currentLoadOrderIterator = l_currentLoadOrder;
 	GList * l_completeLoadOrder = NULL;
 
-	while(l_currentLoadOrderCursor != NULL) {
-		char * modName = l_currentLoadOrderCursor->data;
-		//TODO: finir sa
+	while(l_currentLoadOrderIterator != NULL) {
+		//pointer arithmetic to skip the *
+		const char * modName = (const char *)l_currentLoadOrderIterator->data + 1;
+
 		GList * mod = g_list_find_custom(l_plugins, modName, (GCompareFunc)strcmp);
-		if(mod == NULL) {
-			//The plugin is no longer installed
-			continue;
-		} else {
-			l_completeLoadOrder = g_list_append(l_completeLoadOrder, strdup(modName));
+		if(mod != NULL) {
+			order_plugin_entry_t * new_entry = g_malloc(sizeof(order_plugin_entry_t));
+			new_entry->filename = strdup(modName);
+			new_entry->activated = TRUE;
+			l_completeLoadOrder = g_list_append(l_completeLoadOrder, new_entry);
 		}
-		l_currentLoadOrderCursor = g_list_next(l_currentLoadOrderCursor);
+		l_currentLoadOrderIterator = g_list_next(l_currentLoadOrderIterator);
+	}
+
+	GList * l_plugins_iterator = l_plugins;
+	while(l_plugins_iterator != NULL) {
+		const char * filename = (const char *)l_plugins_iterator->data;
+
+		GList * mod = g_list_find_custom(l_completeLoadOrder, filename, order_find_file_with_name);
+		if(mod == NULL) {
+			order_plugin_entry_t * new_entry = g_malloc(sizeof(order_plugin_entry_t));
+			new_entry->filename = strdup(filename);
+			new_entry->activated = FALSE;
+			l_completeLoadOrder = g_list_append(l_completeLoadOrder, new_entry);
+		}
+
+		l_plugins_iterator = g_list_next(l_plugins_iterator);
 	}
 
 	*order = l_completeLoadOrder;
@@ -130,6 +151,7 @@ error_t order_getLoadOrder(int appid, GList ** order) {
 }
 
 //TODO: Check if the default LF format is compatible with windows' CRLF in skyrim
+//TODO: add loadorder.txt along with plugins.txt
 error_t order_setLoadOrder(int appid, GList * loadOrder) {
 	GHashTable * gamePaths;
 	error_t status = steam_searchGames(&gamePaths);
@@ -147,11 +169,17 @@ error_t order_setLoadOrder(int appid, GList * loadOrder) {
 	sprintf(appidStr, "%d", appid);
 
 	const char * path = g_hash_table_lookup(gamePaths, &gameId);
-	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
+	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
+
 
 	FILE * f_loadOrder = fopen(loadOrderPath, "w");
 	while(loadOrder != NULL) {
-		fwrite(loadOrder->data, sizeof(char), strlen(loadOrder->data), f_loadOrder);
+		order_plugin_entry_t * entry = loadOrder->data;
+		if(entry->activated) {
+			fwrite("*", sizeof(char), 1, f_loadOrder);
+			fwrite(entry->filename, sizeof(char), strlen(entry->filename), f_loadOrder);
+			fwrite("\n", sizeof(char), 1, f_loadOrder);
+		}
 		loadOrder = g_list_next(loadOrder);
 	}
 	fclose(f_loadOrder);
@@ -205,7 +233,7 @@ error_t order_getModDependencies(const char * esmPath, GList ** dependencies) {
 
 		length -= 8 + subsectionLength;
 		if(strcmp(sectionName, "MAST") == 0) {
-			char * dependency = malloc(subsectionLength + 1);
+			char * dependency = g_malloc(subsectionLength + 1);
 			dependency[subsectionLength] = '\0';
 			fread(dependency, sizeof(char), subsectionLength, file);
 			*dependencies = g_list_append(*dependencies, dependency);
@@ -215,4 +243,9 @@ error_t order_getModDependencies(const char * esmPath, GList ** dependencies) {
 	}
 	fclose(file);
 	return ERR_SUCCESS;
+}
+
+void order_free_plugin_entry(order_plugin_entry_t * entry) {
+	free(entry->filename);
+	g_free(entry);
 }

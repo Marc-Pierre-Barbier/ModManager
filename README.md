@@ -29,6 +29,7 @@ Use --list-plugins <APPID>
 ## Requirements:
 * glib2
 * 7z unzip unrar (used for each respective formats)
+* libaudit
 
 ### Optional requirements:
 * Fuse (2 or 3)

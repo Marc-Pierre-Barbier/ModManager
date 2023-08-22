@@ -88,7 +88,7 @@ GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * 
 			for(long fileId = 0; fileId < condFile->flagCount; fileId++) {
 				const fomod_File_t * file = &(condFile->files[fileId]);
 
-				fomod_File_t * fileCopy = malloc(sizeof(*file));
+				fomod_File_t * fileCopy = g_malloc(sizeof(*file));
 				*fileCopy = *file;
 
 				//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it

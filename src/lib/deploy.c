@@ -10,7 +10,7 @@
 #include "gameData.h"
 #include "getHome.h"
 #include "file.h"
-#include "order.h"
+#include "mods.h"
 #include "overlayfs.h"
 #include "install.h"
 
@@ -43,7 +43,7 @@ deploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods) {
 	//might crash if no mods were installed
 	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 
-	GList * mods = order_listMods(appid);
+	GList * mods = mods_list(appid);
 	//since the priority is by alphabetical order
 	//and we need to bind the least important first
 	//and the most important last
