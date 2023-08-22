@@ -36,7 +36,6 @@ set(LIB_SOURCES
 	src/lib/fomod/group.c
 	src/lib/fomod/xmlUtil.c
 	src/lib/fomod/parser.c
-	src/lib/mod_util.c
 )
 
 # Headers files to export in the include folder
@@ -52,7 +51,6 @@ set(LIB_PUBLIC_HEADERS
 	src/include/loadOrder.h
 	src/include/mods.h
 	src/include/steam.h
-	src/include/mod_util.h
 )
 
 set(CLI_SOURCES
