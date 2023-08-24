@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Mod Manager
+Icon=insert-object-symbolic
+StartupNotify=true
+Exec=mod-manager-gui

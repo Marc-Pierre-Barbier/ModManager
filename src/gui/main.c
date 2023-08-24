@@ -19,7 +19,7 @@ static void show_about(GSimpleAction*, GVariant*, gpointer)
 	adw_show_about_window (
 		gtk_application_get_active_window (app),
 		"application-name", "Mod Manager",
-		"application-icon", "fr.marcbarbier.modmanager",
+		"application-icon", "insert-object-symbolic",
 		"version", "GUI 0.0.1 - LIB " MODLIB_VERSION ,
 		"copyright", "© 2023 Marc barbier",
 		"issue-url", "https://gitlab.gnome.org/example/example/-/issues/new",
@@ -32,6 +32,7 @@ static void show_about(GSimpleAction*, GVariant*, gpointer)
 
 static void game_selector(void) {
 	window = adw_application_window_new(app);
+	gtk_window_set_icon_name(GTK_WINDOW(window), "insert-object-symbolic");
 	#ifdef DEBUG
 	gtk_widget_add_css_class(window, "devel");
 	#endif

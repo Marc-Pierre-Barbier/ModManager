@@ -99,6 +99,7 @@ target_link_libraries(mod-manager-gui PUBLIC libmod-manager PkgConfig::GTK4 PkgC
 #####################
 
 install(TARGETS mod-manager-cli OPTIONAL DESTINATION bin)
+install(TARGETS mod-manager-gui OPTIONAL DESTINATION bin)
 
 target_sources(libmod-manager PUBLIC FILE_SET HEADERS
 	BASE_DIRS src/include/
