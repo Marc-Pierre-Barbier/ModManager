@@ -15,5 +15,6 @@
 //overlayfs temporary dir.
 #define GAME_WORK_DIR_NAME "WORK_DIRS"
 
+//create a function to get it at runtime
 #define MODLIB_VERSION "0.3"
 #endif

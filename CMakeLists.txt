@@ -4,8 +4,8 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if(CMAKE_BUILD_TYPE MATCHES DEBUG)
-	add_link_options(-fsanitize=address)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+	add_definitions(-DDEBUG)
 endif()
 
 set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wmaybe-uninitialized -O0")
