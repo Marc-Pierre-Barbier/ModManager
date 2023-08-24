@@ -26,18 +26,20 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 	char appidStr[appidStrLen];
 	sprintf(appidStr, "%d", appid);
 
-	char * dataFolder = NULL;
-	error_t error = gameData_getDataPath(appid, &dataFolder);
+	GFile * data_folder_file = NULL;
+	error_t error = gameData_getDataPath(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
 
+	g_autofree char * data_folder = g_file_get_path(data_folder_file);
+
 	//esp && esm files are loadable
-	DIR * d = opendir(dataFolder);
+	DIR * d = opendir(data_folder);
 	struct dirent *dir;
 	if (d != NULL) {
 		while ((dir = readdir(d)) != NULL) {
-			const char * extension = file_extractExtension(dir->d_name);
+			const char * extension = file_extract_extension(dir->d_name);
 			//folder don't have file extensions
 			if(extension == NULL)
 				continue;
@@ -49,7 +51,7 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 		closedir(d);
 	}
 
-	free(dataFolder);
+	free(data_folder_file);
 	return ERR_SUCCESS;
 }
 
@@ -212,7 +214,7 @@ error_t order_getModDependencies(const char * esmPath, GList ** dependencies) {
 		recordHeaderToIgnore = 16;
 		sizeFieldSize = 2;
 	} else {
-		fprintf(stderr, "Unrecognized file format %s\n", sectionName);
+		g_error( "Unrecognized file format %s\n", sectionName);
 		fclose(file);
 		return ERR_FAILURE;
 	}

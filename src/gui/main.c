@@ -5,10 +5,10 @@
 
 
 static GtkApplication *app;
-
+GtkWidget *window;
 
 static void game_selector(void) {
-	GtkWidget *window = adw_application_window_new(app);
+	window = adw_application_window_new(app);
 
 	gtk_window_set_title(GTK_WINDOW(window),  "Mod manager - Pick your game");
 	gtk_window_set_default_size(GTK_WINDOW(window), 800, 400);

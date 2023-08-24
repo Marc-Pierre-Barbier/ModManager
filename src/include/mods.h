@@ -2,10 +2,12 @@
 #define __ORDER_H__
 
 #include <glib.h>
+#include <gio/gio.h>
 #include <stdbool.h>
 #include <errorType.h>
 
 #define ORDER_FILE "__ORDER__"
+#define INSTALLED_FLAG_FILE "__DO_NOT_REMOVE__"
 
 //This file manager the load order of mods.
 // the current solution is using ORDER_FILE to store a number corresponding to the mod
@@ -36,11 +38,19 @@ GList * mods_list(int appid) __attribute__((warn_unused_result));
  * @param modId
  * @param modId2
  */
-error_t mods_swap_place(int appid, int modId, int modId2)  __attribute__((warn_unused_result));
+error_t mods_swap_place(int appid, int modId, int modId2) __attribute__((warn_unused_result));
 
-error_t mods_enable_mod(int appid, int modId)  __attribute__((warn_unused_result));
-error_t mods_disable_mod(int appid, int modId)  __attribute__((warn_unused_result));
-error_t mods_remove_mod(int appid, int modId)  __attribute__((warn_unused_result));
-char * mods_get_mods_folder(int appid)  __attribute__((warn_unused_result));
-char * mods_get_mod_folder(int appid, int mod_id)  __attribute__((warn_unused_result));
+/**
+ * @brief Add a mod to the folder defined in main.h
+ *
+ * @param filePath path to the mod file
+ * @param appId game for which the mod is destined to be used with.
+ */
+error_t mods_add_mod(GFile * filePath, int appId) __attribute__((warn_unused_result));
+
+error_t mods_enable_mod(int appid, int modId) __attribute__((warn_unused_result));
+error_t mods_disable_mod(int appid, int modId) __attribute__((warn_unused_result));
+error_t mods_remove_mod(int appid, int modId) __attribute__((warn_unused_result));
+GFile * mods_get_mods_folder(int appid) __attribute__((warn_unused_result));
+GFile * mods_get_mod_folder(int appid, int mod_id) __attribute__((warn_unused_result));
 #endif

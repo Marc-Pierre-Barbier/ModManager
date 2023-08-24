@@ -15,7 +15,7 @@
 
 before_script:
   - apt update -y
-  - apt install cmake libglib2.0-dev libgtk-4-dev make gcc git make clang libaudit-dev -y
+  - apt install cmake libglib2.0-dev libgtk-4-dev make gcc git make clang libaudit-dev libadwaita-dev -y
 
 
 stages:          # List of stages for jobs, and their order of execution
@@ -33,4 +33,3 @@ build-job:       # This job runs in the build stage, which runs first.
       paths:
         - build/ModManager
       expire_in: 1 week
-

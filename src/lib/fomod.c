@@ -18,7 +18,7 @@
 #include "fomod/group.h"
 #include "fomod/xmlUtil.h"
 
-static gint priorityCmp(gconstpointer a, gconstpointer b) {
+static gint priority_cmp(gconstpointer a, gconstpointer b) {
 	const fomod_File_t * fileA = (const fomod_File_t *)a;
 	const fomod_File_t * fileB = (const fomod_File_t *)b;
 
@@ -39,32 +39,37 @@ static gint fomod_flagEqual(const fomod_Flag_t * a, const fomod_Flag_t * b) {
 }
 
 //TODO: handle error
-error_t fomod_processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination) {
+error_t fomod_processFileOperations(GList ** pending_file_operations, GFile * modFolder, GFile* destination) {
 	//priority higher a less important and should be processed first.
-	*pendingFileOperations = g_list_sort(*pendingFileOperations, priorityCmp);
-	GList * currentFileOperation = *pendingFileOperations;
+	*pending_file_operations = g_list_sort(*pending_file_operations, priority_cmp);
+	GList * file_operation_iterator = *pending_file_operations;
 
-	while(currentFileOperation != NULL) {
+	while(file_operation_iterator != NULL) {
 		//TODO: support destination
 		//no using link since priority is made to override files and link is annoying to deal with when overriding files.
-		const fomod_File_t * file = (const fomod_File_t *)currentFileOperation->data;
-		char * source = g_build_path("/", modFolder, file->source, NULL);
+		const fomod_File_t * file = (const fomod_File_t *)file_operation_iterator->data;
 
-		//fix the / and \ windows - unix paths
-		xml_fixPath(source);
+		////fix the / and \ windows - unix paths
+		xml_fixPath(file->source);
 
-		int copyResult;
+		char * mod_folder_path = g_file_get_path(modFolder);
+		//TODO: check if it can build from 2 path
+		GFile * source = g_file_new_build_filename(mod_folder_path, file->source, NULL);
+		g_free(mod_folder_path);
+
+		int copyResult = EXIT_SUCCESS;
 		if(file->isFolder) {
-			copyResult = file_copy(source, destination, FILE_CP_NO_TARGET_DIR | FILE_CP_RECURSIVE);
+			copyResult = file_recursive_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL);
 		} else {
-			copyResult = file_copy(source, destination, 0);
+			if(!g_file_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
+				copyResult = EXIT_FAILURE;
 		}
 		if(copyResult != EXIT_SUCCESS) {
-			fprintf(stderr, "Copy failed, some file might be corrupted\n");
+			g_error( "Copy failed, some file might be corrupted\n");
 		}
 		g_free(source);
 
-		currentFileOperation = g_list_next(currentFileOperation);
+		file_operation_iterator = g_list_next(file_operation_iterator);
 	}
 	return ERR_SUCCESS;
 }

@@ -12,7 +12,6 @@
 #include "file.h"
 #include "mods.h"
 #include "overlayfs.h"
-#include "install.h"
 
 
 
@@ -22,26 +21,25 @@ deploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods) {
 		return INVALID_APPID;
 	}
 
-	char * home = getHome();
-	char * gameFolder = g_build_filename(home, MODLIB_WORKING_DIR, GAME_FOLDER_NAME, appIdStr, NULL);
+	g_autofree GFile * home = audit_get_home();
+	g_autofree char * home_path = g_file_get_path(home);
+	g_autofree char * gameFolder = g_build_filename(home_path, MODLIB_WORKING_DIR, GAME_FOLDER_NAME, appIdStr, NULL);
 
     //is the game present in the disk
 	if(access(gameFolder, F_OK) != 0) {
-		free(home);
-		g_free(gameFolder);
 		return GAME_NOT_FOUND;
 	}
 
-    char * dataFolder = NULL;
-	error_t error = gameData_getDataPath(appid, &dataFolder);
+    GFile * data_folder_file = NULL;
+	error_t error = gameData_getDataPath(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
-		free(home);
 		return GAME_NOT_FOUND;
 	}
+	char * data_folder = g_file_get_path(data_folder_file);
 
 	//unmount everything beforhand
 	//might crash if no mods were installed
-	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
+	g_autofree char * modFolder = g_build_filename(home_path, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 
 	GList * mods = mods_list(appid);
 	//since the priority is by alphabetical order
@@ -72,25 +70,23 @@ deploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods) {
 		modCount += 1;
 
 		mods = g_list_next(mods);
-		free(modFlag);
+		g_free(modFlag);
 	}
-
-	g_free(modFolder);
 
 	//const char * data = "lowerdir=gameFolder,gameFolder2,gameFolder3..."
 	modsToInstall[modCount] = gameFolder;
 	modsToInstall[modCount + 1] = NULL;
 
-	char * gameUpperDir = g_build_filename(home, MODLIB_WORKING_DIR, GAME_UPPER_DIR_NAME, appIdStr, NULL);
-	char * gameWorkDir = g_build_filename(home, MODLIB_WORKING_DIR, GAME_WORK_DIR_NAME, appIdStr, NULL);
-	free(home);
+	g_autofree char * gameUpperDir = g_build_filename(home_path, MODLIB_WORKING_DIR, GAME_UPPER_DIR_NAME, appIdStr, NULL);
+	g_autofree char * gameWorkDir = g_build_filename(home_path, MODLIB_WORKING_DIR, GAME_WORK_DIR_NAME, appIdStr, NULL);
+
 
 	//unmount the game folder
 	//DETACH + FORCE allow us to be sure it will be unload.
 	//it might crash / corrupt game file if the user do it while the game is running
 	//but it's still very unlikely
-	while(umount2(dataFolder, MNT_FORCE | MNT_DETACH) == 0);
-	overlay_errors_t status = overlay_mount(modsToInstall, dataFolder, gameUpperDir, gameWorkDir);
+	while(umount2(data_folder, MNT_FORCE | MNT_DETACH) == 0);
+	overlay_errors_t status = overlay_mount(modsToInstall, data_folder, gameUpperDir, gameWorkDir);
 	if(status == SUCESS) {
 		return OK;
 	} else if(status == FAILURE) {
@@ -101,9 +97,6 @@ deploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods) {
 		return BUG;
 	}
 
-	g_free(dataFolder);
-	g_free(gameUpperDir);
-	g_free(gameWorkDir);
-
+	g_free(data_folder);
 	return EXIT_SUCCESS;
 }

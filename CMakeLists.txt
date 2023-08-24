@@ -24,7 +24,6 @@ project(mod-manager)
 set(LIB_SOURCES
 	src/lib/steam.c
 	src/lib/loadOrder.c
-	src/lib/install.c
 	src/lib/overlayfs.c
 	src/lib/gameData.c
 	src/lib/getHome.c
@@ -47,7 +46,6 @@ set(LIB_PUBLIC_HEADERS
 	src/include/fomod.h
 	src/include/gameData.h
 	src/include/getHome.h
-	src/include/install.h
 	src/include/loadOrder.h
 	src/include/mods.h
 	src/include/steam.h
@@ -83,17 +81,18 @@ pkg_search_module(AUDIT REQUIRED IMPORTED_TARGET audit)
 pkg_search_module(LIBXML REQUIRED IMPORTED_TARGET libxml-2.0)
 pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtk4)
 pkg_check_modules(ADWAIDA REQUIRED IMPORTED_TARGET libadwaita-1)
+pkg_check_modules(GIO REQUIRED IMPORTED_TARGET gio-2.0)
 
 # LIB
-target_link_libraries(libmod-manager PUBLIC PkgConfig::GLIB PkgConfig::LIBXML PkgConfig::AUDIT)
+target_link_libraries(libmod-manager PUBLIC PkgConfig::GLIB PkgConfig::LIBXML PkgConfig::AUDIT PkgConfig::GIO)
 
 # CLI
 target_include_directories(mod-manager-cli PUBLIC src/include)
-target_link_libraries(mod-manager-cli PUBLIC libmod-manager PkgConfig::GLIB)
+target_link_libraries(mod-manager-cli PUBLIC libmod-manager PkgConfig::GLIB PkgConfig::GIO)
 
 # GUI
 target_include_directories(mod-manager-gui PUBLIC src/include)
-target_link_libraries(mod-manager-gui PUBLIC libmod-manager PkgConfig::GTK4 PkgConfig::GLIB PkgConfig::ADWAIDA)
+target_link_libraries(mod-manager-gui PUBLIC libmod-manager PkgConfig::GTK4 PkgConfig::GLIB PkgConfig::ADWAIDA PkgConfig::GIO)
 
 #####################
 #  INSTALL OPTIONS  #

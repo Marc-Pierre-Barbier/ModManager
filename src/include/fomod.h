@@ -3,6 +3,7 @@
 
 #include "errorType.h"
 #include <glib.h>
+#include <gio/gio.h>
 #include "fomodTypes.h"
 
 /**
@@ -11,7 +12,7 @@
  * @param fomodFile path to the moduleconfig.xml
  * @param fomod pointer to a new FOMod_t
  */
-error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod);
+error_t fomod_parse(GFile * fomodFile, FOMod_t* fomod);
 
 /**
  * @brief In fomod there is file operations which depends on multiple flags this function find the ones that mach our current flags and append them to a list.
@@ -31,7 +32,7 @@ GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * 
  * @param destination folder of the new mod that contains the result of the process.
  * @return error code
  */
-error_t fomod_processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination);
+error_t fomod_processFileOperations(GList ** pendingFileOperations, GFile * modFolder, GFile* destination);
 
 /**
  * @brief

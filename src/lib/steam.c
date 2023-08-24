@@ -41,12 +41,13 @@ static int getFiledId(const char * field) {
 	} else if(strcmp(field, "apps") == 0) {
 		return FIELD_APPS;
 	} else {
-		fprintf(stderr, "unknown field\n");
+		g_error( "unknown field\n");
 		return -1;
 	}
 }
 
-static steam_Libraries_t * parseVDF(const char * path, size_t * size, int * status) {
+static steam_Libraries_t * parseVDF(GFile * file_path, size_t * size, int * status) {
+	g_autofree const char * path = g_file_get_path(file_path);
 	FILE * fd = fopen(path, "r");
 	char * line = NULL;
 	size_t len = 0;
@@ -154,7 +155,7 @@ static steam_Libraries_t * parseVDF(const char * path, size_t * size, int * stat
 				break;
 			case '}':
 				if(inQuotes) {
-					fprintf(stderr, "Syntax error in VDF\n");
+					g_error( "Syntax error in VDF\n");
 					//TODO: fix this leak
 					free(libraries);
 					libraries = NULL;
@@ -207,11 +208,12 @@ error_t steam_searchGames(GHashTable ** p_hashTable) {
 
 	steam_Libraries_t * libraries = NULL;
 	size_t size = 0;
-	char * home = getHome();
+	GFile * home = audit_get_home();
+	g_autofree char * home_path = g_file_get_path(home);
 
 	for(unsigned long i = 0; i < LEN(steamLibraries); i++) {
-		char * path = g_build_filename(home, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
-		if (access(path, F_OK) == 0) {
+		GFile * path = g_file_new_build_filename(home_path, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
+		if (g_file_query_exists(path, NULL)) {
 			int parserStatus;
 			libraries = parseVDF(path, &size, &parserStatus);
 			if(parserStatus == EXIT_SUCCESS) {
@@ -269,18 +271,18 @@ int steam_parseAppId(const char * appIdStr) {
 	//strtoul set EINVAL(after C99) if the string is invalid
 	unsigned long appid = strtoul(appIdStr, &strtoulSentinel, 10);
 	if(errno == EINVAL || strtoulSentinel == appIdStr) {
-		fprintf(stderr, "Appid has to be a valid number\n");
+		g_error( "Appid has to be a valid number\n");
 		return -1;
 	}
 
 	int gameId = steam_gameIdFromAppId((int)appid);
 	if(gameId < 0) {
-		fprintf(stderr, "Game is not compatible\n");
+		g_error( "Game is not compatible\n");
 		return -1;
 	}
 
 	if(!g_hash_table_contains(gamePaths, &gameId)) {
-		fprintf(stderr, "Game not found\n");
+		g_error( "Game not found\n");
 		return -1;
 	}
 

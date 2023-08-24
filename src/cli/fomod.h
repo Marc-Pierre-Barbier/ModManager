@@ -7,4 +7,4 @@
  * @param destination folder of the new mod that contains the result of the fomod process.
  * @return int
  */
-error_t fomod_installFOMod(const char * modFolder, const char * destination);
+error_t fomod_installFOMod(GFile * modFolder, GFile * destination);

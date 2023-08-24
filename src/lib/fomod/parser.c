@@ -250,7 +250,7 @@ static void fomod_sortGroup(fomod_Group_t * group) {
 	}
 }
 
-error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
+error_t fomod_parse(GFile * fomod_file, FOMod_t* fomod) {
 	xmlDocPtr doc;
 	xmlNodePtr cur;
 
@@ -263,23 +263,24 @@ error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 	fomod->moduleImage = NULL;
 	fomod->moduleName = NULL;
 
-	doc = xmlParseFile(fomodFile);
+	g_autofree char * fomod_file_path = g_file_get_path(fomod_file);
+	doc = xmlParseFile(fomod_file_path);
 
 	if(doc == NULL) {
-		fprintf(stderr, "Document is not a valid xml file\n");
+		g_error( "Document is not a valid xml file\n");
 		return ERR_FAILURE;
 	}
 
 
 	cur = xmlDocGetRootElement(doc);
 	if(cur == NULL) {
-		fprintf(stderr, "emptyDocument\n");
+		g_error( "emptyDocument\n");
 		xmlFreeDoc(doc);
 		return ERR_FAILURE;
 	}
 
 	if(xmlStrcmp(cur->name, (const xmlChar *) "config") != 0) {
-		fprintf(stderr, "document of the wrong type, root node is '%s' instead of config\n", cur->name);
+		g_error( "document of the wrong type, root node is '%s' instead of config\n", cur->name);
 		xmlFreeDoc(doc);
 		return ERR_FAILURE;
 	}
@@ -312,7 +313,7 @@ error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 			}
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"installSteps") == 0) {
 			if(fomod->steps != NULL) {
-				fprintf(stderr, "Multiple 'installSteps' tags\n");
+				g_error( "Multiple 'installSteps' tags\n");
 				//TODO: handle error
 				return ERR_FAILURE;
 			}
@@ -325,7 +326,7 @@ error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod) {
 			FOModStep_t * steps = parseInstallSteps(cur, &stepCount);
 
 			if(steps == NULL) {
-				fprintf(stderr, "Failed to parse the install steps\n");
+				g_error( "Failed to parse the install steps\n");
 
 				//TODO: manage the error properly
 				return ERR_FAILURE;

@@ -3,6 +3,8 @@
 
 
 #include "errorType.h"
+#include <gio/gio.h>
+
 
 /**
  * @brief Get the path to the data folder
@@ -10,6 +12,6 @@
  * @param destination pointer to a null char * variable. it's value will be allocated with g_malloc
  * @return error_t
  */
-error_t gameData_getDataPath(int appid, char ** destination);
+error_t gameData_getDataPath(int appid, GFile ** destination);
 
 #endif

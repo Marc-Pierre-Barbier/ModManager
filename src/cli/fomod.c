@@ -52,35 +52,29 @@ static void fomod_printOptionsInOrder(fomod_Group_t group) {
 	}
 }
 
-error_t fomod_installFOMod(const char * modFolder, const char * destination) {
+error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 	//everything should be lowercase since we use casefold() before calling any install function
-	char * fomodFolder = g_build_path("/", modFolder, "fomod", NULL);
-	char * fomodFile = g_build_filename(fomodFolder, "moduleconfig.xml", NULL);
+	g_autofree char * mod_folder = g_file_get_path(mod_folder_file);
+	g_autofree GFile * fomod_folder_file = g_file_new_build_filename(mod_folder, "fomod", NULL);
+	g_autofree char * fomod_folder = g_file_get_path(fomod_folder_file);
+	g_autofree GFile * fomod_file = g_file_new_build_filename(fomod_folder, "moduleconfig.xml", NULL);
 
-	if(access(destination, F_OK) != 0) {
-		int status = mkdir(destination, 0700);
-		if(status != 0) {
-			fprintf(stderr, "Could not create output folder\n");
-			g_free(fomodFolder);
-			g_free(fomodFile);
+	if(!g_file_query_exists(destination, NULL)) {
+		if(!g_file_make_directory_with_parents(destination, NULL, NULL)) {
+			g_error( "Could not create output folder\n");
 			return ERR_FAILURE;
 		}
 	}
 
-	printf("%s\n", fomodFile);
-	if(access(fomodFile, F_OK) != 0) {
-		fprintf(stderr, "FOMod file not found, are you sure this is a fomod mod ?\n");
-		g_free(fomodFolder);
-		g_free(fomodFile);
+	if(!g_file_query_exists(fomod_file, NULL)) {
+		g_error( "FOMod file not found, are you sure this is a fomod mod ?\n");
 		return ERR_FAILURE;
 	}
 
 	FOMod_t fomod;
-	int returnValue = parser_parseFOMod(fomodFile, &fomod);
+	int returnValue = fomod_parse(fomod_file, &fomod);
 	if(returnValue == ERR_FAILURE)
 		return ERR_FAILURE;
-
-	g_free(fomodFile);
 
 	GList * flagList = NULL;
 	GList * pendingFileOperations = NULL;
@@ -143,7 +137,7 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 					break;
 				default:
 					//never happen;
-					fprintf(stderr, "unexpected type please report this issue %d, %d", group.type, __LINE__);
+					g_error( "unexpected type please report this issue %d, %d", group.type, __LINE__);
 					return ERR_FAILURE;
 				}
 
@@ -155,7 +149,7 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 						printf("Continuing\n");
 						break;
 					}
-					fprintf(stderr, "Invalid input\n");
+					g_error( "Invalid input\n");
 					if(inputBuffer != NULL)free(inputBuffer);
 					inputBuffer = NULL;
 				} else {
@@ -186,7 +180,8 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 
 					//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
 					//char * destination = g_ascii_strdown(file->destination, -1);
-					fileCopy->destination = strdup(destination);
+					//TODO: replace by GFile
+					fileCopy->destination = g_file_get_path(destination);
 					//g_free(destination);
 
 					char * source = g_ascii_strdown(file->source, -1);
@@ -205,12 +200,11 @@ error_t fomod_installFOMod(const char * modFolder, const char * destination) {
 	//TODO: manage multiple files with the same name
 
 	pendingFileOperations = fomod_processCondFiles(&fomod, flagList, pendingFileOperations);
-	fomod_processFileOperations(&pendingFileOperations, modFolder, destination);
+	fomod_processFileOperations(&pendingFileOperations, mod_folder_file, destination);
 
 	printf("FOMod successfully installed!\n");
 	g_list_free(flagList);
 	fomod_freeFileOperations(pendingFileOperations);
 	fomod_freeFOMod(&fomod);
-	g_free(fomodFolder);
 	return ERR_SUCCESS;
 }

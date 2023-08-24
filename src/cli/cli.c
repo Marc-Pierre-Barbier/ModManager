@@ -12,7 +12,6 @@
 #include <loadOrder.h>
 #include <deploy.h>
 #include <steam.h>
-#include <install.h>
 #include <getHome.h>
 #include <steam.h>
 #include <file.h>
@@ -93,8 +92,10 @@ static int add(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	install_addMod(argv[3], appid);
-	return EXIT_SUCCESS;
+	GFile * file = g_file_new_for_path(argv[3]);
+	error_t err = mods_add_mod(file, appid);
+	g_free(file);
+	return err;
 }
 
 static int listAllMods(int argc, char ** argv) {
@@ -104,11 +105,6 @@ static int listAllMods(int argc, char ** argv) {
 	if( appid < 0) {
 		return EXIT_FAILURE;
 	}
-
-	//might crash if no mods were installed
-	char * home = getHome();
-	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
-	free(home);
 
 	GList * mods = mods_list(appid);
 	GList * p_mods = mods;
@@ -135,8 +131,6 @@ static int listAllMods(int argc, char ** argv) {
 		mods = g_list_next(mods);
 	}
 
-
-	free(modFolder);
 	g_list_free_full(p_mods, free);
 	return EXIT_SUCCESS;
 }
@@ -217,46 +211,38 @@ static int setup(int argc, char ** argv) {
 	if(appid < 0) {
 		return EXIT_FAILURE;
 	}
-	char * home = getHome();
+	g_autofree GFile * home = audit_get_home();
+	g_autofree char * home_path = g_file_get_path(home);
 
-	char * gameUpperDir = g_build_filename(home, MODLIB_WORKING_DIR, GAME_UPPER_DIR_NAME, appIdStr, NULL);
-	char * gameWorkDir = g_build_filename(home, MODLIB_WORKING_DIR, GAME_WORK_DIR_NAME, appIdStr, NULL);
-	g_mkdir_with_parents(gameUpperDir, 0755);
-	g_mkdir_with_parents(gameWorkDir, 0755);
-	free(gameUpperDir);
-	free(gameWorkDir);
+	g_autofree GFile * gameUpperDir = g_file_new_build_filename(home_path, MODLIB_WORKING_DIR, GAME_UPPER_DIR_NAME, appIdStr, NULL);
+	g_autofree GFile * gameWorkDir = g_file_new_build_filename(home_path, MODLIB_WORKING_DIR, GAME_WORK_DIR_NAME, appIdStr, NULL);
+	g_file_make_directory_with_parents(gameUpperDir, NULL, NULL);
+	g_file_make_directory_with_parents(gameWorkDir, NULL, NULL);
 
-	char * dataFolder = NULL;
+	GFile * dataFolder = NULL;
 	error_t error = gameData_getDataPath(appid, &dataFolder);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
 
-	char * gameFolder = g_build_filename(home, MODLIB_WORKING_DIR, GAME_FOLDER_NAME, appIdStr, NULL);
-	if(access(gameFolder, F_OK) == 0) {
+	g_autofree GFile * gameFolder = g_file_new_build_filename(home_path, MODLIB_WORKING_DIR, GAME_FOLDER_NAME, appIdStr, NULL);
+	if(g_file_query_exists(gameFolder, NULL)) {
 		//if the game folder alredy exists just delete it
 		//this will allow the removal of dlcs and language change
-		file_delete(gameFolder, true);
+		file_delete_recursive(gameFolder, NULL, NULL);
 	}
-	g_mkdir_with_parents(gameFolder, 0755);
+	//TODO: error checking
+	g_file_make_directory_with_parents(gameFolder, NULL, NULL);
 
 	//links don't conflict with overlayfs and avoid coping 17Gb of files.
 	//but links require the files to be on the same filesystem
-	int returnValue = file_copy(dataFolder, gameFolder, FILE_CP_RECURSIVE | FILE_CP_NO_TARGET_DIR | FILE_CP_LINK);
-	if(returnValue < 0) {
+	if(!file_recursive_copy(dataFolder, gameFolder, G_FILE_COPY_NONE, NULL, NULL)) {
 		printf("Coping game files.  HINT: having the game on the same partition as you home director will make this operation use zero extra space\n");
-		returnValue = file_copy(dataFolder, gameFolder, FILE_CP_RECURSIVE | FILE_CP_NO_TARGET_DIR);
-		if(returnValue < 0) {
-			fprintf(stderr, "Copy failed make sure you have enough space on your device.\n");
-			free(dataFolder);
-			free(gameFolder);
-			return EXIT_FAILURE;
-		}
+		return EXIT_FAILURE;
 	}
 	file_casefold(gameFolder);
 
-	free(dataFolder);
-	free(gameFolder);
+	g_free(dataFolder);
 	printf("Done\n");
 	return EXIT_SUCCESS;
 }
@@ -270,15 +256,16 @@ static int unbind(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	char * dataFolder = NULL;
-	error_t error = gameData_getDataPath(appid, &dataFolder);
+	GFile * data_folder_file = NULL;
+	error_t error = gameData_getDataPath(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
 
-	while(umount2(dataFolder, MNT_FORCE | MNT_DETACH) == 0);
+	g_autofree char * data_folder = g_file_get_path(data_folder_file);
 
-	free(dataFolder);
+	while(umount2(data_folder, MNT_FORCE | MNT_DETACH) == 0);
+
 	return EXIT_SUCCESS;
 }
 
@@ -318,8 +305,9 @@ static int fomod(int argc, char ** argv) {
 	}
 
 	//might crash if no mods were installed
-	char * home = getHome();
-	char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
+	g_autofree GFile * home = audit_get_home();
+	g_autofree char * home_path = g_file_get_path(home);
+	g_autofree char * modFolder = g_build_filename(home_path, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	free(home);
 	GList * mods = mods_list(appid);
 	GList * modsFirstPointer = mods;
@@ -333,22 +321,20 @@ static int fomod(int argc, char ** argv) {
 		return EXIT_FAILURE;
 	}
 
-	char * destination = g_strconcat(mods->data, "__FOMOD", NULL);
+	g_autofree char * destination = g_strconcat(mods->data, "__FOMOD", NULL);
+	g_autofree GFile * destination_file = g_file_new_build_filename(destination, NULL);
 
-	if(access(destination, F_OK) == 0) {
-		file_delete(destination, true);
+	if(g_file_query_exists(destination_file, NULL)) {
+		//TODO: add error handling
+		file_delete_recursive(destination_file, NULL, NULL);
 	}
-	char * modDestination = g_build_filename(modFolder, destination, NULL);
-	char * modPath = g_build_filename(modFolder, mods->data, NULL);
+	g_autofree GFile * modDestination = g_file_new_build_filename(modFolder, destination, NULL);
+	g_autofree GFile * modPath = g_file_new_build_filename(modFolder, mods->data, NULL);
 
 	//TODO: add error handling
 	int returnValue = fomod_installFOMod(modPath, modDestination);
 
-	free(destination);
 	g_list_free_full(modsFirstPointer, free);
-	g_free(modDestination);
-	g_free(modPath);
-	g_free(modFolder);
 	return returnValue;
 }
 
@@ -445,9 +431,12 @@ int main(int argc, char ** argv) {
 	}
 
 	int returnValue = EXIT_SUCCESS;
-	char * home = getHome();
-	char * configFolder = g_build_filename(home, MODLIB_WORKING_DIR, NULL);
-	free(home);
+	GFile * home = audit_get_home();
+	char * home_path = g_file_get_path(home);
+	char * configFolder = g_build_filename(home_path, MODLIB_WORKING_DIR, NULL);
+	g_free(home);
+	g_free(home_path);
+
 	if(access(configFolder, F_OK) != 0) {
 
 		//check to NOT run this as root
