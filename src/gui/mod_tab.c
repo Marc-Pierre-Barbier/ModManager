@@ -22,16 +22,14 @@ static gboolean on_mod_toggled(GtkSwitch*, gboolean state, gpointer user_data) {
 	return err == ERR_FAILURE;
 }
 
-static void on_mod_deleted(GtkMenuButton * button, gpointer user_data) {
+static void on_mod_deleted(GtkMenuButton *, gpointer user_data) {
 	const int modId = g_list_index(mods, user_data);
 	error_t err = mods_remove_mod(GAMES_APPIDS[current_game], modId);
-	if(err != ERR_FAILURE) {
+	if(err != ERR_SUCCESS) {
 		//TODO: error popup
 		printf("err %d\n", modId);
 	} else {
-		GtkWidget * mod_row = gtk_widget_get_parent(gtk_widget_get_parent(GTK_WIDGET(button)));
-		gtk_list_box_remove(mod_box, mod_row);
-		mods = g_list_remove(mods, user_data);
+		mod_tab_generate_ui();
 	}
 }
 

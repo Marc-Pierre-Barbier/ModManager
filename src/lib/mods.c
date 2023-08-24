@@ -272,13 +272,12 @@ GFile * mods_get_mods_folder(int appid) {
 	snprintf(appidstr, 9, "%d", appid);
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
-	g_autofree GFile * mods_folder = g_file_new_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidstr, NULL);
-	return mods_folder;
+	return g_file_new_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidstr, NULL);
 }
 
 GFile * mods_get_mod_folder(int appid, int mod_id) {
 	g_autofree GFile * mods_folder = mods_get_mods_folder(appid);
-	g_autofree char * mods_folder_path = g_file_get_path(mods_folder);
+	char * mods_folder_path = g_file_get_path(mods_folder);
 	GList * mods = mods_list(appid);
 	GList * mod = g_list_nth(mods, mod_id);
 
