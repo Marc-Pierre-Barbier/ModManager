@@ -24,7 +24,7 @@ static const char * steamLibraries[] = {
 	"/.var/app/com.valvesoftware.Steam/.local/share/Steam"
 };
 
-static int getFiledId(const char * field) {
+static int get_filed_id(const char * field) {
 	//replace with a hash + switch
 	if(strcmp(field, "path") == 0) {
 		return FIELD_PATH;
@@ -46,7 +46,7 @@ static int getFiledId(const char * field) {
 	}
 }
 
-static steam_Libraries_t * parseVDF(GFile * file_path, size_t * size, int * status) {
+static steam_Libraries_t * parse_vdf(GFile * file_path, size_t * size, int * status) {
 	g_autofree const char * path = g_file_get_path(file_path);
 	FILE * fd = fopen(path, "r");
 	char * line = NULL;
@@ -54,7 +54,7 @@ static steam_Libraries_t * parseVDF(GFile * file_path, size_t * size, int * stat
 
 	*status = EXIT_SUCCESS;
 
-	bool inQuotes = false;
+	bool in_quotes = false;
 
 	steam_Libraries_t * libraries = NULL;
 	*size = 0;
@@ -63,38 +63,38 @@ static steam_Libraries_t * parseVDF(GFile * file_path, size_t * size, int * stat
 	getline(&line, &len, fd);
 	getline(&line, &len, fd);
 
-	int braceDepth = 0;
+	int brace_depth = 0;
 
 	//can support up to 1024 car in quotes;
 	char buffer[1024];
-	bool isAppId = TRUE;
-	int bufferIndex = 0;
-	int nextFieldToFill = -1;
+	bool is_app_id = TRUE;
+	int buffer_index = 0;
+	int next_field_to_fill = -1;
 
 	while (getline(&line, &len, fd) != -1) {
 		for(int i = 0; line[i] != '\0'; i++) {
 			switch (line[i]) {
 			case '"':
-				if(braceDepth == 0) {
+				if(brace_depth == 0) {
 					//this is a library id so we don't care.
-					bufferIndex = 0;
+					buffer_index = 0;
 				} else {
 					//actual data
-					if(inQuotes) {
-						inQuotes = FALSE;
-						buffer[bufferIndex] = '\0';
-						if(nextFieldToFill == -1) {
-							nextFieldToFill = getFiledId(buffer);
-							if(nextFieldToFill == -1) {
+					if(in_quotes) {
+						in_quotes = FALSE;
+						buffer[buffer_index] = '\0';
+						if(next_field_to_fill == -1) {
+							next_field_to_fill = get_filed_id(buffer);
+							if(next_field_to_fill == -1) {
 								if(libraries != NULL) free(libraries);
 								libraries = NULL;
 								goto exit;
 							}
 
 						} else {
-							char * value = strndup(buffer, bufferIndex);
+							char * value = strndup(buffer, buffer_index);
 							steam_Libraries_t * library = &libraries[*size - 1];
-							switch (nextFieldToFill) {
+							switch (next_field_to_fill) {
 							case FIELD_PATH:
 								library->path = value;
 								break;
@@ -121,40 +121,40 @@ static steam_Libraries_t * parseVDF(GFile * file_path, size_t * size, int * stat
 								break;
 
 							case FIELD_APPS:
-								if(isAppId) {
-									library->appsCount++;
-									library->apps = realloc(library->apps, library->appsCount * sizeof(steam_App_t));
+								if(is_app_id) {
+									library->apps_count++;
+									library->apps = realloc(library->apps, library->apps_count * sizeof(steam_App_t));
 									unsigned int appid = strtoul(value, NULL, 10);
-									library->apps[library->appsCount - 1].appid = appid;
+									library->apps[library->apps_count - 1].appid = appid;
 								} else {
-									library->apps[library->appsCount - 1].update = strtoul(value, NULL, 10);
+									library->apps[library->apps_count - 1].update = strtoul(value, NULL, 10);
 								}
 								free(value);
-								isAppId = !isAppId;
+								is_app_id = !is_app_id;
 								break;
 							default:
 								free(value);
 							}
 							//field apps is using braces so the syntax is different
-							if(nextFieldToFill != FIELD_APPS)nextFieldToFill = -1;
+							if(next_field_to_fill != FIELD_APPS)next_field_to_fill = -1;
 						}
 					} else {
-						inQuotes = TRUE;
+						in_quotes = TRUE;
 					}
-					bufferIndex = 0;
+					buffer_index = 0;
 
 				}
 				break;
 			case '{':
-				braceDepth++;
-				if(braceDepth == 1) {
+				brace_depth++;
+				if(brace_depth == 1) {
 					*size += 1;
 					libraries = realloc(libraries, sizeof(steam_Libraries_t) * (*size));
 					memset(&libraries[*size - 1], 0, sizeof(steam_Libraries_t));
 				}
 				break;
 			case '}':
-				if(inQuotes) {
+				if(in_quotes) {
 					g_error( "Syntax error in VDF\n");
 					//TODO: fix this leak
 					free(libraries);
@@ -162,15 +162,15 @@ static steam_Libraries_t * parseVDF(GFile * file_path, size_t * size, int * stat
 					*status = EXIT_FAILURE;
 					goto exit;
 				}
-				if(nextFieldToFill == FIELD_APPS) {
-					nextFieldToFill = -1;
+				if(next_field_to_fill == FIELD_APPS) {
+					next_field_to_fill = -1;
 				}
-				braceDepth--;
+				brace_depth--;
 				break;
 
 			default:
-				if(inQuotes) {
-					buffer[bufferIndex++] = line[i];
+				if(in_quotes) {
+					buffer[buffer_index++] = line[i];
 				}
 			}
 		}
@@ -194,15 +194,16 @@ static void freeLibraries(steam_Libraries_t * libraries, int size) {
 	free(libraries);
 }
 
-static GHashTable* gameTableSingleton = NULL;
+static GHashTable* game_table_singleton = NULL;
 
 void steam_freeGameTable() {
-	if(gameTableSingleton != NULL)g_hash_table_destroy(gameTableSingleton);
+	if(game_table_singleton != NULL)g_hash_table_destroy(game_table_singleton);
+	game_table_singleton = NULL;
 }
 
-error_t steam_searchGames(GHashTable ** p_hashTable) {
-	if(gameTableSingleton != NULL) {
-		*p_hashTable = gameTableSingleton;
+error_t steam_searchGames(GHashTable ** p_hash_table) {
+	if(game_table_singleton != NULL) {
+		*p_hash_table = game_table_singleton;
 		return ERR_SUCCESS;
 	}
 
@@ -215,7 +216,7 @@ error_t steam_searchGames(GHashTable ** p_hashTable) {
 		GFile * path = g_file_new_build_filename(home_path, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
 		if (g_file_query_exists(path, NULL)) {
 			int parserStatus;
-			libraries = parseVDF(path, &size, &parserStatus);
+			libraries = parse_vdf(path, &size, &parserStatus);
 			if(parserStatus == EXIT_SUCCESS) {
 				g_free(path);
 				break;
@@ -234,19 +235,19 @@ error_t steam_searchGames(GHashTable ** p_hashTable) {
 
 	//fill the table
 	for(unsigned long i = 0; i < size; i++) {
-		for(unsigned long j = 0; j < libraries[i].appsCount; j++) {
-			int gameId = steam_gameIdFromAppId(libraries[i].apps[j].appid);
-			if(gameId >= 0) {
+		for(unsigned long j = 0; j < libraries[i].apps_count; j++) {
+			int game_id = steam_gameIdFromAppId(libraries[i].apps[j].appid);
+			if(game_id >= 0) {
 				int * key = g_malloc(sizeof(int));
-				*key = gameId;
+				*key = game_id;
 				g_hash_table_insert(table, key, strdup(libraries[i].path));
 			}
 		}
 	}
 
 	freeLibraries(libraries, size);
-	*p_hashTable = table;
-	gameTableSingleton = table;
+	*p_hash_table = table;
+	game_table_singleton = table;
 	return ERR_SUCCESS;
 }
 
@@ -260,7 +261,7 @@ int steam_gameIdFromAppId(u_int32_t appid) {
 	return -1;
 }
 
-int steam_parseAppId(const char * appIdStr) {
+int steam_parseAppId(const char * appid_str) {
 	GHashTable * gamePaths;
 	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {
@@ -269,8 +270,8 @@ int steam_parseAppId(const char * appIdStr) {
 
 	char * strtoulSentinel;
 	//strtoul set EINVAL(after C99) if the string is invalid
-	unsigned long appid = strtoul(appIdStr, &strtoulSentinel, 10);
-	if(errno == EINVAL || strtoulSentinel == appIdStr) {
+	unsigned long appid = strtoul(appid_str, &strtoulSentinel, 10);
+	if(errno == EINVAL || strtoulSentinel == appid_str) {
 		g_error( "Appid has to be a valid number\n");
 		return -1;
 	}

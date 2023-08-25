@@ -19,41 +19,41 @@ typedef struct Mod {
 	char * name;
 } Mod_t;
 
-static gint compareOrder(const void * a, const void * b) {
-	const Mod_t * ModA = a;
-	const Mod_t * ModB = b;
+static gint compare_order(const void * a, const void * b) {
+	const Mod_t * mod_a = a;
+	const Mod_t * mod_b = b;
 
-	if(ModA->modId == -1) return -1;
-	if(ModB->modId == -1) return 1;
+	if(mod_a->modId == -1) return -1;
+	if(mod_b->modId == -1) return 1;
 
-	return ModA->modId - ModB->modId;
+	return mod_a->modId - mod_b->modId;
 }
 
 GList * mods_list(int appid) {
-	char appidStr[10];
-	sprintf(appidStr, "%d", appid);
+	char appid_str[10];
+	sprintf(appid_str, "%d", appid);
 
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
-	g_autofree char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidStr, NULL);
+	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
 
 	GList * list = NULL;
 	DIR *d;
 	struct dirent *dir;
-	d = opendir(modFolder);
+	d = opendir(mod_folder);
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
 			//removes .. & . from the list
 			if(strcmp(dir->d_name, "..") != 0 && strcmp(dir->d_name, ".") != 0) {
 				int modId = -1;
 				//TODO: remove order file
-				char * modPath = g_build_filename(modFolder, dir->d_name, NULL);
-				char * modOrder = g_build_filename(modPath, ORDER_FILE, NULL);
-				FILE * fd_oder = fopen(modOrder, "r");
-				g_free(modOrder);
-				if(fd_oder != NULL) {
-					fscanf(fd_oder, "%d", &modId);
-					fclose(fd_oder);
+				char * mod_path = g_build_filename(mod_folder, dir->d_name, NULL);
+				char * mod_order = g_build_filename(mod_path, ORDER_FILE, NULL);
+				FILE * fd_order = fopen(mod_order, "r");
+				g_free(mod_order);
+				if(fd_order != NULL) {
+					fscanf(fd_order, "%d", &modId);
+					fclose(fd_order);
 				}
 
 				Mod_t * mod = alloca(sizeof(Mod_t));
@@ -62,98 +62,90 @@ GList * mods_list(int appid) {
 				mod->name = strdup(dir->d_name);
 				//strdup but on the stack
 				//add one for the \0
-				mod->path = alloca((strlen(modPath) + 1) * sizeof(char));
-				memcpy(mod->path, modPath, (strlen(modPath) + 1) * sizeof(char));
+				mod->path = alloca((strlen(mod_path) + 1) * sizeof(char));
+				memcpy(mod->path, mod_path, (strlen(mod_path) + 1) * sizeof(char));
 
 
 				list = g_list_append(list, mod);
-				g_free(modPath);
+				g_free(mod_path);
 			}
 		}
 		closedir(d);
 	}
 
-	list = g_list_sort(list, compareOrder);
-	GList * orderedMods = NULL;
+	list = g_list_sort(list, compare_order);
+	GList * ordered_mods = NULL;
 
 	int index = 0;
 	for(GList * p_list = list; p_list != NULL; p_list = g_list_next(p_list)) {
 		Mod_t * mod = p_list->data;
 
-		gchar * modOrder = g_build_filename(mod->path, ORDER_FILE, NULL);
+		gchar * mod_order = g_build_filename(mod->path, ORDER_FILE, NULL);
 
-		FILE * fd_oder = fopen(modOrder, "w+");
-		g_free(modOrder);
-		if(fd_oder != NULL) {
-			fprintf(fd_oder, "%d", index);
-			fclose(fd_oder);
+		FILE * fd_order = fopen(mod_order, "w+");
+		g_free(mod_order);
+		if(fd_order != NULL) {
+			fprintf(fd_order, "%d", index);
+			fclose(fd_order);
 		}
 
-		orderedMods = g_list_append(orderedMods, mod->name);
+		ordered_mods = g_list_append(ordered_mods, mod->name);
 
 		index++;
 	}
 
 	//do not use g_list_free_full since i used alloca everything is on the stack
 	g_list_free(list);
-	return orderedMods;
+	return ordered_mods;
 }
 
 
-error_t mods_swap_place(int appid, int modIdA, int modIdB) {
+error_t mods_swap_place(int appid, int mod_id_a, int mod_id_b) {
 	char appidStr[10];
 	sprintf(appidStr, "%d", appid);
 
-	g_message("flipping mod%d and mod%d", modIdA, modIdB);
+	g_message("flipping mod%d and mod%d", mod_id_a, mod_id_b);
 
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
-	g_autofree char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidStr, NULL);
+	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidStr, NULL);
 
 	GList * list = mods_list(appid);
-	GList * listA = list;
-	GList * listB = list;
+	GList * list_a = g_list_nth(list, mod_id_a);
+	GList * list_b = g_list_nth(list, mod_id_b);;
 
-	for(int i = 0; i < modIdA; i++) {
-		listA = g_list_next(listA);
-	}
-
-	for(int i = 0; i < modIdB; i++) {
-		listB = g_list_next(listB);
-	}
-
-	if(listA == NULL || listB == NULL) {
+	if(list_a == NULL || list_b == NULL) {
 		g_error( "Invalid modId\n");
 		return ERR_FAILURE;
 	}
 
-	g_autofree char * modAFolder = g_build_filename(modFolder, listA->data, ORDER_FILE, NULL);
-	g_autofree char * modBFolder = g_build_filename(modFolder, listB->data, ORDER_FILE, NULL);
+	g_autofree char * mod_a_folder = g_build_filename(mod_folder, list_a->data, ORDER_FILE, NULL);
+	g_autofree char * mod_b_folder = g_build_filename(mod_folder, list_b->data, ORDER_FILE, NULL);
 
-	FILE * fileA = fopen(modAFolder, "w");
-	FILE * fileB = fopen(modBFolder, "w");
+	FILE * file_a = fopen(mod_a_folder, "w");
+	FILE * file_b = fopen(mod_b_folder, "w");
 
-	if(fileA == NULL || fileB == NULL) {
+	if(file_a == NULL || file_b == NULL) {
 		g_error( "Error could not open order file\n");
 		return ERR_FAILURE;
 	}
 
-	fprintf(fileA, "%d", modIdB);
-	fprintf(fileB, "%d", modIdA);
+	fprintf(file_a, "%d", mod_id_b);
+	fprintf(file_b, "%d", mod_id_a);
 
-	fclose(fileA);
-	fclose(fileB);
+	fclose(file_a);
+	fclose(file_b);
 
 	g_list_free_full(list, free);
 	return ERR_SUCCESS;
 }
 
-mods_mod_detail_t mods_mod_details(const int appid, int modId) {
+mods_mod_detail_t mods_mod_details(const int appid, int modid) {
 	char appIdStr[10];
 	snprintf(appIdStr, 10, "%d", appid);
 
 	GList * mods = mods_list(appid);
-	GList * mod = g_list_nth(mods, modId);
+	GList * mod = g_list_nth(mods, modid);
 	const char * mod_name = (char*)mod->data;
 
 	g_autofree GFile * home_file = audit_get_home();
@@ -298,39 +290,34 @@ exit:
 
 //TODO: Replace print with errors
 error_t mods_add_mod(GFile * file_path, int appId) {
-	error_t resultError = ERR_SUCCESS;
-
-	GFileInfo * file_info = g_file_query_info(file_path, "access::*", G_FILE_QUERY_INFO_NONE, NULL, NULL);
+	g_autofree GFileInfo * file_info = g_file_query_info(file_path, "access::*", G_FILE_QUERY_INFO_NONE, NULL, NULL);
 
 	gboolean can_read = g_file_info_get_attribute_boolean (file_info, G_FILE_ATTRIBUTE_ACCESS_CAN_READ);
 	gboolean exits = g_file_query_exists(file_path, NULL);
 
 	if (!exits) {
 		g_error("File not found\n");
-		resultError = ERR_FAILURE;
-		goto exit;
+		return ERR_FAILURE;
 	}
 
 	if (!can_read) {
 		g_error("File not readable\n");
-		resultError = ERR_FAILURE;
-		goto exit;
+		return ERR_FAILURE;
 	}
 
-	char * configFolder = g_build_filename(getenv("HOME"), MODLIB_WORKING_DIR, NULL);
+	g_autofree char * configFolder = g_build_filename(getenv("HOME"), MODLIB_WORKING_DIR, NULL);
 	if(g_mkdir_with_parents(configFolder, 0755) < 0) {
 		g_error( "Could not create mod folder\n");
-		resultError = ERR_FAILURE;
-		goto exit2;
+		return ERR_FAILURE;
 	}
 
 	const char * filename = g_file_get_basename(file_path);
 	const char * extension = file_extract_extension(filename);
-	char * lowercaseExtension = g_ascii_strdown(extension, -1);
+	g_autofree char * lowercaseExtension = g_ascii_strdown(extension, -1);
 
 	char appIdStr[20];
 	sprintf(appIdStr, "%d", appId);
-	GFile * outdir = g_file_new_build_filename(configFolder, MOD_FOLDER_NAME, appIdStr, filename, NULL);
+	g_autofree GFile * outdir = g_file_new_build_filename(configFolder, MOD_FOLDER_NAME, appIdStr, filename, NULL);
 
 	if(!g_file_make_directory_with_parents(outdir, NULL, NULL)) {
 		//TODO: memory management
@@ -353,16 +340,10 @@ error_t mods_add_mod(GFile * file_path, int appId) {
 	if(returnValue == EXIT_FAILURE) {
 		printf("Failed to install mod\n");
 		g_file_trash(outdir, NULL, NULL);
-		resultError = ERR_FAILURE;
+		return ERR_FAILURE;
 	}
 	else
 		printf("Done\n");
 
-	g_free(lowercaseExtension);
-	g_free(outdir);
-exit2:
-	g_free(configFolder);
-exit:
-	g_free(file_info);
-	return resultError;
+	return ERR_SUCCESS;
 }
