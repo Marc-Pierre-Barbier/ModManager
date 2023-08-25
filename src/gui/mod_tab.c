@@ -33,7 +33,29 @@ static void on_mod_deleted(GtkMenuButton *, gpointer user_data) {
 	}
 }
 
-static GtkWidget * create_mod_row(int mod_id, char * mod_name) {
+static void on_mod_up(GtkWidget *, gpointer user_data) {
+	const int modId = g_list_index(mods, user_data);
+	error_t err = mods_swap_place(GAMES_APPIDS[current_game], modId, modId - 1);
+		if(err != ERR_SUCCESS) {
+		//TODO: error popup
+		printf("err %d\n", modId);
+	} else {
+		mod_tab_generate_ui();
+	}
+}
+
+static void on_mod_down(GtkWidget *, gpointer user_data) {
+	const int modId = g_list_index(mods, user_data);
+	error_t err = mods_swap_place(GAMES_APPIDS[current_game], modId, modId + 1);
+		if(err != ERR_SUCCESS) {
+		//TODO: error popup
+		printf("err %d\n", modId);
+	} else {
+		mod_tab_generate_ui();
+	}
+}
+
+static GtkWidget * create_mod_row(int mod_id, char * mod_name, bool first, bool last) {
 	mods_mod_detail_t details = mods_mod_details(GAMES_APPIDS[current_game], mod_id);
 
 	if(details.has_fomod_sibling)
@@ -55,11 +77,36 @@ static GtkWidget * create_mod_row(int mod_id, char * mod_name) {
 
 	GtkWidget * remove_button = gtk_button_new();
 	gtk_button_set_icon_name(GTK_BUTTON(remove_button), "user-trash-symbolic");
+	gtk_widget_set_valign(remove_button, GTK_ALIGN_CENTER);
 	g_signal_connect(remove_button, "clicked", G_CALLBACK(on_mod_deleted), mod_name);
 
 	GtkWidget * button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
 	gtk_box_append(GTK_BOX(button_box), remove_button);
 	gtk_box_append(GTK_BOX(button_box), enable_switch);
+
+	GtkWidget * up_dow_button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_add_css_class(up_dow_button_box, "linked");
+
+	GtkWidget * up_button = gtk_button_new();
+	gtk_button_set_icon_name(GTK_BUTTON(up_button), "go-up-symbolic");
+	gtk_box_append(GTK_BOX(up_dow_button_box), up_button);
+	gtk_widget_set_valign(up_button, GTK_ALIGN_CENTER);
+	g_signal_connect(up_button, "clicked", G_CALLBACK(on_mod_up), mod_name);
+	if(first) {
+		gtk_widget_set_sensitive (up_button, FALSE);
+	}
+
+	GtkWidget * down_button = gtk_button_new();
+	gtk_button_set_icon_name(GTK_BUTTON(down_button), "go-down-symbolic");
+	gtk_box_append(GTK_BOX(up_dow_button_box), down_button);
+	gtk_widget_set_valign(down_button, GTK_ALIGN_CENTER);
+	g_signal_connect(down_button, "clicked", G_CALLBACK(on_mod_down), mod_name);
+	if(last) {
+		gtk_widget_set_sensitive (down_button, FALSE);
+	}
+
+
+	gtk_box_prepend(GTK_BOX(button_box), up_dow_button_box);
 
 	adw_action_row_add_suffix(ADW_ACTION_ROW(mod_row), button_box);
 	return mod_row;
@@ -87,14 +134,14 @@ static void open_add_mod_file_choser() {
 
 void mod_tab_generate_ui() {
 	if(mod_tab_widget == NULL) {
-		mod_tab_widget = gtk_viewport_new(NULL, NULL);
+		mod_tab_widget = adw_bin_new();
 	}
 
 	if(current_game == -1) {
 		GtkWidget * status_page = adw_status_page_new();
 		adw_status_page_set_description(ADW_STATUS_PAGE(status_page), "No game selected");
 		adw_status_page_set_icon_name(ADW_STATUS_PAGE(status_page), "dialog-error-symbolic");
-		gtk_viewport_set_child(GTK_VIEWPORT(mod_tab_widget), status_page);
+		adw_bin_set_child(ADW_BIN(mod_tab_widget), status_page);
 		return;
 	}
 
@@ -107,7 +154,7 @@ void mod_tab_generate_ui() {
 	GtkWidget * body = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
 	gtk_widget_set_margin_start(body, 12);
 	gtk_widget_set_margin_end(body, 12);
-	gtk_viewport_set_child(GTK_VIEWPORT(mod_tab_widget), body);
+	adw_bin_set_child(ADW_BIN(mod_tab_widget), body);
 
 	GtkWidget * header = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
 	gtk_box_prepend(GTK_BOX(body), header);
@@ -140,16 +187,19 @@ void mod_tab_generate_ui() {
 	mods = mods_list(GAMES_APPIDS[current_game]);
 	GList * mods_iterator = mods;
 	int index = 0;
+	GList * prev_it = NULL;
 	while(mods_iterator != NULL) {
+		GList * next_it = g_list_next(mods_iterator);
 		char * mod_name = (char *)mods_iterator->data;
 
-		GtkWidget * mod_row = create_mod_row(index, mod_name);
+		GtkWidget * mod_row = create_mod_row(index, mod_name, prev_it == NULL, next_it == NULL);
 		if(mod_row != NULL) {
 			gtk_list_box_append(GTK_LIST_BOX(mod_box), mod_row);
 		} else {
 			printf("ignoring mod %s since it's has a fomod sibling\n", mod_name);
 		}
 		index++;
-		mods_iterator = g_list_next(mods_iterator);
+		prev_it = mods_iterator;
+		mods_iterator = next_it;
 	}
 }

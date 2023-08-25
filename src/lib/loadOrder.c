@@ -154,7 +154,7 @@ error_t order_getLoadOrder(int appid, GList ** order) {
 
 //TODO: Check if the default LF format is compatible with windows' CRLF in skyrim
 //TODO: add loadorder.txt along with plugins.txt
-error_t order_setLoadOrder(int appid, GList * loadOrder) {
+error_t order_set_load_order(int appid, GList * loadOrder) {
 	GHashTable * gamePaths;
 	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {

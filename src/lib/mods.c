@@ -104,6 +104,8 @@ error_t mods_swap_place(int appid, int modIdA, int modIdB) {
 	char appidStr[10];
 	sprintf(appidStr, "%d", appid);
 
+	g_message("flipping mod%d and mod%d", modIdA, modIdB);
+
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
 	g_autofree char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidStr, NULL);

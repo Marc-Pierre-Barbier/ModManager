@@ -68,17 +68,12 @@ static void game_selector(void) {
 	adw_view_stack_page_set_icon_name(plugin_page, "preferences-other-symbolic");
 
 
-	GtkWidget * title_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-	adw_header_bar_set_title_widget(ADW_HEADER_BAR(header), title_widget);
 	adw_view_switcher_title_set_stack(ADW_VIEW_SWITCHER_TITLE(viewswitcher), ADW_VIEW_STACK(content));
-	gtk_box_append(GTK_BOX(title_widget), viewswitcher);
-	gtk_widget_set_hexpand(viewswitcher, TRUE);
-	gtk_widget_set_hexpand_set(viewswitcher, TRUE);
+	adw_header_bar_set_title_widget(ADW_HEADER_BAR(header), viewswitcher);
 
 	GtkWidget * burger_menu = gtk_menu_button_new();
 	gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(burger_menu), "open-menu-symbolic");
-	gtk_box_append(GTK_BOX(title_widget), burger_menu);
-
+	adw_header_bar_pack_end(ADW_HEADER_BAR(header), burger_menu);
 
 	GMenu * menu = g_menu_new();
 	GSimpleAction *action_about = g_simple_action_new("about", NULL);

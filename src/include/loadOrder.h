@@ -30,7 +30,7 @@ error_t order_getLoadOrder(int appid, GList ** order)    __attribute__((warn_unu
  * @param appid the appid of the game
  * @param loadOrder the load order a Glist of order_plugin_entry_t
  */
-error_t order_setLoadOrder(int appid, GList * loadOrder) __attribute__((warn_unused_result));
+error_t order_set_load_order(int appid, GList * loadOrder) __attribute__((warn_unused_result));
 
 /**
  * @brief List all dependencies for a esm mod.
