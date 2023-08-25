@@ -12,7 +12,7 @@
  * @param fomodFile path to the moduleconfig.xml
  * @param fomod pointer to a new FOMod_t
  */
-error_t fomod_parse(GFile * fomodFile, FOMod_t* fomod);
+error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod);
 
 /**
  * @brief In fomod there is file operations which depends on multiple flags this function find the ones that mach our current flags and append them to a list.
@@ -22,7 +22,7 @@ error_t fomod_parse(GFile * fomodFile, FOMod_t* fomod);
  * @param pendingFileOperations a list of pending FOModFile_t operation to which add the new ones. (can be null)
  * @return a list of pendingFileOperations(FOModFile_t)
  */
-GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendingFileOperations) __attribute__((warn_unused_result));
+GList * fomod_process_cond_files(const Fomod_t * fomod, GList * flag_list, GList * pending_file_operations) __attribute__((warn_unused_result));
 
 /**
  * @brief FOModFile_t have a priority option and this function execute the file operation while taking this into account.
@@ -32,20 +32,20 @@ GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * 
  * @param destination folder of the new mod that contains the result of the process.
  * @return error code
  */
-error_t fomod_processFileOperations(GList ** pendingFileOperations, GFile * modFolder, GFile* destination);
+error_t fomod_process_file_operations(GList ** pending_file_operations, GFile * mod_folder, GFile* destination);
 
 /**
  * @brief
  *
  * @param fileOperations
  */
-void fomod_freeFileOperations(GList * fileOperations);
+void fomod_free_file_operations(GList * file_operations);
 
 
 /**
  * @brief Free content of a fomod file.
  * @param fomod
  */
-void fomod_freeFOMod(FOMod_t * fomod);
+void fomod_free_fomod(Fomod_t * fomod);
 
 #endif

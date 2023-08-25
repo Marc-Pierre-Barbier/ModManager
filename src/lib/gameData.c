@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 
-error_t gameData_getDataPath(int appid, GFile ** destination) {
+error_t gameData_get_data_path(int appid, GFile ** destination) {
     GHashTable * gamePaths;
 	error_t status = steam_searchGames(&gamePaths);
 	if(status == ERR_FAILURE) {

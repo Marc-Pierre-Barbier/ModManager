@@ -181,7 +181,7 @@ static error_t cli_deploy(int argc, char ** argv) {
 
 	GList * ignoredMods = NULL;
 
-	deploymentErrors_t errors = deploy(appIdStr, &ignoredMods);
+	DeploymentErrors_t errors = deploy(appIdStr, &ignoredMods);
 	switch(errors) {
 	//we prevalidate the appid so it is a bug
 	default:
@@ -220,7 +220,7 @@ static int setup(int argc, char ** argv) {
 	g_file_make_directory_with_parents(gameWorkDir, NULL, NULL);
 
 	GFile * dataFolder = NULL;
-	error_t error = gameData_getDataPath(appid, &dataFolder);
+	error_t error = gameData_get_data_path(appid, &dataFolder);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
@@ -257,7 +257,7 @@ static int unbind(int argc, char ** argv) {
 	}
 
 	GFile * data_folder_file = NULL;
-	error_t error = gameData_getDataPath(appid, &data_folder_file);
+	error_t error = gameData_get_data_path(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}

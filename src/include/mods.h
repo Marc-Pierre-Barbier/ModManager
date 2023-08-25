@@ -28,7 +28,7 @@ mods_mod_detail_t mods_mod_details(const int appid, int modId) ;
  *
  * @return GList of char containing the name of the mod folder in order
  */
-GList * mods_list(int appid) __attribute__((warn_unused_result));
+[[nodiscard]] GList * mods_list(int appid);
 
 /**
  * @brief Change the mod order by swaping two mod
@@ -38,7 +38,7 @@ GList * mods_list(int appid) __attribute__((warn_unused_result));
  * @param modId
  * @param modId2
  */
-error_t mods_swap_place(int appid, int modId, int modId2) __attribute__((warn_unused_result));
+[[nodiscard]] error_t mods_swap_place(int appid, int modId, int modId2);
 
 /**
  * @brief Add a mod to the folder defined in main.h
@@ -46,11 +46,11 @@ error_t mods_swap_place(int appid, int modId, int modId2) __attribute__((warn_un
  * @param filePath path to the mod file
  * @param appId game for which the mod is destined to be used with.
  */
-error_t mods_add_mod(GFile * filePath, int appId) __attribute__((warn_unused_result));
+[[nodiscard]] error_t mods_add_mod(GFile * filePath, int appId);
 
-error_t mods_enable_mod(int appid, int modId) __attribute__((warn_unused_result));
-error_t mods_disable_mod(int appid, int modId) __attribute__((warn_unused_result));
-error_t mods_remove_mod(int appid, int modId) __attribute__((warn_unused_result));
-GFile * mods_get_mods_folder(int appid) __attribute__((warn_unused_result));
-GFile * mods_get_mod_folder(int appid, int mod_id) __attribute__((warn_unused_result));
+[[nodiscard]] error_t mods_enable_mod(int appid, int modId);
+[[nodiscard]] error_t mods_disable_mod(int appid, int modId);
+[[nodiscard]] error_t mods_remove_mod(int appid, int modId);
+[[nodiscard]] GFile * mods_get_mods_folder(int appid);
+[[nodiscard]] GFile * mods_get_mod_folder(int appid, int mod_id);
 #endif

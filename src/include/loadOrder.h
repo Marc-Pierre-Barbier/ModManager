@@ -16,21 +16,21 @@ typedef struct order_mod_entry {
  * @param appid the appid of the game
  * @param order a pointer to a null Glist *. in which there will be the list of esm files.
  */
-error_t order_listPlugins(int appid, GList ** list)      __attribute__((warn_unused_result));
+[[nodiscard]] error_t order_listPlugins(int appid, GList ** list);
 
 /**
  * @brief fetch the load order of the game it might be null if setLoadOrder was never called.
  * @param appid the appid of the game
  * @param order a pointer to a null Glist *. in which there will be the list of order_mod_entry_t.
  */
-error_t order_getLoadOrder(int appid, GList ** order)    __attribute__((warn_unused_result));
+[[nodiscard]] error_t order_getLoadOrder(int appid, GList ** order);
 
 /**
  * @brief change the plugin load order of the game
  * @param appid the appid of the game
  * @param loadOrder the load order a Glist of order_plugin_entry_t
  */
-error_t order_set_load_order(int appid, GList * loadOrder) __attribute__((warn_unused_result));
+[[nodiscard]] error_t order_set_load_order(int appid, GList * loadOrder);
 
 /**
  * @brief List all dependencies for a esm mod.
@@ -38,7 +38,7 @@ error_t order_set_load_order(int appid, GList * loadOrder) __attribute__((warn_u
  * @param dependencies a pointer to a null Glist *. in which there will be the list of esm files.
  * free it using g_list_free_full(dependencies, free);
  */
-error_t order_getModDependencies(const char * esmPath, GList ** dependencies) __attribute__((warn_unused_result));
+[[nodiscard]] error_t order_getModDependencies(const char * esmPath, GList ** dependencies);
 
 /**
  * @brief free a order_mod_entry_t* allocated with g_malloc to use with g_list_free_full(GList *list, (GDestroyNotify)order_free_mod_entry)

@@ -46,7 +46,7 @@ static int get_filed_id(const char * field) {
 	}
 }
 
-static steam_Libraries_t * parse_vdf(GFile * file_path, size_t * size, int * status) {
+static SteamLibraries_t * parse_vdf(GFile * file_path, size_t * size, int * status) {
 	g_autofree const char * path = g_file_get_path(file_path);
 	FILE * fd = fopen(path, "r");
 	char * line = NULL;
@@ -56,7 +56,7 @@ static steam_Libraries_t * parse_vdf(GFile * file_path, size_t * size, int * sta
 
 	bool in_quotes = false;
 
-	steam_Libraries_t * libraries = NULL;
+	SteamLibraries_t * libraries = NULL;
 	*size = 0;
 
 	//skip the "libraryfolders" label & the first opening brace
@@ -93,7 +93,7 @@ static steam_Libraries_t * parse_vdf(GFile * file_path, size_t * size, int * sta
 
 						} else {
 							char * value = strndup(buffer, buffer_index);
-							steam_Libraries_t * library = &libraries[*size - 1];
+							SteamLibraries_t * library = &libraries[*size - 1];
 							switch (next_field_to_fill) {
 							case FIELD_PATH:
 								library->path = value;
@@ -123,7 +123,7 @@ static steam_Libraries_t * parse_vdf(GFile * file_path, size_t * size, int * sta
 							case FIELD_APPS:
 								if(is_app_id) {
 									library->apps_count++;
-									library->apps = realloc(library->apps, library->apps_count * sizeof(steam_App_t));
+									library->apps = realloc(library->apps, library->apps_count * sizeof(SteamApp_t));
 									unsigned int appid = strtoul(value, NULL, 10);
 									library->apps[library->apps_count - 1].appid = appid;
 								} else {
@@ -149,8 +149,8 @@ static steam_Libraries_t * parse_vdf(GFile * file_path, size_t * size, int * sta
 				brace_depth++;
 				if(brace_depth == 1) {
 					*size += 1;
-					libraries = realloc(libraries, sizeof(steam_Libraries_t) * (*size));
-					memset(&libraries[*size - 1], 0, sizeof(steam_Libraries_t));
+					libraries = realloc(libraries, sizeof(SteamLibraries_t) * (*size));
+					memset(&libraries[*size - 1], 0, sizeof(SteamLibraries_t));
 				}
 				break;
 			case '}':
@@ -182,7 +182,7 @@ exit:
 	return libraries;
 }
 
-static void freeLibraries(steam_Libraries_t * libraries, int size) {
+static void freeLibraries(SteamLibraries_t * libraries, int size) {
 	for(int i = 0; i < size; i++) {
 		free(libraries[i].path);
 		free(libraries[i].label);
@@ -207,7 +207,7 @@ error_t steam_searchGames(GHashTable ** p_hash_table) {
 		return ERR_SUCCESS;
 	}
 
-	steam_Libraries_t * libraries = NULL;
+	SteamLibraries_t * libraries = NULL;
 	size_t size = 0;
 	GFile * home = audit_get_home();
 	g_autofree char * home_path = g_file_get_path(home);

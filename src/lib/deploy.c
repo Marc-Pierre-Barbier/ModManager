@@ -15,7 +15,7 @@
 
 
 
-deploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods) {
+DeploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods) {
 	int appid = steam_parseAppId(appIdStr);
 	if(appid < 0) {
 		return INVALID_APPID;
@@ -31,7 +31,7 @@ deploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods) {
 	}
 
     GFile * data_folder_file = NULL;
-	error_t error = gameData_getDataPath(appid, &data_folder_file);
+	error_t error = gameData_get_data_path(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
 		return GAME_NOT_FOUND;
 	}

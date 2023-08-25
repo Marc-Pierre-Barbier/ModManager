@@ -7,65 +7,65 @@ typedef enum GroupType_t { ONE_ONLY, ANY, AT_LEAST_ONE, AT_MOST_ONE, ALL } Group
 typedef enum TypeDescriptor { OPTIONAL, MAYBE_USABLE, NOT_USABLE, REQUIRED, RECOMMENDED } TypeDescriptor_t;
 typedef enum FOModOrder { ASC, DESC, ORD } fomod_Order_t;
 
-typedef struct fomod_Flag {
+typedef struct FomodFlag {
 	char * name;
 	char * value;
-} fomod_Flag_t;
+} FomodFlag_t;
 
 typedef struct fomod_File {
 	char * source;
 	char * destination;
 	int priority;
 	bool isFolder;
-} fomod_File_t;
+} FomodFile_t;
 
-typedef struct fomod_CondFile {
-	fomod_Flag_t * requiredFlags;
+typedef struct fomodCondFile {
+	FomodFlag_t * requiredFlags;
 	unsigned int flagCount;
-	fomod_File_t * files;
+	FomodFile_t * files;
 	unsigned int fileCount;
-} fomod_CondFile_t;
+} FomodCondFile_t;
 
-typedef struct fomod_Plugin {
+typedef struct FomodPlugin {
 	char * description;
 	char * image;
-	fomod_Flag_t * flags;
+	FomodFlag_t * flags;
 	int flagCount;
-	fomod_File_t * files;
+	FomodFile_t * files;
 	int fileCount;
 	TypeDescriptor_t type;
 	char * name;
-} fomod_Plugin_t;
+} FomodPlugin_t;
 
 //combine group and "plugins"
-typedef struct fomod_Group {
-	fomod_Plugin_t * plugins;
+typedef struct fomodGroup {
+	FomodPlugin_t * plugins;
 	int pluginCount;
 	GroupType_t type;
 	char * name;
 	fomod_Order_t order;
-} fomod_Group_t;
+} fomodGroup_t;
 
 //combine installStep and optionalFileGroups
-typedef struct FOModStep {
+typedef struct FomodStep {
 	fomod_Order_t optionOrder;
-	fomod_Group_t * groups;
+	fomodGroup_t * groups;
 	int groupCount;
 	char * name;
-	fomod_Flag_t * requiredFlags;
+	FomodFlag_t * requiredFlags;
 	int flagCount;
-} FOModStep_t;
+} FomodStep_t;
 
-typedef struct FOMod {
+typedef struct Fomod {
 	char * moduleName;
 	char * moduleImage;
 	char ** requiredInstallFiles;
 	fomod_Order_t stepOrder;
-	FOModStep_t * steps;
+	FomodStep_t * steps;
 	int stepCount;
-	fomod_CondFile_t * condFiles;
+	FomodCondFile_t * condFiles;
 	int condFilesCount;
-} FOMod_t;
+} Fomod_t;
 
 
 #endif

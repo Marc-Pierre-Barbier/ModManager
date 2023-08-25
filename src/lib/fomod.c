@@ -19,14 +19,14 @@
 #include "fomod/xmlUtil.h"
 
 static gint priority_cmp(gconstpointer a, gconstpointer b) {
-	const fomod_File_t * fileA = (const fomod_File_t *)a;
-	const fomod_File_t * fileB = (const fomod_File_t *)b;
+	const Fomod_File_t * fileA = (const Fomod_File_t *)a;
+	const Fomod_File_t * fileB = (const Fomod_File_t *)b;
 
 	return fileB->priority - fileA->priority;
 }
 
 //match the definirion of gcompare func
-static gint fomod_flagEqual(const fomod_Flag_t * a, const fomod_Flag_t * b) {
+static gint fomod_flagEqual(const Fomod_Flag_t * a, const Fomod_Flag_t * b) {
 	int nameCmp = strcmp(a->name, b->name);
 	if(nameCmp == 0) {
 		if(strcmp(a->value, b->value) == 0)
@@ -39,7 +39,7 @@ static gint fomod_flagEqual(const fomod_Flag_t * a, const fomod_Flag_t * b) {
 }
 
 //TODO: handle error
-error_t fomod_processFileOperations(GList ** pending_file_operations, GFile * modFolder, GFile* destination) {
+error_t fomod_process_file_operations(GList ** pending_file_operations, GFile * modFolder, GFile* destination) {
 	//priority higher a less important and should be processed first.
 	*pending_file_operations = g_list_sort(*pending_file_operations, priority_cmp);
 	GList * file_operation_iterator = *pending_file_operations;
@@ -47,7 +47,7 @@ error_t fomod_processFileOperations(GList ** pending_file_operations, GFile * mo
 	while(file_operation_iterator != NULL) {
 		//TODO: support destination
 		//no using link since priority is made to override files and link is annoying to deal with when overriding files.
-		const fomod_File_t * file = (const fomod_File_t *)file_operation_iterator->data;
+		const Fomod_File_t * file = (const Fomod_File_t *)file_operation_iterator->data;
 
 		////fix the / and \ windows - unix paths
 		xml_fixPath(file->source);
@@ -74,9 +74,9 @@ error_t fomod_processFileOperations(GList ** pending_file_operations, GFile * mo
 	return ERR_SUCCESS;
 }
 
-GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendingFileOperations) {
+GList * fomod_process_cond_files(const Fomod_t * fomod, GList * flagList, GList * pendingFileOperations) {
 	for(int condId = 0; condId < fomod->condFilesCount; condId++) {
-		const fomod_CondFile_t *condFile = &fomod->condFiles[condId];
+		const Fomod_CondFile_t *condFile = &fomod->condFiles[condId];
 
 		bool areAllFlagsValid = true;
 
@@ -91,9 +91,9 @@ GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * 
 
 		if(areAllFlagsValid) {
 			for(long fileId = 0; fileId < condFile->flagCount; fileId++) {
-				const fomod_File_t * file = &(condFile->files[fileId]);
+				const Fomod_File_t * file = &(condFile->files[fileId]);
 
-				fomod_File_t * fileCopy = g_malloc(sizeof(*file));
+				Fomod_File_t * fileCopy = g_malloc(sizeof(*file));
 				*fileCopy = *file;
 
 				//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
@@ -110,10 +110,10 @@ GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * 
 	return pendingFileOperations;
 }
 
-void fomod_freeFileOperations(GList * fileOperations) {
+void fomod_free_file_operations(GList * fileOperations) {
 	GList * fileOperationsStart = fileOperations;
 	while(fileOperations != NULL) {
-		fomod_File_t * file = (fomod_File_t *)fileOperations->data;
+		Fomod_File_t * file = (Fomod_File_t *)fileOperations->data;
 		if(file->destination != NULL)free(file->destination);
 		if(file->source != NULL)free(file->source);
 		fileOperations = g_list_next(fileOperations);
@@ -122,16 +122,16 @@ void fomod_freeFileOperations(GList * fileOperations) {
 	g_list_free_full(fileOperationsStart, free);
 }
 
-void fomod_freeFOMod(FOMod_t * fomod) {
+void fomod_free_fomod(Fomod_t * fomod) {
 	for(int i = 0; i < fomod->condFilesCount; i++) {
-		fomod_CondFile_t * condFile = &(fomod->condFiles[i]);
+		Fomod_CondFile_t * condFile = &(fomod->condFiles[i]);
 		for(long fileId = 0; fileId < condFile->fileCount; fileId++) {
 			free(condFile->files[fileId].destination);
 			free(condFile->files[fileId].source);
 		}
 
 		for(long flagId = 0; flagId < condFile->flagCount; flagId++) {
-			fomod_Flag_t * flag = &(condFile->requiredFlags[flagId]);
+			Fomod_Flag_t * flag = &(condFile->requiredFlags[flagId]);
 			free(flag->name);
 			free(flag->value);
 		}
@@ -149,13 +149,13 @@ void fomod_freeFOMod(FOMod_t * fomod) {
 	free(fomod->requiredInstallFiles);
 
 	for(int i = 0; i < fomod->stepCount; i++) {
-		FOModStep_t * step = &fomod->steps[i];
+		FomodStep_t * step = &fomod->steps[i];
 		for(int groupId = 0; groupId < step->groupCount; groupId++) {
-			fomod_Group_t * group = &step->groups[groupId];
+			fomodGroup_t * group = &step->groups[groupId];
 			grp_freeGroup(group);
 		}
 		for(int flagId = 0; flagId < step->flagCount; flagId++) {
-			fomod_Flag_t * flag = &(step->requiredFlags[flagId]);
+			Fomod_Flag_t * flag = &(step->requiredFlags[flagId]);
 			free(flag->name);
 			free(flag->value);
 		}
@@ -166,5 +166,5 @@ void fomod_freeFOMod(FOMod_t * fomod) {
 	free(fomod->steps);
 
 	//set every counter to zero and every pointer to null
-	memset(fomod, 0, sizeof(FOMod_t));
+	memset(fomod, 0, sizeof(Fomod_t));
 }

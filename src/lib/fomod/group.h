@@ -5,7 +5,7 @@
 #include "xmlUtil.h"
 #include <fomod.h>
 
-int grp_parseGroup(xmlNodePtr groupNode, fomod_Group_t* group);
-void grp_freeGroup(fomod_Group_t * group);
+int grp_parseGroup(xmlNodePtr groupNode, fomodGroup_t* group);
+void grp_freeGroup(fomodGroup_t * group);
 
 #endif

@@ -27,7 +27,7 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 	sprintf(appidStr, "%d", appid);
 
 	GFile * data_folder_file = NULL;
-	error_t error = gameData_getDataPath(appid, &data_folder_file);
+	error_t error = gameData_get_data_path(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}

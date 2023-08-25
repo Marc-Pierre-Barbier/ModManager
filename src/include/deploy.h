@@ -3,8 +3,8 @@
 
 #include <glib.h>
 
-typedef enum deploymentErrors { INVALID_APPID, GAME_NOT_FOUND, OK, CANNOT_MOUNT, FUSE_NOT_INSTALLED, BUG } deploymentErrors_t;
+typedef enum DeploymentErrors { INVALID_APPID, GAME_NOT_FOUND, OK, CANNOT_MOUNT, FUSE_NOT_INSTALLED, BUG } DeploymentErrors_t;
 
-[[nodiscard]] deploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods);
+[[nodiscard]] DeploymentErrors_t deploy(char * appIdStr, GList ** ignoredMods);
 
 #endif

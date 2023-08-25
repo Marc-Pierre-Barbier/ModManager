@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int parseVisibleNode(xmlNodePtr node, FOModStep_t * step) {
+static int parseVisibleNode(xmlNodePtr node, FomodStep_t * step) {
 	printf("Warning unsuported function used\n");
 	return EXIT_SUCCESS;
 /*
@@ -35,7 +35,7 @@ this code in one node deeper than it should
 	return EXIT_SUCCESS;
 }
 
-static int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
+static int parseOptionalFileGroup(xmlNodePtr node, FomodStep_t * step) {
 	xmlChar * optionOrder = xmlGetProp(node, (const xmlChar *)"order");
 	step->optionOrder = fomod_getOrder((char *)optionOrder);
 	xmlFree(optionOrder);
@@ -50,7 +50,7 @@ static int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
 		if(group == NULL)break;
 
 		step->groupCount += 1;
-		step->groups = realloc(step->groups, step->groupCount * sizeof(fomod_Group_t));
+		step->groups = realloc(step->groups, step->groupCount * sizeof(fomodGroup_t));
 		int status = grp_parseGroup(group, &step->groups[step->groupCount - 1]);
 
 		if(status != EXIT_SUCCESS) {
@@ -65,8 +65,8 @@ static int parseOptionalFileGroup(xmlNodePtr node, FOModStep_t * step) {
 	return EXIT_SUCCESS;
 }
 
-static FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
-	FOModStep_t * steps = NULL;
+static FomodStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCount) {
+	FomodStep_t * steps = NULL;
 	*stepCount = 0;
 
 	xmlNodePtr stepNode = installStepsNode->children;
@@ -81,9 +81,9 @@ static FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCo
 		if(stepNode == NULL)break;
 
 		*stepCount += 1;
-		steps = realloc(steps, *stepCount * sizeof(FOModStep_t));
+		steps = realloc(steps, *stepCount * sizeof(FomodStep_t));
 
-		FOModStep_t * step = &steps[*stepCount - 1];
+		FomodStep_t * step = &steps[*stepCount - 1];
 		step->name = xml_freeAndDup(xmlGetProp(stepNode, (const xmlChar *)"name"));
 		step->requiredFlags = NULL;
 		step->flagCount = 0;
@@ -106,7 +106,7 @@ static FOModStep_t * parseInstallSteps(xmlNodePtr installStepsNode, int * stepCo
 	return steps;
 }
 
-static int parseDependencies(xmlNodePtr node, fomod_CondFile_t * condFile) {
+static int parseDependencies(xmlNodePtr node, Fomod_CondFile_t * condFile) {
 	xmlNodePtr flagNode = node->children;
 
 	if(!xml_validateNode(&flagNode, true, "flagDependency", NULL)) {
@@ -117,8 +117,8 @@ static int parseDependencies(xmlNodePtr node, fomod_CondFile_t * condFile) {
 
 	while(flagNode != NULL) {
 		condFile->flagCount += 1;
-		condFile->requiredFlags = realloc(condFile->requiredFlags, condFile->flagCount * sizeof(fomod_Flag_t));
-		fomod_Flag_t * flag = &(condFile->requiredFlags[condFile->flagCount - 1]);
+		condFile->requiredFlags = realloc(condFile->requiredFlags, condFile->flagCount * sizeof(Fomod_Flag_t));
+		Fomod_Flag_t * flag = &(condFile->requiredFlags[condFile->flagCount - 1]);
 		flag->name = xml_freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "flag"));
 		flag->value = xml_freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "value"));
 
@@ -127,7 +127,7 @@ static int parseDependencies(xmlNodePtr node, fomod_CondFile_t * condFile) {
 	return EXIT_SUCCESS;
 }
 
-static int parseFiles(xmlNodePtr node, fomod_CondFile_t * condFile) {
+static int parseFiles(xmlNodePtr node, Fomod_CondFile_t * condFile) {
 	xmlNodePtr filesNode = node->children;
 
 
@@ -139,8 +139,8 @@ static int parseFiles(xmlNodePtr node, fomod_CondFile_t * condFile) {
 		}
 
 		condFile->fileCount += 1;
-		condFile->files = realloc(condFile->files, condFile->fileCount * sizeof(fomod_File_t));
-		fomod_File_t * flag = &(condFile->files[condFile->fileCount - 1]);
+		condFile->files = realloc(condFile->files, condFile->fileCount * sizeof(Fomod_File_t));
+		Fomod_File_t * flag = &(condFile->files[condFile->fileCount - 1]);
 		flag->source = xml_freeAndDup(xmlGetProp(filesNode, (const xmlChar *) "source"));
 		flag->destination = xml_freeAndDup(xmlGetProp(filesNode, (const xmlChar *) "destination"));
 		flag->priority = 0;
@@ -152,7 +152,7 @@ static int parseFiles(xmlNodePtr node, fomod_CondFile_t * condFile) {
 	return EXIT_SUCCESS;
 }
 
-static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
+static int parseConditionalInstalls(xmlNodePtr node, Fomod_t * fomod) {
 	xmlNodePtr patterns = node->children;
 	if(patterns != NULL) {
 		if(!xml_validateNode(&patterns, true, "patterns", NULL)) {
@@ -172,8 +172,8 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 
 			while(patternChild != NULL) {
 				fomod->condFilesCount += 1;
-				fomod->condFiles = realloc(fomod->condFiles, fomod->condFilesCount * sizeof(fomod_CondFile_t));
-				fomod_CondFile_t * condFile = &(fomod->condFiles[fomod->condFilesCount - 1]);
+				fomod->condFiles = realloc(fomod->condFiles, fomod->condFilesCount * sizeof(Fomod_CondFile_t));
+				Fomod_CondFile_t * condFile = &(fomod->condFiles[fomod->condFilesCount - 1]);
 
 				condFile->fileCount = 0;
 				condFile->files = NULL;
@@ -199,18 +199,18 @@ static int parseConditionalInstalls(xmlNodePtr node, FOMod_t * fomod) {
 }
 
 static int stepCmpAsc(const void * stepA, const void * stepB) {
-	const FOModStep_t * step1 = (const FOModStep_t *)stepA;
-	const FOModStep_t * step2 = (const FOModStep_t *)stepB;
+	const FomodStep_t * step1 = (const FomodStep_t *)stepA;
+	const FomodStep_t * step2 = (const FomodStep_t *)stepB;
 	return strcmp(step1->name, step2->name);
 }
 
 static int stepCmpDesc(const void * stepA, const void * stepB) {
-	const FOModStep_t * step1 = (const FOModStep_t *)stepA;
-	const FOModStep_t * step2 = (const FOModStep_t *)stepB;
+	const FomodStep_t * step1 = (const FomodStep_t *)stepA;
+	const FomodStep_t * step2 = (const FomodStep_t *)stepB;
 	return 1 - strcmp(step1->name, step2->name);
 }
 
-static void fomod_sortSteps(FOMod_t * fomod) {
+static void fomod_sortSteps(Fomod_t * fomod) {
 	switch(fomod->stepOrder) {
 	case ASC:
 		qsort(fomod->steps, fomod->stepCount, sizeof(*fomod->steps), stepCmpAsc);
@@ -225,18 +225,18 @@ static void fomod_sortSteps(FOMod_t * fomod) {
 }
 
 static int fomod_groupCmpAsc(const void * stepA, const void * stepB) {
-	const fomod_Group_t * step1 = (const fomod_Group_t *)stepA;
-	const fomod_Group_t * step2 = (const fomod_Group_t *)stepB;
+	const fomodGroup_t * step1 = (const fomodGroup_t *)stepA;
+	const fomodGroup_t * step2 = (const fomodGroup_t *)stepB;
 	return strcmp(step1->name, step2->name);
 }
 
 static int fomod_groupCmpDesc(const void * stepA, const void * stepB) {
-	const fomod_Group_t * step1 = (const fomod_Group_t *)stepA;
-	const fomod_Group_t * step2 = (const fomod_Group_t *)stepB;
+	const fomodGroup_t * step1 = (const fomodGroup_t *)stepA;
+	const fomodGroup_t * step2 = (const fomodGroup_t *)stepB;
 	return 1 - strcmp(step1->name, step2->name);
 }
 
-static void fomod_sortGroup(fomod_Group_t * group) {
+static void fomod_sortGroup(fomodGroup_t * group) {
 	switch(group->order) {
 	case ASC:
 		qsort(group->plugins, group->pluginCount, sizeof(*group->plugins), fomod_groupCmpAsc);
@@ -250,7 +250,7 @@ static void fomod_sortGroup(fomod_Group_t * group) {
 	}
 }
 
-error_t fomod_parse(GFile * fomod_file, FOMod_t* fomod) {
+error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod) {
 	xmlDocPtr doc;
 	xmlNodePtr cur;
 
@@ -323,7 +323,7 @@ error_t fomod_parse(GFile * fomod_file, FOMod_t* fomod) {
 			xmlFree(stepOrder);
 
 			int stepCount = 0;
-			FOModStep_t * steps = parseInstallSteps(cur, &stepCount);
+			FomodStep_t * steps = parseInstallSteps(cur, &stepCount);
 
 			if(steps == NULL) {
 				g_error( "Failed to parse the install steps\n");

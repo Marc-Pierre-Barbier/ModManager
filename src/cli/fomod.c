@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 //match the definirion of gcompare func
-static gint fomod_flagEqual(const fomod_Flag_t * a, const fomod_Flag_t * b) {
+static gint fomod_flagEqual(const Fomod_Flag_t * a, const Fomod_Flag_t * b) {
 	int nameCmp = strcmp(a->name, b->name);
 	if(nameCmp == 0) {
 		if(strcmp(a->value, b->value) == 0)
@@ -45,7 +45,7 @@ static int getInputCount(const char * input) {
 	return elementCount;
 }
 
-static void fomod_printOptionsInOrder(fomod_Group_t group) {
+static void fomod_printOptionsInOrder(fomodGroup_t group) {
 	for(int i = 0; i < group.pluginCount; i++) {
 		printf("%d, %s\n", i, group.plugins[i].name);
 		printf("%s\n", group.plugins[i].description);
@@ -71,7 +71,7 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 		return ERR_FAILURE;
 	}
 
-	FOMod_t fomod;
+	Fomod_t fomod;
 	int returnValue = fomod_parse(fomod_file, &fomod);
 	if(returnValue == ERR_FAILURE)
 		return ERR_FAILURE;
@@ -80,7 +80,7 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 	GList * pendingFileOperations = NULL;
 
 	for(int i = 0; i < fomod.stepCount; i++) {
-		const FOModStep_t * step = &fomod.steps[i];
+		const FomodStep_t * step = &fomod.steps[i];
 
 		bool validFlags = true;
 		for(int flagId = 0; flagId < step->flagCount; flagId++) {
@@ -94,7 +94,7 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 		if(!validFlags) continue;
 
 		for(int groupId = 0; groupId < step->groupCount; groupId++ ) {
-			fomod_Group_t group = step->groups[groupId];
+			fomodGroup_t group = step->groups[groupId];
 
 			u_int8_t min;
 			u_int8_t max;
@@ -166,16 +166,16 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 			for(int choiceId = 0; choices[choiceId] != NULL; choiceId++) {
 				//TODO: safer user input
 				int choice = atoi(choices[choiceId]);
-				fomod_Plugin_t plugin = group.plugins[choice];
+				Fomod_Plugin_t plugin = group.plugins[choice];
 				for(int flagId = 0; flagId < plugin.flagCount; flagId++) {
 					flagList = g_list_append(flagList, &plugin.flags[flagId]);
 				}
 
 				//do the install
 				for(int pluginId = 0; pluginId < plugin.fileCount; pluginId++) {
-					const fomod_File_t * file = &plugin.files[pluginId];
+					const Fomod_File_t * file = &plugin.files[pluginId];
 
-					fomod_File_t * fileCopy = g_malloc(sizeof(fomod_File_t));
+					Fomod_File_t * fileCopy = g_malloc(sizeof(Fomod_File_t));
 					*fileCopy = *file;
 
 					//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
@@ -199,12 +199,12 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 
 	//TODO: manage multiple files with the same name
 
-	pendingFileOperations = fomod_processCondFiles(&fomod, flagList, pendingFileOperations);
-	fomod_processFileOperations(&pendingFileOperations, mod_folder_file, destination);
+	pendingFileOperations = fomod_process_cond_files(&fomod, flagList, pendingFileOperations);
+	fomod_process_file_operations(&pendingFileOperations, mod_folder_file, destination);
 
 	printf("FOMod successfully installed!\n");
 	g_list_free(flagList);
-	fomod_freeFileOperations(pendingFileOperations);
-	fomod_freeFOMod(&fomod);
+	fomod_free_file_operations(pendingFileOperations);
+	fomod_free_fomod(&fomod);
 	return ERR_SUCCESS;
 }
