@@ -45,26 +45,18 @@ static int getInputCount(const char * input) {
 	return elementCount;
 }
 
-static void fomod_printOptionsInOrder(fomodGroup_t group) {
+static void fomod_printOptionsInOrder(FomodGroup_t group) {
 	for(int i = 0; i < group.plugin_count; i++) {
 		printf("%d, %s\n", i, group.plugins[i].name);
 		printf("%s\n", group.plugins[i].description);
 	}
 }
 
-error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
+error_t fomod_installFOMod(char * mod_folder, GFile * destination) {
 	//everything should be lowercase since we use casefold() before calling any install function
-	g_autofree char * mod_folder = g_file_get_path(mod_folder_file);
 	g_autofree GFile * fomod_folder_file = g_file_new_build_filename(mod_folder, "fomod", NULL);
 	g_autofree char * fomod_folder = g_file_get_path(fomod_folder_file);
 	g_autofree GFile * fomod_file = g_file_new_build_filename(fomod_folder, "moduleconfig.xml", NULL);
-
-	if(!g_file_query_exists(destination, NULL)) {
-		if(!g_file_make_directory_with_parents(destination, NULL, NULL)) {
-			g_error( "Could not create output folder\n");
-			return ERR_FAILURE;
-		}
-	}
 
 	if(!g_file_query_exists(fomod_file, NULL)) {
 		g_error( "FOMod file not found, are you sure this is a fomod mod ?\n");
@@ -94,7 +86,7 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 		if(!validFlags) continue;
 
 		for(int groupId = 0; groupId < step->group_count; groupId++ ) {
-			fomodGroup_t group = step->groups[groupId];
+			FomodGroup_t group = step->groups[groupId];
 
 			u_int8_t min;
 			u_int8_t max;
@@ -200,7 +192,7 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 	//TODO: manage multiple files with the same name
 
 	pendingFileOperations = fomod_process_cond_files(&fomod, flagList, pendingFileOperations);
-	fomod_process_file_operations(&pendingFileOperations, mod_folder_file, destination);
+	//fomod_process_file_operations(&pendingFileOperations, source_mod, destination, appid);
 
 	printf("FOMod successfully installed!\n");
 	g_list_free(flagList);

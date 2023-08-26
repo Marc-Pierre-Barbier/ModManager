@@ -44,12 +44,12 @@ typedef struct fomodGroup {
 	GroupType_t type;
 	char * name;
 	fomod_Order_t order;
-} fomodGroup_t;
+} FomodGroup_t;
 
 //combine installStep and optionalFileGroups
 typedef struct FomodStep {
 	fomod_Order_t option_order;
-	fomodGroup_t * groups;
+	FomodGroup_t * groups;
 	int group_count;
 	char * name;
 	FomodFlag_t * required_flags;

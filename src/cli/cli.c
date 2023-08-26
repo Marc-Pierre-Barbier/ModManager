@@ -308,7 +308,6 @@ static int fomod(int argc, char ** argv) {
 	g_autofree GFile * home = audit_get_home();
 	g_autofree char * home_path = g_file_get_path(home);
 	g_autofree char * modFolder = g_build_filename(home_path, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
-	free(home);
 	GList * mods = mods_list(appid);
 	GList * modsFirstPointer = mods;
 
@@ -329,10 +328,9 @@ static int fomod(int argc, char ** argv) {
 		file_delete_recursive(destination_file, NULL, NULL);
 	}
 	g_autofree GFile * modDestination = g_file_new_build_filename(modFolder, destination, NULL);
-	g_autofree GFile * modPath = g_file_new_build_filename(modFolder, mods->data, NULL);
 
 	//TODO: add error handling
-	int returnValue = fomod_installFOMod(modPath, modDestination);
+	int returnValue = fomod_installFOMod(mods->data, modDestination);
 
 	g_list_free_full(modsFirstPointer, free);
 	return returnValue;

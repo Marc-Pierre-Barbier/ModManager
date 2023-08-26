@@ -59,6 +59,7 @@ set(CLI_SOURCES
 set(GUI_SOURCES
 	src/gui/main.c
 	src/gui/game_tab.c
+	src/gui/fomod_install.c
 	src/gui/mod_tab.c
 	src/gui/plugin_tab.c
 )

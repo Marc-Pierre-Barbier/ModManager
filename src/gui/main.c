@@ -78,7 +78,7 @@ static void game_selector(void) {
 	GMenu * menu = g_menu_new();
 	GSimpleAction *action_about = g_simple_action_new("about", NULL);
 	g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(action_about));
-    g_signal_connect(action_about, "activate", G_CALLBACK(show_about), NULL);
+	g_signal_connect(action_about, "activate", G_CALLBACK(show_about), NULL);
 
 	GMenuItem * about_menu_item = g_menu_item_new("About", "app.about");
 	g_menu_append_item(menu, about_menu_item);

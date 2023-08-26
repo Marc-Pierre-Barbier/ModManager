@@ -26,13 +26,12 @@ GList * fomod_process_cond_files(const Fomod_t * fomod, GList * flag_list, GList
 
 /**
  * @brief FOModFile_t have a priority option and this function execute the file operation while taking this into account.
- *
+ * this create a new mod with the __FOMOD postfix in the name
  * @param pendingFileOperations list of FOModFile_t to process
- * @param modFolder folder of the fomod file.
- * @param destination folder of the new mod that contains the result of the process.
+ * @param modFolder mod_name
  * @return error code
  */
-error_t fomod_process_file_operations(GList ** pending_file_operations, GFile * mod_folder, GFile* destination);
+error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_id, int appid);
 
 /**
  * @brief

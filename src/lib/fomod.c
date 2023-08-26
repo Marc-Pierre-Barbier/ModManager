@@ -17,6 +17,7 @@
 
 #include "fomod/group.h"
 #include "fomod/xmlUtil.h"
+#include "mods.h"
 
 static gint priority_cmp(gconstpointer a, gconstpointer b) {
 	const FomodFile_t * file_a = (const FomodFile_t *)a;
@@ -39,7 +40,18 @@ static gint fomod_flag_equal(const FomodFlag_t * a, const FomodFlag_t * b) {
 }
 
 //TODO: handle error
-error_t fomod_process_file_operations(GList ** pending_file_operations, GFile * mod_folder, GFile* destination) {
+error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_id, int appid) {
+	char app_id_str[10];
+	strncpy(app_id_str, "%d", appid);
+
+	GList * mods = mods_list(appid);
+	const char * souce_name = g_list_nth(mods, mod_id)->data;
+	g_autofree const char * home = g_get_home_dir();
+	g_autofree const char * mods_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, app_id_str, NULL);
+	g_autofree  GFile * mod_folder = g_file_new_build_filename(mods_folder, souce_name, NULL);
+	g_autofree const char * destination_name = g_strconcat(souce_name, "__FOMOD", NULL);
+	g_autofree  GFile * destination = g_file_new_build_filename(mods_folder, destination_name, NULL);
+
 	//priority higher a less important and should be processed first.
 	*pending_file_operations = g_list_sort(*pending_file_operations, priority_cmp);
 	GList * file_operation_iterator = *pending_file_operations;
@@ -71,6 +83,8 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, GFile * 
 
 		file_operation_iterator = g_list_next(file_operation_iterator);
 	}
+
+	g_list_free_full(mods, g_free);
 	return ERR_SUCCESS;
 }
 
@@ -151,7 +165,7 @@ void fomod_free_fomod(Fomod_t * fomod) {
 	for(int i = 0; i < fomod->step_count; i++) {
 		FomodStep_t * step = &fomod->steps[i];
 		for(int group_id = 0; group_id < step->group_count; group_id++) {
-			fomodGroup_t * group = &step->groups[group_id];
+			FomodGroup_t * group = &step->groups[group_id];
 			grp_free_group(group);
 		}
 		for(int flag_id = 0; flag_id < step->flag_count; flag_id++) {

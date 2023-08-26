@@ -69,7 +69,8 @@ int archive_unrar(GFile * file, GFile * out_dir) {
 
 
 int archive_un7z(GFile * file, GFile * out_dir) {
-	g_autofree gchar * outParameter = g_strjoin("", "-o", out_dir, NULL);
+	g_autofree char * out_dir_path = g_file_get_path(out_dir);
+	g_autofree gchar * outParameter = g_strjoin("", "-o", out_dir_path, NULL);
 	g_autofree char * path = g_file_get_path(file);
 
 	char * const args[] = {

@@ -2,6 +2,7 @@
 #include <steam.h>
 #include <mods.h>
 #include <adwaita.h>
+#include "fomod_install.h"
 #include "mod_tab.h"
 #include "game_tab.h"
 #include "window.h"
@@ -11,45 +12,56 @@ static GList * mods = NULL;
 static GtkListBox * mod_box = NULL;
 
 static gboolean on_mod_toggled(GtkSwitch*, gboolean state, gpointer user_data) {
-	const int modId = g_list_index(mods, user_data);
+	const int mod_id = g_list_index(mods, user_data);
 
 	error_t err;
 	if(state)
-		err = mods_enable_mod(GAMES_APPIDS[current_game], modId);
+		err = mods_enable_mod(GAMES_APPIDS[current_game], mod_id);
 	else
-		err = mods_disable_mod(GAMES_APPIDS[current_game], modId);
+		err = mods_disable_mod(GAMES_APPIDS[current_game], mod_id);
 
 	return err == ERR_FAILURE;
 }
 
-static void on_mod_deleted(GtkMenuButton *, gpointer user_data) {
-	const int modId = g_list_index(mods, user_data);
-	error_t err = mods_remove_mod(GAMES_APPIDS[current_game], modId);
+static void on_fomod_install(GtkMenuButton *, gpointer user_data) {
+	const int mod_id = g_list_index(mods, user_data);
+	error_t err = gui_fomod_installer(mod_id);
 	if(err != ERR_SUCCESS) {
 		//TODO: error popup
-		printf("err %d\n", modId);
+		printf("err %d\n", mod_id);
+	} else {
+		mod_tab_generate_ui();
+	}
+}
+
+static void on_mod_deleted(GtkMenuButton *, gpointer user_data) {
+	const int mod_id = g_list_index(mods, user_data);
+	error_t err = mods_remove_mod(GAMES_APPIDS[current_game], mod_id);
+	if(err != ERR_SUCCESS) {
+		//TODO: error popup
+		printf("err %d\n", mod_id);
 	} else {
 		mod_tab_generate_ui();
 	}
 }
 
 static void on_mod_up(GtkWidget *, gpointer user_data) {
-	const int modId = g_list_index(mods, user_data);
-	error_t err = mods_swap_place(GAMES_APPIDS[current_game], modId, modId - 1);
+	const int mod_id = g_list_index(mods, user_data);
+	error_t err = mods_swap_place(GAMES_APPIDS[current_game], mod_id, mod_id - 1);
 		if(err != ERR_SUCCESS) {
 		//TODO: error popup
-		printf("err %d\n", modId);
+		printf("err %d\n", mod_id);
 	} else {
 		mod_tab_generate_ui();
 	}
 }
 
 static void on_mod_down(GtkWidget *, gpointer user_data) {
-	const int modId = g_list_index(mods, user_data);
-	error_t err = mods_swap_place(GAMES_APPIDS[current_game], modId, modId + 1);
+	const int mod_id = g_list_index(mods, user_data);
+	error_t err = mods_swap_place(GAMES_APPIDS[current_game], mod_id, mod_id + 1);
 		if(err != ERR_SUCCESS) {
 		//TODO: error popup
-		printf("err %d\n", modId);
+		printf("err %d\n", mod_id);
 	} else {
 		mod_tab_generate_ui();
 	}
@@ -105,8 +117,17 @@ static GtkWidget * create_mod_row(int mod_id, char * mod_name, bool first, bool 
 		gtk_widget_set_sensitive (down_button, FALSE);
 	}
 
-
 	gtk_box_prepend(GTK_BOX(button_box), up_dow_button_box);
+
+	if(details.has_fomodfile) {
+		GtkWidget * fomod_button = gtk_button_new();
+		gtk_button_set_icon_name(GTK_BUTTON(fomod_button), "document-properties-symbolic");
+		gtk_box_prepend(GTK_BOX(button_box), fomod_button);
+		gtk_widget_set_valign(fomod_button, GTK_ALIGN_CENTER);
+		g_signal_connect(fomod_button, "clicked", G_CALLBACK(on_fomod_install), mod_name);
+	}
+
+
 
 	adw_action_row_add_suffix(ADW_ACTION_ROW(mod_row), button_box);
 	return mod_row;

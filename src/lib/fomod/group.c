@@ -38,7 +38,7 @@ static TypeDescriptor_t get_descriptor(const char * descriptor) {
 	}
 }
 
-void grp_free_group(fomodGroup_t * group){
+void grp_free_group(FomodGroup_t * group){
 	free(group->name);
 	if(group->plugin_count == 0) return;
 	for(int pluginId = 0; pluginId < group->plugin_count; pluginId++) {
@@ -157,7 +157,7 @@ static int parseNodeElement(FomodPlugin_t * plugin, xmlNodePtr node_element) {
 	return EXIT_SUCCESS;
 }
 
-int grp_parse_group(xmlNodePtr groupNode, fomodGroup_t* group) {
+int grp_parse_group(xmlNodePtr groupNode, FomodGroup_t* group) {
 	xmlNodePtr plugins_node = groupNode->children;
 	if(!xml_validate_node(&plugins_node, true, "plugins", NULL)) {
 		return EXIT_FAILURE;

@@ -50,7 +50,7 @@ static int parse_optional_file_group(xmlNodePtr node, FomodStep_t * step) {
 		if(group == NULL)break;
 
 		step->group_count += 1;
-		step->groups = realloc(step->groups, step->group_count * sizeof(fomodGroup_t));
+		step->groups = realloc(step->groups, step->group_count * sizeof(FomodGroup_t));
 		int status = grp_parse_group(group, &step->groups[step->group_count - 1]);
 
 		if(status != EXIT_SUCCESS) {
@@ -225,18 +225,18 @@ static void fomod_sortSteps(Fomod_t * fomod) {
 }
 
 static int fomod_group_cmp_asc(const void * stepA, const void * stepB) {
-	const fomodGroup_t * step1 = (const fomodGroup_t *)stepA;
-	const fomodGroup_t * step2 = (const fomodGroup_t *)stepB;
+	const FomodGroup_t * step1 = (const FomodGroup_t *)stepA;
+	const FomodGroup_t * step2 = (const FomodGroup_t *)stepB;
 	return strcmp(step1->name, step2->name);
 }
 
 static int fomod_group_cmp_desc(const void * stepA, const void * stepB) {
-	const fomodGroup_t * step1 = (const fomodGroup_t *)stepA;
-	const fomodGroup_t * step2 = (const fomodGroup_t *)stepB;
+	const FomodGroup_t * step1 = (const FomodGroup_t *)stepA;
+	const FomodGroup_t * step2 = (const FomodGroup_t *)stepB;
 	return 1 - strcmp(step1->name, step2->name);
 }
 
-static void fomod_sortGroup(fomodGroup_t * group) {
+static void fomod_sortGroup(FomodGroup_t * group) {
 	switch(group->order) {
 	case ASC:
 		qsort(group->plugins, group->plugin_count, sizeof(*group->plugins), fomod_group_cmp_asc);

@@ -18,30 +18,26 @@ error_t file_casefold(GFile * folder) {
 		GFileEnumerator *enumerator = g_file_enumerate_children(folder, G_FILE_ATTRIBUTE_STANDARD_NAME, G_FILE_QUERY_INFO_NONE, NULL, NULL);
 		for (GFileInfo *info = g_file_enumerator_next_file(enumerator, NULL, NULL); info != NULL; info = g_file_enumerator_next_file(enumerator, NULL, NULL)) {
 			const char * name = g_file_info_get_name(info);
-			//removes .. & . from the list
-			if(strcmp(name, "..") != 0 && strcmp(name, ".") != 0) {
-				//only look at ascii and hope for the best.
-				GFile * file = g_file_new_build_filename(folder_path, name, NULL);
+			//only look at ascii and hope for the best.
+			GFile * file = g_file_new_build_filename(folder_path, name, NULL);
 
-				gchar * destination_name = g_ascii_strdown(name, -1);
-				GFile * destination = g_file_new_build_filename(folder_path, destination_name, NULL);
+			gchar * destination_name = g_ascii_strdown(name, -1);
+			GFile * destination = g_file_new_build_filename(folder_path, destination_name, NULL);
 
-				if(strcmp(destination_name, name) != 0) {
-					if(!g_file_move(file, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL)) {
-						g_error( "Move failed: %s => %s \n", name, destination_name);
-					}
+			if(strcmp(destination_name, name) != 0) {
+				if(!g_file_move(file, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL)) {
+					g_error( "Move failed: %s => %s \n", name, destination_name);
 				}
-				g_free(file);
-				g_free(destination_name);
-
-				GFileType type = g_file_query_file_type(file, G_FILE_QUERY_INFO_NONE, NULL);
-
-				if(type == G_FILE_TYPE_REGULAR) {
-					file_casefold(destination);
-				}
-
-				g_free(destination);
 			}
+			g_free(destination_name);
+			g_free(file);
+			GFileType type = g_file_query_file_type(destination, G_FILE_QUERY_INFO_NONE, NULL);
+
+			if(type == G_FILE_TYPE_DIRECTORY) {
+				file_casefold(destination);
+			}
+
+			g_free(destination);
 		}
 	}
 	return ERR_SUCCESS;
