@@ -201,7 +201,7 @@ void steam_freeGameTable() {
 	game_table_singleton = NULL;
 }
 
-error_t steam_searchGames(GHashTable ** p_hash_table) {
+error_t steam_search_games(GHashTable ** p_hash_table) {
 	if(game_table_singleton != NULL) {
 		*p_hash_table = game_table_singleton;
 		return ERR_SUCCESS;
@@ -236,7 +236,7 @@ error_t steam_searchGames(GHashTable ** p_hash_table) {
 	//fill the table
 	for(unsigned long i = 0; i < size; i++) {
 		for(unsigned long j = 0; j < libraries[i].apps_count; j++) {
-			int game_id = steam_gameIdFromAppId(libraries[i].apps[j].appid);
+			int game_id = steam_game_id_from_app_id(libraries[i].apps[j].appid);
 			if(game_id >= 0) {
 				int * key = g_malloc(sizeof(int));
 				*key = game_id;
@@ -252,7 +252,7 @@ error_t steam_searchGames(GHashTable ** p_hash_table) {
 }
 
 
-int steam_gameIdFromAppId(u_int32_t appid) {
+int steam_game_id_from_app_id(u_int32_t appid) {
 	for(unsigned long k = 0; k < LEN(GAMES_APPIDS); k++) {
 		if(appid == GAMES_APPIDS[k]) {
 			return k;
@@ -263,7 +263,7 @@ int steam_gameIdFromAppId(u_int32_t appid) {
 
 int steam_parseAppId(const char * appid_str) {
 	GHashTable * gamePaths;
-	error_t status = steam_searchGames(&gamePaths);
+	error_t status = steam_search_games(&gamePaths);
 	if(status == ERR_FAILURE) {
 		return -1;
 	}
@@ -276,7 +276,7 @@ int steam_parseAppId(const char * appid_str) {
 		return -1;
 	}
 
-	int gameId = steam_gameIdFromAppId((int)appid);
+	int gameId = steam_game_id_from_app_id((int)appid);
 	if(gameId < 0) {
 		g_error( "Game is not compatible\n");
 		return -1;

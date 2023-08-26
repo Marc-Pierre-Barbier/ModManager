@@ -12,6 +12,6 @@
  * @param destination pointer to a null char * variable. it's value will be allocated with g_malloc
  * @return error_t
  */
-error_t gameData_get_data_path(int appid, GFile ** destination);
+error_t game_data_get_data_path(int appid, GFile ** destination);
 
 #endif

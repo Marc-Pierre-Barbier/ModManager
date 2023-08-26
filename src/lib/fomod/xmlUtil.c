@@ -4,13 +4,13 @@
 #include <string.h>
 #include <sys/types.h>
 
-char * xml_freeAndDup(xmlChar * line) {
+char * xml_free_and_dup(xmlChar * line) {
 	char * free = strdup((const char *) line);
 	xmlFree(line);
 	return free;
 }
 
-fomod_Order_t fomod_getOrder(const char * order) {
+fomod_Order_t fomod_get_order(const char * order) {
 	if(order == NULL || strcmp(order, "Ascending") == 0) {
 		return ASC;
 	} else if(strcmp(order, "Explicit") == 0) {
@@ -22,14 +22,14 @@ fomod_Order_t fomod_getOrder(const char * order) {
 }
 
 //replace \ in the path by /
-void xml_fixPath(char * path) {
+void xml_fix_path(char * path) {
 	while(*path != '\0') {
 		if(*path == '\\')*path = '/';
 		path++;
 	}
 }
 
-int fomod_countUntilNull(char ** pointers) {
+int fomod_count_until_null(char ** pointers) {
 	if(pointers == NULL) return 0;
 	int i = 0;
 	char ** arithmetic = pointers;
@@ -42,12 +42,12 @@ int fomod_countUntilNull(char ** pointers) {
 
 //names cannot contain false
 //need to be null terminated
-bool xml_validateNode(xmlNodePtr * node, bool skipText, const char * names, ...) {
-	va_list namesPtr;
+bool xml_validate_node(xmlNodePtr * node, bool skip_text, const char * names, ...) {
+	va_list names_ptr;
 
 	//skipping text nodes
 	while(*node != NULL && xmlStrcmp((*node)->name, (const xmlChar *)"text") == 0) {
-		if(skipText) {
+		if(skip_text) {
 			(*node) = (*node)->next;
 		} else {
 			//could not skip and the node was a text node.
@@ -59,17 +59,17 @@ bool xml_validateNode(xmlNodePtr * node, bool skipText, const char * names, ...)
 		return true;
 	}
 
-	va_start(namesPtr, names);
+	va_start(names_ptr, names);
 
 	const char * validName = names;
 	while(validName != NULL) {
 		if(xmlStrcmp((*node)->name, (const xmlChar *)validName) == 0) {
-			va_end(namesPtr);
+			va_end(names_ptr);
 			return true;
 		}
-		validName = va_arg(namesPtr, char *);
+		validName = va_arg(names_ptr, char *);
 	}
 
-	va_end(namesPtr);
+	va_end(names_ptr);
 	return false;
 }

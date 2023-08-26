@@ -13,21 +13,21 @@
  * @param names variadic of the valid names.
  * @return return true if it found a valid node
  */
-bool xml_validateNode(xmlNodePtr * node, bool skipText, const char * names, ...);
+bool xml_validate_node(xmlNodePtr * node, bool skipText, const char * names, ...);
 
 /**
  * @brief Free memory of and xmlChar and return a strdup version. just to make sure there is nothing remaining in libxml
  */
-char * xml_freeAndDup(xmlChar * line);
+char * xml_free_and_dup(xmlChar * line);
 
 
-fomod_Order_t fomod_getOrder(const char * order);
+fomod_Order_t fomod_get_order(const char * order);
 
 /**
  * @brief replace / by \
  * @param path
  */
-void xml_fixPath(char * path);
+void xml_fix_path(char * path);
 
 /**
  * @brief Count the number of step before null
@@ -35,6 +35,6 @@ void xml_fixPath(char * path);
  * @param pointers pointer to the list
  * @return size
  */
-int fomod_countUntilNull(char ** pointers);
+int fomod_count_until_null(char ** pointers);
 
 #endif

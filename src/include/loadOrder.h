@@ -23,7 +23,7 @@ typedef struct order_mod_entry {
  * @param appid the appid of the game
  * @param order a pointer to a null Glist *. in which there will be the list of order_mod_entry_t.
  */
-[[nodiscard]] error_t order_getLoadOrder(int appid, GList ** order);
+[[nodiscard]] error_t order_get_load_order(int appid, GList ** order);
 
 /**
  * @brief change the plugin load order of the game
@@ -38,7 +38,7 @@ typedef struct order_mod_entry {
  * @param dependencies a pointer to a null Glist *. in which there will be the list of esm files.
  * free it using g_list_free_full(dependencies, free);
  */
-[[nodiscard]] error_t order_getModDependencies(const char * esmPath, GList ** dependencies);
+[[nodiscard]] error_t order_get_mod_dependencies(const char * esmPath, GList ** dependencies);
 
 /**
  * @brief free a order_mod_entry_t* allocated with g_malloc to use with g_list_free_full(GList *list, (GDestroyNotify)order_free_mod_entry)

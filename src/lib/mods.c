@@ -150,20 +150,20 @@ mods_mod_detail_t mods_mod_details(const int appid, int modid) {
 
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
-	g_autofree char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
-	g_autofree char * currentModPath = g_build_filename(modFolder, mod_name, NULL);
-	g_autofree char * currentModInstallFlag =  g_build_filename(currentModPath, INSTALLED_FLAG_FILE, NULL);
-	g_autofree char * currentModFomodFile =  g_build_filename(currentModPath, "fomod", "moduleconfig.xml", NULL);
-	g_autofree char * fomodModName = g_strconcat(mod_name, "__FOMOD", NULL);
-	g_autofree char * fomodModFolder = g_build_filename(modFolder, fomodModName, NULL);
+	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
+	g_autofree char * current_mod_path = g_build_filename(mod_folder, mod_name, NULL);
+	g_autofree char * current_mod_install_flag =  g_build_filename(current_mod_path, INSTALLED_FLAG_FILE, NULL);
+	g_autofree char * current_mod_fomod_file =  g_build_filename(current_mod_path, "fomod", "moduleconfig.xml", NULL);
+	g_autofree char * fomod_mod_name = g_strconcat(mod_name, "__FOMOD", NULL);
+	g_autofree char * fomod_mod_folder = g_build_filename(mod_folder, fomod_mod_name, NULL);
 
 
 	mods_mod_detail_t result;
-	result.is_present = access(currentModPath, F_OK) == 0;
-	result.is_activated = access(currentModInstallFlag, F_OK) == 0;
-	result.has_fomodfile = access(currentModFomodFile, F_OK) == 0;
-	result.is_fomod = strstr(currentModPath, "__FOMOD") != NULL;
-	result.has_fomod_sibling = access(fomodModFolder, F_OK) == 0;
+	result.is_present = access(current_mod_path, F_OK) == 0;
+	result.is_activated = access(current_mod_install_flag, F_OK) == 0;
+	result.has_fomodfile = access(current_mod_fomod_file, F_OK) == 0;
+	result.is_fomod = strstr(current_mod_path, "__FOMOD") != NULL;
+	result.has_fomod_sibling = access(fomod_mod_folder, F_OK) == 0;
 
 	g_list_free_full(mods, free);
 	return result;
@@ -171,7 +171,7 @@ mods_mod_detail_t mods_mod_details(const int appid, int modid) {
 
 
 error_t mods_enable_mod(int appid, int modId) {
-	int returnValue = EXIT_SUCCESS;
+	int return_value = EXIT_SUCCESS;
 	GList * mods = mods_list(appid);
 	GList * mod = g_list_nth(mods, modId);
 
@@ -187,13 +187,13 @@ error_t mods_enable_mod(int appid, int modId) {
 
 	if(access(mod_folder, F_OK) != 0) {
 		//mod not found
-		returnValue = EXIT_FAILURE;
+		return_value = EXIT_FAILURE;
 		goto exit;
 	}
 
 	if(access(modFlag, F_OK) == 0) {
 		//mod already enabled
-		returnValue = EXIT_SUCCESS;
+		return_value = EXIT_SUCCESS;
 		goto exit;
 	}
 
@@ -203,18 +203,18 @@ error_t mods_enable_mod(int appid, int modId) {
 		int exit_code = (fwrite("", 1, 1, fd) != 1);
 		exit_code |= fclose(fd);
 		if(exit_code != 0)
-			returnValue = EXIT_FAILURE;
+			return_value = EXIT_FAILURE;
 	} else {
-		returnValue = EXIT_FAILURE;
+		return_value = EXIT_FAILURE;
 	}
 
 exit:
 	g_list_free_full(mods, free);
-	return returnValue;
+	return return_value;
 }
 
 error_t mods_disable_mod(int appid, int modId) {
-	int returnValue = EXIT_SUCCESS;
+	int return_value = EXIT_SUCCESS;
 	GList * mods = mods_list(appid);
 	GList * mod = g_list_nth(mods, modId);
 
@@ -223,32 +223,32 @@ error_t mods_disable_mod(int appid, int modId) {
 
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
-	g_autofree char * modFolder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidstr, NULL);
+	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidstr, NULL);
 
-	const char * modName = (char*)mod->data;
-	g_autofree char * modFlag = g_build_filename(modFolder, modName, INSTALLED_FLAG_FILE, NULL);
+	const char * mod_name = (char*)mod->data;
+	g_autofree char * mod_flag = g_build_filename(mod_folder, mod_name, INSTALLED_FLAG_FILE, NULL);
 
-	if(access(modFolder, F_OK) != 0) {
+	if(access(mod_folder, F_OK) != 0) {
 		//mod not found
-		returnValue = EXIT_FAILURE;
+		return_value = EXIT_FAILURE;
 		goto exit;
 	}
 
-	if(access(modFlag, F_OK) != 0) {
+	if(access(mod_flag, F_OK) != 0) {
 		//mod already disabled
-		returnValue = EXIT_SUCCESS;
+		return_value = EXIT_SUCCESS;
 		goto exit;
 	}
 
-	if(unlink(modFlag) != 0) {
+	if(unlink(mod_flag) != 0) {
 		//could not disable the mod
-		returnValue = EXIT_FAILURE;
+		return_value = EXIT_FAILURE;
 		goto exit;
 	}
 
 exit:
 	g_list_free_full(mods, free);
-	return returnValue;
+	return return_value;
 }
 
 error_t mods_remove_mod(int appid, int modId) {
@@ -305,39 +305,39 @@ error_t mods_add_mod(GFile * file_path, int appId) {
 		return ERR_FAILURE;
 	}
 
-	g_autofree char * configFolder = g_build_filename(getenv("HOME"), MODLIB_WORKING_DIR, NULL);
-	if(g_mkdir_with_parents(configFolder, 0755) < 0) {
+	g_autofree char * config_folder = g_build_filename(getenv("HOME"), MODLIB_WORKING_DIR, NULL);
+	if(g_mkdir_with_parents(config_folder, 0755) < 0) {
 		g_error( "Could not create mod folder\n");
 		return ERR_FAILURE;
 	}
 
 	const char * filename = g_file_get_basename(file_path);
 	const char * extension = file_extract_extension(filename);
-	g_autofree char * lowercaseExtension = g_ascii_strdown(extension, -1);
+	g_autofree char * lowercase_extension = g_ascii_strdown(extension, -1);
 
 	char appIdStr[20];
 	sprintf(appIdStr, "%d", appId);
-	g_autofree GFile * outdir = g_file_new_build_filename(configFolder, MOD_FOLDER_NAME, appIdStr, filename, NULL);
+	g_autofree GFile * outdir = g_file_new_build_filename(config_folder, MOD_FOLDER_NAME, appIdStr, filename, NULL);
 
 	if(!g_file_make_directory_with_parents(outdir, NULL, NULL)) {
 		//TODO: memory management
 		return EXIT_FAILURE;
 	}
 
-	int returnValue = EXIT_SUCCESS;
+	int return_value = EXIT_SUCCESS;
 	printf("Adding mod, this process can be slow depending on your hardware\n");
-	if(strcmp(lowercaseExtension, "rar") == 0) {
-		returnValue = archive_unrar(file_path, outdir);
-	} else if (strcmp(lowercaseExtension, "zip") == 0) {
-		returnValue = archive_unzip(file_path, outdir);
-	} else if (strcmp(lowercaseExtension, "7z") == 0) {
-		returnValue = archive_un7z(file_path, outdir);
+	if(strcmp(lowercase_extension, "rar") == 0) {
+		return_value = archive_unrar(file_path, outdir);
+	} else if (strcmp(lowercase_extension, "zip") == 0) {
+		return_value = archive_unzip(file_path, outdir);
+	} else if (strcmp(lowercase_extension, "7z") == 0) {
+		return_value = archive_un7z(file_path, outdir);
 	} else {
 		g_error( "Unsupported format only zip/7z/rar are supported\n");
-		returnValue = EXIT_FAILURE;
+		return_value = EXIT_FAILURE;
 	}
 
-	if(returnValue == EXIT_FAILURE) {
+	if(return_value == EXIT_FAILURE) {
 		printf("Failed to install mod\n");
 		g_file_trash(outdir, NULL, NULL);
 		return ERR_FAILURE;

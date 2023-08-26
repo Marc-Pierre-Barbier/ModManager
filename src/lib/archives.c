@@ -28,13 +28,13 @@ int archive_unzip(GFile * file, GFile * out_dir) {
 		execv("/usr/bin/unzip", args);
 		return EXIT_FAILURE;
 	} else {
-		int returnValue;
-		waitpid(pid, &returnValue, 0);
+		int return_value;
+		waitpid(pid, &return_value, 0);
 
-		if(returnValue != 0) {
+		if(return_value != 0) {
 			g_error( "\nFailed to decompress archive\n");
 		}
-		return returnValue;
+		return return_value;
 	}
 }
 
@@ -57,13 +57,13 @@ int archive_unrar(GFile * file, GFile * out_dir) {
 		execv("/usr/bin/unrar", args);
 		return EXIT_FAILURE;
 	} else {
-		int returnValue;
-		waitpid(pid, &returnValue, 0);
+		int return_value;
+		waitpid(pid, &return_value, 0);
 
-		if(returnValue != 0) {
+		if(return_value != 0) {
 			g_error( "\nFailed to decompress archive\n");
 		}
-		return returnValue;
+		return return_value;
 	}
 }
 
@@ -87,15 +87,15 @@ int archive_un7z(GFile * file, GFile * out_dir) {
 		execv("/usr/bin/7z", args);
 		return EXIT_FAILURE;
 	} else {
-		int returnValue;
-		waitpid(pid, &returnValue, 0);
+		int return_value;
+		waitpid(pid, &return_value, 0);
 
-		if(returnValue != 0) {
+		if(return_value != 0) {
 			g_error( "\nFailed to decompress archive\n");
-			return returnValue;
+			return return_value;
 		}
 		//make everything lowercase since 7z don't have an argument for that.
 		file_casefold(out_dir);
-		return returnValue;
+		return return_value;
 	}
 }

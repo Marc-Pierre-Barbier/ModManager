@@ -19,9 +19,9 @@ overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * 
 			exit(execl("/usr/bin/fuse-overlayfs", "/usr/bin/fuse-overlayfs", "-o", mount_data, dest, NULL));
 		} else {
 
-			int returnValue = 0;
-			waitpid(pid, &returnValue, 0);
-			if(returnValue != 0) {
+			int return_value = 0;
+			waitpid(pid, &return_value, 0);
+			if(return_value != 0) {
 				result = FAILURE;
 			}
 		}

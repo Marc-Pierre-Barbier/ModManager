@@ -22,12 +22,12 @@ static gint order_find_file_with_name(gconstpointer list_entry, gconstpointer us
 error_t order_listPlugins(int appid, GList ** plugins) {
 	//save appid parsing
 	//TODO: apply a similar mechanism everywhere
-	size_t appidStrLen = snprintf(NULL, 0, "%d", appid) + 1;
-	char appidStr[appidStrLen];
-	sprintf(appidStr, "%d", appid);
+	size_t appid_str_len = snprintf(NULL, 0, "%d", appid) + 1;
+	char appid_str[appid_str_len];
+	sprintf(appid_str, "%d", appid);
 
 	GFile * data_folder_file = NULL;
-	error_t error = gameData_get_data_path(appid, &data_folder_file);
+	error_t error = game_data_get_data_path(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
@@ -55,7 +55,7 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 	return ERR_SUCCESS;
 }
 
-static void removeCRLF_CR_LF(char * string) {
+static void remove_line_ending(char * string) {
 	int size = strlen(string);
 	if(string[size - 1] == '\r') size--;
 	if(string[size - 1] == '\n') size--;
@@ -63,10 +63,10 @@ static void removeCRLF_CR_LF(char * string) {
 	string[size] = '\0';
 }
 
-error_t order_getLoadOrder(int appid, GList ** order) {
+error_t order_get_load_order(int appid, GList ** order) {
 
-	GHashTable * gamePaths;
-	error_t status = steam_searchGames(&gamePaths);
+	GHashTable * game_paths;
+	error_t status = steam_search_games(&game_paths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
@@ -77,104 +77,104 @@ error_t order_getLoadOrder(int appid, GList ** order) {
 		return ERR_FAILURE;
 
 
-	int gameId = steam_gameIdFromAppId(appid);
+	int gameId = steam_game_id_from_app_id(appid);
 	if(gameId < 0 ) {
 		return ERR_FAILURE;
 	}
 
-	size_t appidStrLen = snprintf(NULL, 0, "%d", appid) + 1;
-	char appidStr[appidStrLen];
-	sprintf(appidStr, "%d", appid);
+	size_t appid_str_len = snprintf(NULL, 0, "%d", appid) + 1;
+	char appid_str[appid_str_len];
+	sprintf(appid_str, "%d", appid);
 
-	const char * path = g_hash_table_lookup(gamePaths, &gameId);
+	const char * path = g_hash_table_lookup(game_paths, &gameId);
 
 
 	//this is the path i would use in windows but it seems it is not avaliable in all wine versions.
 	//char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
-	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/Local Settings/Application Data/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
+	char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/Local Settings/Application Data/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
 
-	GList * l_currentLoadOrder = NULL;
-	if(access(loadOrderPath, R_OK) == 0) {
-		FILE * f_loadOrder = fopen(loadOrderPath, "r");
+	GList * l_current_load_order = NULL;
+	if(access(load_order_path, R_OK) == 0) {
+		FILE * f_load_order = fopen(load_order_path, "r");
 
 		size_t length = 0;
 		char * line = NULL;
 
-		while(getline(&line, &length, f_loadOrder) > 0) {
+		while(getline(&line, &length, f_load_order) > 0) {
 			if(line[0] == '#' || line[0] == '\n')
 				continue;
 
-			removeCRLF_CR_LF(line);
+			remove_line_ending(line);
 
-			l_currentLoadOrder = g_list_append(l_currentLoadOrder, strdup(line));
+			l_current_load_order = g_list_append(l_current_load_order, strdup(line));
 		}
 		if(line != NULL)free(line);
 	}
 
 
-	GList * l_currentLoadOrderIterator = l_currentLoadOrder;
-	GList * l_completeLoadOrder = NULL;
+	GList * l_current_load_order_iterator = l_current_load_order;
+	GList * l_complete_load_order = NULL;
 
-	while(l_currentLoadOrderIterator != NULL) {
+	while(l_current_load_order_iterator != NULL) {
 		//pointer arithmetic to skip the *
-		const char * modName = (const char *)l_currentLoadOrderIterator->data + 1;
+		const char * mod_name = (const char *)l_current_load_order_iterator->data + 1;
 
-		GList * mod = g_list_find_custom(l_plugins, modName, (GCompareFunc)strcmp);
+		GList * mod = g_list_find_custom(l_plugins, mod_name, (GCompareFunc)strcmp);
 		if(mod != NULL) {
 			order_plugin_entry_t * new_entry = g_malloc(sizeof(order_plugin_entry_t));
-			new_entry->filename = strdup(modName);
+			new_entry->filename = strdup(mod_name);
 			new_entry->activated = TRUE;
-			l_completeLoadOrder = g_list_append(l_completeLoadOrder, new_entry);
+			l_complete_load_order = g_list_append(l_complete_load_order, new_entry);
 		}
-		l_currentLoadOrderIterator = g_list_next(l_currentLoadOrderIterator);
+		l_current_load_order_iterator = g_list_next(l_current_load_order_iterator);
 	}
 
 	GList * l_plugins_iterator = l_plugins;
 	while(l_plugins_iterator != NULL) {
 		const char * filename = (const char *)l_plugins_iterator->data;
 
-		GList * mod = g_list_find_custom(l_completeLoadOrder, filename, order_find_file_with_name);
+		GList * mod = g_list_find_custom(l_complete_load_order, filename, order_find_file_with_name);
 		if(mod == NULL) {
 			order_plugin_entry_t * new_entry = g_malloc(sizeof(order_plugin_entry_t));
 			new_entry->filename = strdup(filename);
 			new_entry->activated = FALSE;
-			l_completeLoadOrder = g_list_append(l_completeLoadOrder, new_entry);
+			l_complete_load_order = g_list_append(l_complete_load_order, new_entry);
 		}
 
 		l_plugins_iterator = g_list_next(l_plugins_iterator);
 	}
 
-	*order = l_completeLoadOrder;
+	*order = l_complete_load_order;
 
 	g_list_free_full(l_plugins, free);
-	g_list_free_full(l_currentLoadOrder, free);
-	g_free(loadOrderPath);
+	g_list_free_full(l_current_load_order, free);
+	g_free(load_order_path);
 	return ERR_SUCCESS;
 }
 
 //TODO: Check if the default LF format is compatible with windows' CRLF in skyrim
 //TODO: add loadorder.txt along with plugins.txt
 error_t order_set_load_order(int appid, GList * loadOrder) {
-	GHashTable * gamePaths;
-	error_t status = steam_searchGames(&gamePaths);
+	GHashTable * game_paths;
+	error_t status = steam_search_games(&game_paths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
 
-	int gameId = steam_gameIdFromAppId(appid);
+	int gameId = steam_game_id_from_app_id(appid);
 	if(gameId < 0 ) {
 		return ERR_FAILURE;
 	}
 
-	size_t appidStrLen = snprintf(NULL, 0, "%d", appid) + 1;
-	char appidStr[appidStrLen];
-	sprintf(appidStr, "%d", appid);
+	size_t appid_str_len = snprintf(NULL, 0, "%d", appid) + 1;
+	char appid_str[appid_str_len];
+	sprintf(appid_str, "%d", appid);
 
-	const char * path = g_hash_table_lookup(gamePaths, &gameId);
-	char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
+	const char * path = g_hash_table_lookup(game_paths, &gameId);
+	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
 
 
-	FILE * f_loadOrder = fopen(loadOrderPath, "w");
+	FILE * f_loadOrder = fopen(load_order_path, "w");
 	while(loadOrder != NULL) {
 		order_plugin_entry_t * entry = loadOrder->data;
 		if(entry->activated) {
@@ -192,55 +192,55 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 //TODO: support compression since it can change how we read the file
 //https://en.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Records
 //https://www.mwmythicmods.com/argent/tech/es_format.html
-error_t order_getModDependencies(const char * esmPath, GList ** dependencies) {
-	FILE * file = fopen(esmPath, "r");
+error_t order_get_mod_dependencies(const char * esm_path, GList ** dependencies) {
+	FILE * file = fopen(esm_path, "r");
 
-	char sectionName[5];
-	sectionName[4] = '\0';
-	fread(sectionName, sizeof(char), 4, file);
+	char section_name[5];
+	section_name[4] = '\0';
+	fread(section_name, sizeof(char), 4, file);
 
-	size_t sizeFieldSize = 0;
-	u_int8_t recordHeaderToIgnore = 0;
+	size_t size_field_size = 0;
+	u_int8_t record_header_to_ignore = 0;
 
 	//the field "length" in the sub-record change between games.
 	//TES4 => Fallout4 Oblivion Skyrim(+SE)
 	//TES3 => Morrowind
-	if(strcmp(sectionName, "TES3") == 0) {
+	if(strcmp(section_name, "TES3") == 0) {
 		printf("Using tes3 file format\n");
-		recordHeaderToIgnore = 8;
-		sizeFieldSize = 4;
-	} else if(strcmp(sectionName, "TES4") == 0) {
+		record_header_to_ignore = 8;
+		size_field_size = 4;
+	} else if(strcmp(section_name, "TES4") == 0) {
 		printf("Using tes4 file format\n");
-		recordHeaderToIgnore = 16;
-		sizeFieldSize = 2;
+		record_header_to_ignore = 16;
+		size_field_size = 2;
 	} else {
-		g_error( "Unrecognized file format %s\n", sectionName);
+		g_error( "Unrecognized file format %s\n", section_name);
 		fclose(file);
 		return ERR_FAILURE;
 	}
 
 
-	u_int32_t lengthVal = 0;
-	fread(&lengthVal, 4, 1, file);
+	u_int32_t length_val = 0;
+	fread(&length_val, 4, 1, file);
 	//ignore the rest of the data
-	fseek(file, recordHeaderToIgnore, SEEK_CUR);
+	fseek(file, record_header_to_ignore, SEEK_CUR);
 
-	int64_t length = lengthVal;
+	int64_t length = length_val;
 	while(length > 0) {
-		char sectionName[5];
-		sectionName[4] = '\0';
-		fread(sectionName, sizeof(char), 4, file);
-		unsigned long subsectionLength = 0;
-		fread(&subsectionLength, sizeFieldSize, 1, file);
+		char section_name[5];
+		section_name[4] = '\0';
+		fread(section_name, sizeof(char), 4, file);
+		unsigned long subsection_length = 0;
+		fread(&subsection_length, size_field_size, 1, file);
 
-		length -= 8 + subsectionLength;
-		if(strcmp(sectionName, "MAST") == 0) {
-			char * dependency = g_malloc(subsectionLength + 1);
-			dependency[subsectionLength] = '\0';
-			fread(dependency, sizeof(char), subsectionLength, file);
+		length -= 8 + subsection_length;
+		if(strcmp(section_name, "MAST") == 0) {
+			char * dependency = g_malloc(subsection_length + 1);
+			dependency[subsection_length] = '\0';
+			fread(dependency, sizeof(char), subsection_length, file);
 			*dependencies = g_list_append(*dependencies, dependency);
 		} else {
-			fseek(file, subsectionLength, SEEK_CUR);
+			fseek(file, subsection_length, SEEK_CUR);
 		}
 	}
 	fclose(file);

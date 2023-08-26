@@ -51,7 +51,7 @@ _Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPI
  * @param status pointer to a status variable that will be modified to EXIT_SUCCESS or EXIT_FAILURE
  * @return GHashTable* a map gameId(int) => path(char *) to the corresponding steam library
  */
-error_t steam_searchGames(GHashTable** table_pointer);
+error_t steam_search_games(GHashTable** table_pointer);
 
 void steam_freeGameTable(void);
 
@@ -61,7 +61,7 @@ void steam_freeGameTable(void);
  * @param appid
  * @return -1 in case of failure or the index of the game.
  */
-int steam_gameIdFromAppId(u_int32_t appid);
+int steam_game_id_from_app_id(u_int32_t appid);
 
 /**
  * @brief Parse the steamId string

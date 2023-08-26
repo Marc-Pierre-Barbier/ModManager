@@ -8,14 +8,14 @@
 #include <sys/stat.h>
 #include <stdio.h>
 
-error_t gameData_get_data_path(int appid, GFile ** destination) {
+error_t game_data_get_data_path(int appid, GFile ** destination) {
     GHashTable * gamePaths;
-	error_t status = steam_searchGames(&gamePaths);
+	error_t status = steam_search_games(&gamePaths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
 
-	int gameId = steam_gameIdFromAppId(appid);
+	int gameId = steam_game_id_from_app_id(appid);
 	if(gameId < 0 ) {
 		g_error( "invalid appid");
 		return ERR_FAILURE;

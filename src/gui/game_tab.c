@@ -24,7 +24,7 @@ static void row_selected (GtkListBox*, GtkListBoxRow* row, gpointer) {
 
 GtkWidget * game_tab_generate_ui(GtkWindow * window) {
 	GtkWidget *body = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-	error_t status = steam_searchGames(&gamePaths);
+	error_t status = steam_search_games(&gamePaths);
 	int table_size = g_hash_table_size(gamePaths);
 	if(status == ERR_FAILURE) {
 		GtkAlertDialog * alert = gtk_alert_dialog_new("Could not find your game library");

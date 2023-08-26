@@ -64,7 +64,7 @@ void plugin_tab_generate_ui(void) {
 		return;
 	}
 
-	error_t err = order_getLoadOrder(GAMES_APPIDS[current_game], &plugins);
+	error_t err = order_get_load_order(GAMES_APPIDS[current_game], &plugins);
 
 	if(err != ERR_SUCCESS) {
 		return;

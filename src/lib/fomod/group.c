@@ -6,7 +6,7 @@
 #include "string.h"
 #include <stdlib.h>
 
-static GroupType_t getGroupType(const char * type) {
+static GroupType_t get_group_type(const char * type) {
 	if(strcmp(type, "SelectAtLeastOne") == 0) {
 		return AT_LEAST_ONE;
 	} else if(strcmp(type, "SelectAtMostOne") == 0) {
@@ -22,7 +22,7 @@ static GroupType_t getGroupType(const char * type) {
 	}
 }
 
-static TypeDescriptor_t getDescriptor(const char * descriptor) {
+static TypeDescriptor_t get_descriptor(const char * descriptor) {
 	if(strcmp(descriptor, "Optional") == 0) {
 		return OPTIONAL;
 	} else if(strcmp(descriptor, "Required") == 0) {
@@ -38,21 +38,21 @@ static TypeDescriptor_t getDescriptor(const char * descriptor) {
 	}
 }
 
-void grp_freeGroup(fomodGroup_t * group){
+void grp_free_group(fomodGroup_t * group){
 	free(group->name);
-	if(group->pluginCount == 0) return;
-	for(int pluginId = 0; pluginId < group->pluginCount; pluginId++) {
-		Fomod_Plugin_t * plugin = &group->plugins[pluginId];
-		if(plugin->fileCount > 0) {
-			for(int i = 0; i < plugin->fileCount; i++) {
+	if(group->plugin_count == 0) return;
+	for(int pluginId = 0; pluginId < group->plugin_count; pluginId++) {
+		FomodPlugin_t * plugin = &group->plugins[pluginId];
+		if(plugin->file_count > 0) {
+			for(int i = 0; i < plugin->file_count; i++) {
 				free(plugin->files[i].destination);
 				free(plugin->files[i].source);
 			}
 			free(plugin->files);
 		}
 
-		if(plugin->flagCount > 0) {
-			for(int i = 0; i < plugin->flagCount; i++) {
+		if(plugin->flag_count > 0) {
+			for(int i = 0; i < plugin->flag_count; i++) {
 				free(plugin->flags[i].value);
 				free(plugin->flags[i].name);
 			}
@@ -65,91 +65,91 @@ void grp_freeGroup(fomodGroup_t * group){
 	}
 	free(group->plugins);
 	group->plugins = NULL;
-	group->pluginCount = 0;
+	group->plugin_count = 0;
 }
 
-static int parseConditionFlags(Fomod_Plugin_t * plugin, xmlNodePtr nodeElement) {
-	xmlNodePtr flagNode = nodeElement->children;
-	while(flagNode != NULL) {
-		if(!xml_validateNode(&flagNode, true, "flag", NULL)) {
-			if(plugin->flagCount > 0) {
+static int parse_condition_flags(FomodPlugin_t * plugin, xmlNodePtr nodeElement) {
+	xmlNodePtr flag_node = nodeElement->children;
+	while(flag_node != NULL) {
+		if(!xml_validate_node(&flag_node, true, "flag", NULL)) {
+			if(plugin->flag_count > 0) {
 				free(plugin->flags);
 			}
 			return EXIT_FAILURE;
 		}
-		if(flagNode == NULL)continue;
+		if(flag_node == NULL)continue;
 
-		plugin->flagCount += 1;
-		plugin->flags = realloc(plugin->flags, plugin->flagCount * sizeof(Fomod_Flag_t));
+		plugin->flag_count += 1;
+		plugin->flags = realloc(plugin->flags, plugin->flag_count * sizeof(FomodFlag_t));
 
-		Fomod_Flag_t * flag = &plugin->flags[plugin->flagCount - 1];
+		FomodFlag_t * flag = &plugin->flags[plugin->flag_count - 1];
 
-		flag->name = xml_freeAndDup(xmlGetProp(flagNode, (const xmlChar *) "name"));
-		flag->value = xml_freeAndDup(xmlNodeGetContent(flagNode));
+		flag->name = xml_free_and_dup(xmlGetProp(flag_node, (const xmlChar *) "name"));
+		flag->value = xml_free_and_dup(xmlNodeGetContent(flag_node));
 
-		flagNode = flagNode->next;
+		flag_node = flag_node->next;
 	}
 
 	return EXIT_SUCCESS;
 }
 
-static int parseGroupFiles(Fomod_Plugin_t * plugin, xmlNodePtr nodeElement) {
-	xmlNodePtr fileNode = nodeElement->children;
-	while(fileNode != NULL) {
-		if(!xml_validateNode(&fileNode, true, "folder", "file", NULL)) {
+static int parseGroupFiles(FomodPlugin_t * plugin, xmlNodePtr node_element) {
+	xmlNodePtr file_node = node_element->children;
+	while(file_node != NULL) {
+		if(!xml_validate_node(&file_node, true, "folder", "file", NULL)) {
 			g_error( "Unexpected node in files\n");
 			//TODO: free
 			return EXIT_FAILURE;
 		}
 
-		if(fileNode == NULL)continue;
+		if(file_node == NULL)continue;
 
-		plugin->fileCount += 1;
+		plugin->file_count += 1;
 
-		plugin->files = realloc(plugin->files, (plugin->fileCount + 1) * sizeof(Fomod_File_t));
-		Fomod_File_t * file = &plugin->files[plugin->fileCount - 1];
+		plugin->files = realloc(plugin->files, (plugin->file_count + 1) * sizeof(FomodFile_t));
+		FomodFile_t * file = &plugin->files[plugin->file_count - 1];
 
-		file->destination = xml_freeAndDup(xmlGetProp(fileNode, (const xmlChar *) "destination"));
-		file->source = xml_freeAndDup(xmlGetProp(fileNode, (const xmlChar *) "source"));
+		file->destination = xml_free_and_dup(xmlGetProp(file_node, (const xmlChar *) "destination"));
+		file->source = xml_free_and_dup(xmlGetProp(file_node, (const xmlChar *) "source"));
 
 		//TODO: test if it's a number
-		xmlChar * priority = xmlGetProp(fileNode, (const xmlChar *) "priority");
+		xmlChar * priority = xmlGetProp(file_node, (const xmlChar *) "priority");
 		if(priority == NULL) {
 			file->priority = 0;
 		} else {
 			file->priority = atoi((char *)priority);
 		}
 		xmlFree(priority);
-		file->isFolder = xmlStrcmp(fileNode->name, (const xmlChar *) "folder") == 0;
-		fileNode = fileNode->next;
+		file->isFolder = xmlStrcmp(file_node->name, (const xmlChar *) "folder") == 0;
+		file_node = file_node->next;
 	}
 	return EXIT_SUCCESS;
 }
 
-static int parseNodeElement(Fomod_Plugin_t * plugin, xmlNodePtr nodeElement) {
-	if(xmlStrcmp(nodeElement->name, (const xmlChar *) "description") == 0) {
-		plugin->description = xml_freeAndDup(xmlNodeGetContent(nodeElement));
-	} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "image") == 0) {
-		plugin->image = xml_freeAndDup(xmlGetProp(nodeElement, (const xmlChar *) "path"));
-	} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "conditionFlags") == 0) {
-		return parseConditionFlags(plugin, nodeElement);
-	} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "files") == 0) {
-		return parseGroupFiles(plugin, nodeElement);
-	} else if(xmlStrcmp(nodeElement->name, (const xmlChar *) "typeDescriptor") == 0) {
+static int parseNodeElement(FomodPlugin_t * plugin, xmlNodePtr node_element) {
+	if(xmlStrcmp(node_element->name, (const xmlChar *) "description") == 0) {
+		plugin->description = xml_free_and_dup(xmlNodeGetContent(node_element));
+	} else if(xmlStrcmp(node_element->name, (const xmlChar *) "image") == 0) {
+		plugin->image = xml_free_and_dup(xmlGetProp(node_element, (const xmlChar *) "path"));
+	} else if(xmlStrcmp(node_element->name, (const xmlChar *) "conditionFlags") == 0) {
+		return parse_condition_flags(plugin, node_element);
+	} else if(xmlStrcmp(node_element->name, (const xmlChar *) "files") == 0) {
+		return parseGroupFiles(plugin, node_element);
+	} else if(xmlStrcmp(node_element->name, (const xmlChar *) "typeDescriptor") == 0) {
 		//WEIRD SHIT
-		xmlNodePtr typeNode = nodeElement->children;
-		if(!xml_validateNode(&typeNode, true, "type", "dependencyType", NULL)) {
+		xmlNodePtr typeNode = node_element->children;
+		if(!xml_validate_node(&typeNode, true, "type", "dependencyType", NULL)) {
 			g_error( "Unexpected node in typeDescriptor: %s at %d\n", typeNode->name, typeNode->line);
 			return EXIT_FAILURE;
 		}
 
-		if(xmlStrcmp(nodeElement->name, (const xmlChar *) "dependencyType")) {
+		if(xmlStrcmp(node_element->name, (const xmlChar *) "dependencyType")) {
 			//TODO: add support for it
 			printf("Warning using unsupported functionnality\n");
 			plugin->type = OPTIONAL;
 		} else {
 			xmlChar * name = xmlGetProp(typeNode, (const xmlChar *) "name");
-			plugin->type = getDescriptor((char *) name);
+			plugin->type = get_descriptor((char *) name);
 			xmlFree(name);
 		}
 
@@ -157,46 +157,46 @@ static int parseNodeElement(Fomod_Plugin_t * plugin, xmlNodePtr nodeElement) {
 	return EXIT_SUCCESS;
 }
 
-int grp_parseGroup(xmlNodePtr groupNode, fomodGroup_t* group) {
-	xmlNodePtr pluginsNode = groupNode->children;
-	if(!xml_validateNode(&pluginsNode, true, "plugins", NULL)) {
+int grp_parse_group(xmlNodePtr groupNode, fomodGroup_t* group) {
+	xmlNodePtr plugins_node = groupNode->children;
+	if(!xml_validate_node(&plugins_node, true, "plugins", NULL)) {
 		return EXIT_FAILURE;
 	}
 
 
-	group->name = xml_freeAndDup(xmlGetProp( groupNode, (const xmlChar *) "name"));
+	group->name = xml_free_and_dup(xmlGetProp( groupNode, (const xmlChar *) "name"));
 
 	xmlChar * type = xmlGetProp(groupNode, (const xmlChar *) "type");
-	group->type = getGroupType((const char *)type);
+	group->type = get_group_type((const char *)type);
 	xmlFree(type);
 
-	char * order = (char *) xmlGetProp(pluginsNode, (const xmlChar *) "order");
-	group->order = fomod_getOrder(order);
+	char * order = (char *) xmlGetProp(plugins_node, (const xmlChar *) "order");
+	group->order = fomod_get_order(order);
 	xmlFree(order);
 
-	Fomod_Plugin_t * plugins = NULL;
-	int pluginCount = 0;
+	FomodPlugin_t * plugins = NULL;
+	int plugin_count = 0;
 
-	xmlNodePtr currentPlugin = pluginsNode->children;
-	while(currentPlugin != NULL) {
-		if(!xml_validateNode(&currentPlugin, true, "plugin", NULL)) {
+	xmlNodePtr current_plugin = plugins_node->children;
+	while(current_plugin != NULL) {
+		if(!xml_validate_node(&current_plugin, true, "plugin", NULL)) {
 			//TODO handle error;
 			printf("group.c: %d\n", __LINE__);
 			exit(EXIT_FAILURE);
 		}
 
-		if(currentPlugin == NULL)continue;
+		if(current_plugin == NULL)continue;
 
 
-		pluginCount += 1;
-		plugins = realloc(plugins, pluginCount * sizeof(Fomod_Plugin_t));
-		Fomod_Plugin_t * plugin = &plugins[pluginCount - 1];
+		plugin_count += 1;
+		plugins = realloc(plugins, plugin_count * sizeof(FomodPlugin_t));
+		FomodPlugin_t * plugin = &plugins[plugin_count - 1];
 		//initialise everything to 0 and null pointers
-		memset(plugin, 0, sizeof(Fomod_Plugin_t));
+		memset(plugin, 0, sizeof(FomodPlugin_t));
 
-		plugin->name = xml_freeAndDup(xmlGetProp(currentPlugin, (const xmlChar *) "name"));
+		plugin->name = xml_free_and_dup(xmlGetProp(current_plugin, (const xmlChar *) "name"));
 
-		xmlNodePtr nodeElement = currentPlugin->children;
+		xmlNodePtr nodeElement = current_plugin->children;
 		while(nodeElement != NULL) {
 			if(parseNodeElement(plugin, nodeElement) != EXIT_SUCCESS)
 				goto failure;
@@ -204,17 +204,17 @@ int grp_parseGroup(xmlNodePtr groupNode, fomodGroup_t* group) {
 		}
 
 
-		currentPlugin = currentPlugin->next;
+		current_plugin = current_plugin->next;
 	}
 
 	group->plugins = plugins;
-	group->pluginCount = pluginCount;
+	group->plugin_count = plugin_count;
 	return EXIT_SUCCESS;
 
 failure:
 	//we need to free all of our allocations since we can't expect ou parent function to know what we allocated and what we haven't.
 	group->plugins = plugins;
-	group->pluginCount = pluginCount;
-	grp_freeGroup(group);
+	group->plugin_count = plugin_count;
+	grp_free_group(group);
 	return EXIT_FAILURE;
 }

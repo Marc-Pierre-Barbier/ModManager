@@ -23,16 +23,16 @@ error_t file_casefold(GFile * folder) {
 				//only look at ascii and hope for the best.
 				GFile * file = g_file_new_build_filename(folder_path, name, NULL);
 
-				gchar * destinationName = g_ascii_strdown(name, -1);
-				GFile * destination = g_file_new_build_filename(folder_path, destinationName, NULL);
+				gchar * destination_name = g_ascii_strdown(name, -1);
+				GFile * destination = g_file_new_build_filename(folder_path, destination_name, NULL);
 
-				if(strcmp(destinationName, name) != 0) {
+				if(strcmp(destination_name, name) != 0) {
 					if(!g_file_move(file, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL)) {
-						g_error( "Move failed: %s => %s \n", name, destinationName);
+						g_error( "Move failed: %s => %s \n", name, destination_name);
 					}
 				}
 				g_free(file);
-				g_free(destinationName);
+				g_free(destination_name);
 
 				GFileType type = g_file_query_file_type(file, G_FILE_QUERY_INFO_NONE, NULL);
 
@@ -47,22 +47,22 @@ error_t file_casefold(GFile * folder) {
 	return ERR_SUCCESS;
 }
 
-static const char * file_extractLastPart(const char * filePath, const char delimeter) {
-	const int length = strlen(filePath);
+static const char * file_extract_last_part(const char * file_path, const char delimeter) {
+	const int length = strlen(file_path);
 	long index = -1;
 	for(long i= length - 1; i >= 0; i--) {
-		if(filePath[i] == delimeter) {
+		if(file_path[i] == delimeter) {
 			index = i + 1;
 			break;
 		}
 	}
 
 	if(index <= 0 || index == length) return NULL;
-	return &filePath[index];
+	return &file_path[index];
 }
 
-const char * file_extract_extension(const char * filePath) {
-	return file_extractLastPart(filePath, '.');
+const char * file_extract_extension(const char * file_path) {
+	return file_extract_last_part(file_path, '.');
 }
 
 

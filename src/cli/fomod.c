@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 //match the definirion of gcompare func
-static gint fomod_flagEqual(const Fomod_Flag_t * a, const Fomod_Flag_t * b) {
+static gint fomod_flag_equal(const FomodFlag_t * a, const FomodFlag_t * b) {
 	int nameCmp = strcmp(a->name, b->name);
 	if(nameCmp == 0) {
 		if(strcmp(a->value, b->value) == 0)
@@ -46,7 +46,7 @@ static int getInputCount(const char * input) {
 }
 
 static void fomod_printOptionsInOrder(fomodGroup_t group) {
-	for(int i = 0; i < group.pluginCount; i++) {
+	for(int i = 0; i < group.plugin_count; i++) {
 		printf("%d, %s\n", i, group.plugins[i].name);
 		printf("%s\n", group.plugins[i].description);
 	}
@@ -79,12 +79,12 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 	GList * flagList = NULL;
 	GList * pendingFileOperations = NULL;
 
-	for(int i = 0; i < fomod.stepCount; i++) {
+	for(int i = 0; i < fomod.step_count; i++) {
 		const FomodStep_t * step = &fomod.steps[i];
 
 		bool validFlags = true;
-		for(int flagId = 0; flagId < step->flagCount; flagId++) {
-			const GList * flagLink = g_list_find_custom(flagList, &step->requiredFlags[flagId], (GCompareFunc)fomod_flagEqual);
+		for(int flagId = 0; flagId < step->flag_count; flagId++) {
+			const GList * flagLink = g_list_find_custom(flagList, &step->required_flags[flagId], (GCompareFunc)fomod_flag_equal);
 			if(flagLink == NULL) {
 				validFlags = false;
 				break;
@@ -93,7 +93,7 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 
 		if(!validFlags) continue;
 
-		for(int groupId = 0; groupId < step->groupCount; groupId++ ) {
+		for(int groupId = 0; groupId < step->group_count; groupId++ ) {
 			fomodGroup_t group = step->groups[groupId];
 
 			u_int8_t min;
@@ -115,13 +115,13 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 				case ANY:
 					printf("Select any (space separated) (leave empty for nothing) :\n");
 					min = 0;
-					max = (u_int8_t)group.pluginCount;
+					max = (u_int8_t)group.plugin_count;
 					break;
 
 				case AT_LEAST_ONE:
 					printf("Select at least one (space separated) (leave empty for nothing) :\n");
 					min = 1;
-					max = (u_int8_t)group.pluginCount;
+					max = (u_int8_t)group.plugin_count;
 					break;
 
 				case AT_MOST_ONE:
@@ -166,16 +166,16 @@ error_t fomod_installFOMod(GFile * mod_folder_file, GFile * destination) {
 			for(int choiceId = 0; choices[choiceId] != NULL; choiceId++) {
 				//TODO: safer user input
 				int choice = atoi(choices[choiceId]);
-				Fomod_Plugin_t plugin = group.plugins[choice];
-				for(int flagId = 0; flagId < plugin.flagCount; flagId++) {
+				FomodPlugin_t plugin = group.plugins[choice];
+				for(int flagId = 0; flagId < plugin.flag_count; flagId++) {
 					flagList = g_list_append(flagList, &plugin.flags[flagId]);
 				}
 
 				//do the install
-				for(int pluginId = 0; pluginId < plugin.fileCount; pluginId++) {
-					const Fomod_File_t * file = &plugin.files[pluginId];
+				for(int pluginId = 0; pluginId < plugin.file_count; pluginId++) {
+					const FomodFile_t * file = &plugin.files[pluginId];
 
-					Fomod_File_t * fileCopy = g_malloc(sizeof(Fomod_File_t));
+					FomodFile_t * fileCopy = g_malloc(sizeof(FomodFile_t));
 					*fileCopy = *file;
 
 					//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it

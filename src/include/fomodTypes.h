@@ -20,19 +20,19 @@ typedef struct fomod_File {
 } FomodFile_t;
 
 typedef struct fomodCondFile {
-	FomodFlag_t * requiredFlags;
-	unsigned int flagCount;
+	FomodFlag_t * required_flags;
+	unsigned int flag_count;
 	FomodFile_t * files;
-	unsigned int fileCount;
+	unsigned int file_count;
 } FomodCondFile_t;
 
 typedef struct FomodPlugin {
 	char * description;
 	char * image;
 	FomodFlag_t * flags;
-	int flagCount;
+	int flag_count;
 	FomodFile_t * files;
-	int fileCount;
+	int file_count;
 	TypeDescriptor_t type;
 	char * name;
 } FomodPlugin_t;
@@ -40,7 +40,7 @@ typedef struct FomodPlugin {
 //combine group and "plugins"
 typedef struct fomodGroup {
 	FomodPlugin_t * plugins;
-	int pluginCount;
+	int plugin_count;
 	GroupType_t type;
 	char * name;
 	fomod_Order_t order;
@@ -48,23 +48,23 @@ typedef struct fomodGroup {
 
 //combine installStep and optionalFileGroups
 typedef struct FomodStep {
-	fomod_Order_t optionOrder;
+	fomod_Order_t option_order;
 	fomodGroup_t * groups;
-	int groupCount;
+	int group_count;
 	char * name;
-	FomodFlag_t * requiredFlags;
-	int flagCount;
+	FomodFlag_t * required_flags;
+	int flag_count;
 } FomodStep_t;
 
 typedef struct Fomod {
-	char * moduleName;
-	char * moduleImage;
-	char ** requiredInstallFiles;
-	fomod_Order_t stepOrder;
+	char * module_name;
+	char * module_image;
+	char ** required_install_files;
+	fomod_Order_t step_order;
 	FomodStep_t * steps;
-	int stepCount;
-	FomodCondFile_t * condFiles;
-	int condFilesCount;
+	int step_count;
+	FomodCondFile_t * cond_files;
+	int cond_files_count;
 } Fomod_t;
 
 

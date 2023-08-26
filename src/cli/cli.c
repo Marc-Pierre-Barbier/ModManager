@@ -63,7 +63,7 @@ static int listGames(int argc, char **) {
 	if(argc != 2) return usage();
 
 	GHashTable * gamePaths;
-	error_t status = steam_searchGames(&gamePaths);
+	error_t status = steam_search_games(&gamePaths);
 	if(status == ERR_FAILURE) {
 		return EXIT_FAILURE;
 	}
@@ -220,7 +220,7 @@ static int setup(int argc, char ** argv) {
 	g_file_make_directory_with_parents(gameWorkDir, NULL, NULL);
 
 	GFile * dataFolder = NULL;
-	error_t error = gameData_get_data_path(appid, &dataFolder);
+	error_t error = game_data_get_data_path(appid, &dataFolder);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
@@ -257,7 +257,7 @@ static int unbind(int argc, char ** argv) {
 	}
 
 	GFile * data_folder_file = NULL;
-	error_t error = gameData_get_data_path(appid, &data_folder_file);
+	error_t error = game_data_get_data_path(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
 		return ERR_FAILURE;
 	}
@@ -376,7 +376,7 @@ static int printLoadOrder(int argc, char ** argv) {
 	}
 
 	GList * order = NULL;
-	error_t status = order_getLoadOrder(appid, &order);
+	error_t status = order_get_load_order(appid, &order);
 	if(status != ERR_SUCCESS) {
 		fprintf(stderr, "Could not fetch the load order\n");
 		return EXIT_FAILURE;
