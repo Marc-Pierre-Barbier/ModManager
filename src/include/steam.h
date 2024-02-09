@@ -26,6 +26,9 @@ typedef struct SteamLibraries {
 
 //todo add the older games
 // order has to be the same as in GAMES_NAMES
+// 7 is enough to know if it's in GAMES_APPIDS no need to have the real value
+#define GAMES_MAX_APPID_LENGTH 7
+
 static const u_int32_t GAMES_APPIDS[] = {
 	489830,
 	22330,

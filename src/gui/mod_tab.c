@@ -29,8 +29,6 @@ static void on_fomod_install(GtkMenuButton *, gpointer user_data) {
 	if(err != ERR_SUCCESS) {
 		//TODO: error popup
 		printf("err %d\n", mod_id);
-	} else {
-		mod_tab_generate_ui();
 	}
 }
 
@@ -39,7 +37,7 @@ static void on_mod_deleted(GtkMenuButton *, gpointer user_data) {
 	error_t err = mods_remove_mod(GAMES_APPIDS[current_game], mod_id);
 	if(err != ERR_SUCCESS) {
 		//TODO: error popup
-		printf("err %d\n", mod_id);
+		printf("error during mod removed modid: %d\n", mod_id);
 	} else {
 		mod_tab_generate_ui();
 	}
@@ -126,8 +124,6 @@ static GtkWidget * create_mod_row(int mod_id, char * mod_name, bool first, bool 
 		gtk_widget_set_valign(fomod_button, GTK_ALIGN_CENTER);
 		g_signal_connect(fomod_button, "clicked", G_CALLBACK(on_fomod_install), mod_name);
 	}
-
-
 
 	adw_action_row_add_suffix(ADW_ACTION_ROW(mod_row), button_box);
 	return mod_row;

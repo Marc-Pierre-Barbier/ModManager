@@ -22,9 +22,8 @@ static gint order_find_file_with_name(gconstpointer list_entry, gconstpointer us
 error_t order_listPlugins(int appid, GList ** plugins) {
 	//save appid parsing
 	//TODO: apply a similar mechanism everywhere
-	size_t appid_str_len = snprintf(NULL, 0, "%d", appid) + 1;
-	char appid_str[appid_str_len];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	GFile * data_folder_file = NULL;
 	error_t error = game_data_get_data_path(appid, &data_folder_file);
@@ -82,9 +81,8 @@ error_t order_get_load_order(int appid, GList ** order) {
 		return ERR_FAILURE;
 	}
 
-	size_t appid_str_len = snprintf(NULL, 0, "%d", appid) + 1;
-	char appid_str[appid_str_len];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	const char * path = g_hash_table_lookup(game_paths, &gameId);
 
@@ -166,9 +164,8 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 		return ERR_FAILURE;
 	}
 
-	size_t appid_str_len = snprintf(NULL, 0, "%d", appid) + 1;
-	char appid_str[appid_str_len];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	const char * path = g_hash_table_lookup(game_paths, &gameId);
 	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "Plugins.txt", NULL);

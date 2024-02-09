@@ -4,11 +4,13 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <string.h>
+#include <libgen.h>
 
 #include <fomod.h>
 #include "file.h"
@@ -18,6 +20,7 @@
 #include "fomod/group.h"
 #include "fomod/xmlUtil.h"
 #include "mods.h"
+#include "steam.h"
 
 static gint priority_cmp(gconstpointer a, gconstpointer b) {
 	const FomodFile_t * file_a = (const FomodFile_t *)a;
@@ -41,8 +44,8 @@ static gint fomod_flag_equal(const FomodFlag_t * a, const FomodFlag_t * b) {
 
 //TODO: handle error
 error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_id, int appid) {
-	char app_id_str[10];
-	strncpy(app_id_str, "%d", appid);
+	char app_id_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(app_id_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	GList * mods = mods_list(appid);
 	const char * souce_name = g_list_nth(mods, mod_id)->data;
@@ -50,11 +53,13 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 	g_autofree const char * mods_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, app_id_str, NULL);
 	g_autofree  GFile * mod_folder = g_file_new_build_filename(mods_folder, souce_name, NULL);
 	g_autofree const char * destination_name = g_strconcat(souce_name, "__FOMOD", NULL);
-	g_autofree  GFile * destination = g_file_new_build_filename(mods_folder, destination_name, NULL);
+	g_autofree const char * destination_folder = g_build_filename(mods_folder, destination_name, NULL);
 
 	//priority higher a less important and should be processed first.
 	*pending_file_operations = g_list_sort(*pending_file_operations, priority_cmp);
 	GList * file_operation_iterator = *pending_file_operations;
+	char * mod_folder_path = g_file_get_path(mod_folder);
+	mkdir(destination_folder, 0700);
 
 	while(file_operation_iterator != NULL) {
 		//TODO: support destination
@@ -64,17 +69,24 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 		////fix the / and \ windows - unix paths
 		xml_fix_path(file->source);
 
-		char * mod_folder_path = g_file_get_path(mod_folder);
+		//see basename man page
+		char * posix_source = strdup(file->source);
+		GFile * destination = g_file_new_build_filename(destination_folder, basename(posix_source), NULL);
+		free(posix_source);
+
+
 		//TODO: check if it can build from 2 path
 		GFile * source = g_file_new_build_filename(mod_folder_path, file->source, NULL);
-		g_free(mod_folder_path);
 
 		int copy_result = EXIT_SUCCESS;
 		if(file->isFolder) {
 			copy_result = file_recursive_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL);
 		} else {
-			if(!g_file_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
+			GError * err = NULL;
+			if(!g_file_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, &err)) {
+				printf("%s\n", err->message);
 				copy_result = EXIT_FAILURE;
+			}
 		}
 		if(copy_result != EXIT_SUCCESS) {
 			g_error( "Copy failed, some file might be corrupted\n");
@@ -83,6 +95,7 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 
 		file_operation_iterator = g_list_next(file_operation_iterator);
 	}
+	g_free(mod_folder_path);
 
 	g_list_free_full(mods, g_free);
 	return ERR_SUCCESS;

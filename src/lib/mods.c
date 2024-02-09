@@ -12,6 +12,7 @@
 #include <constants.h>
 
 #include "getHome.h"
+#include "steam.h"
 
 typedef struct Mod {
 	int modId;
@@ -30,8 +31,8 @@ static gint compare_order(const void * a, const void * b) {
 }
 
 GList * mods_list(int appid) {
-	char appid_str[10];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
@@ -141,8 +142,8 @@ error_t mods_swap_place(int appid, int mod_id_a, int mod_id_b) {
 }
 
 mods_mod_detail_t mods_mod_details(const int appid, int modid) {
-	char appIdStr[10];
-	snprintf(appIdStr, 10, "%d", appid);
+	char appIdStr[GAMES_MAX_APPID_LENGTH];
+	snprintf(appIdStr, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	GList * mods = mods_list(appid);
 	GList * mod = g_list_nth(mods, modid);
@@ -175,8 +176,8 @@ error_t mods_enable_mod(int appid, int modId) {
 	GList * mods = mods_list(appid);
 	GList * mod = g_list_nth(mods, modId);
 
-	char appidstr[9];
-	snprintf(appidstr, 9, "%d", appid);
+	char appidstr[GAMES_MAX_APPID_LENGTH];
+	snprintf(appidstr, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
@@ -218,8 +219,8 @@ error_t mods_disable_mod(int appid, int modId) {
 	GList * mods = mods_list(appid);
 	GList * mod = g_list_nth(mods, modId);
 
-	char appidstr[9];
-	snprintf(appidstr, 9, "%d", appid);
+	char appidstr[GAMES_MAX_APPID_LENGTH];
+	snprintf(appidstr, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
@@ -256,14 +257,18 @@ error_t mods_remove_mod(int appid, int modId) {
 	if(folder == NULL)
 		return ERR_FAILURE;
 
-	if(!g_file_trash(folder, NULL, NULL))
+	printf("%s\n", g_file_get_path(folder));
+	GError * err = NULL;
+	if(!g_file_trash(folder, NULL, &err)) {
+		printf("%s\n", err->message);
 		return ERR_FAILURE;
+	}
 	return ERR_SUCCESS;
 }
 
 GFile * mods_get_mods_folder(int appid) {
-	char appidstr[9];
-	snprintf(appidstr, 9, "%d", appid);
+	char appidstr[GAMES_MAX_APPID_LENGTH];
+	snprintf(appidstr, GAMES_MAX_APPID_LENGTH, "%d", appid);
 	g_autofree GFile * home_file = audit_get_home();
 	g_autofree char * home = g_file_get_path(home_file);
 	return g_file_new_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidstr, NULL);
@@ -282,7 +287,11 @@ GFile * mods_get_mod_folder(int appid, int mod_id) {
 		goto exit;
 	}
 
+	printf("%s\n", (char *)mod->data);
+	printf("%s\n", mods_folder_path);
+
 	mod_folder = g_file_new_build_filename(mods_folder_path, mods->data, NULL);
+	printf("%s\n", g_file_get_path(mod_folder));
 	g_list_free_full(mods, free);
 exit:
 	return mod_folder;
