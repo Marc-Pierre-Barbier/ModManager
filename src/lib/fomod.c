@@ -84,7 +84,7 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 		} else {
 			GError * err = NULL;
 			if(!g_file_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, &err)) {
-				printf("%s\n", err->message);
+				fprintf(stderr, "%s\n", err->message);
 				copy_result = EXIT_FAILURE;
 			}
 		}

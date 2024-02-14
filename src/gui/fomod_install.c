@@ -287,16 +287,12 @@ error_t gui_fomod_installer(int modid) {
 	}
 
 	g_autofree char * destination = g_strconcat(mod->data, "__FOMOD", NULL);
-	g_autofree GFile * destination_file = g_file_new_build_filename(destination, NULL);
+	g_autofree GFile * destination_file = g_file_new_build_filename(mods_folder, destination, NULL);
 
 	if(g_file_query_exists(destination_file, NULL)) {
 		if(!file_delete_recursive(destination_file, NULL, NULL)) {
 			return ERR_FAILURE;
 		}
-	}
-	if(!g_file_make_directory_with_parents(destination_file, NULL, NULL)) {
-		g_error( "Could not create output folder\n");
-		return ERR_FAILURE;
 	}
 
 	g_autofree char * mod_folder = g_build_filename(mods_folder, mod->data, NULL);

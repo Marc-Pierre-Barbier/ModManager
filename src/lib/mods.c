@@ -257,11 +257,16 @@ error_t mods_remove_mod(int appid, int modId) {
 	if(folder == NULL)
 		return ERR_FAILURE;
 
-	printf("%s\n", g_file_get_path(folder));
 	GError * err = NULL;
+	//I gave up, i could not figure out why g_file_trash was failing if you delete a fomod you just created
+	//so i wired up file_delete_recursive which at the same time improve support for fs without trash handling
 	if(!g_file_trash(folder, NULL, &err)) {
 		printf("%s\n", err->message);
-		return ERR_FAILURE;
+		err = NULL;
+		if(!file_delete_recursive(folder, NULL, &err)) {
+			printf("%s\n", err->message);
+			return ERR_FAILURE;
+		}
 	}
 	return ERR_SUCCESS;
 }
@@ -287,11 +292,7 @@ GFile * mods_get_mod_folder(int appid, int mod_id) {
 		goto exit;
 	}
 
-	printf("%s\n", (char *)mod->data);
-	printf("%s\n", mods_folder_path);
-
 	mod_folder = g_file_new_build_filename(mods_folder_path, mods->data, NULL);
-	printf("%s\n", g_file_get_path(mod_folder));
 	g_list_free_full(mods, free);
 exit:
 	return mod_folder;
