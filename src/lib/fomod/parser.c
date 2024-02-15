@@ -123,6 +123,11 @@ static int parseDependencies(xmlNodePtr node, FomodCondFile_t * cond_file) {
 		flag->value = xml_free_and_dup(xmlGetProp(flag_node, (const xmlChar *) "value"));
 
 		flag_node = flag_node->next;
+		if(!xml_validate_node(&flag_node, true, "flagDependency", NULL)) {
+			//TODO: handle error
+			printf("parsing error: parser.c: %d\n", __LINE__);
+			return EXIT_FAILURE;
+		}
 	}
 	return EXIT_SUCCESS;
 }
@@ -130,14 +135,12 @@ static int parseDependencies(xmlNodePtr node, FomodCondFile_t * cond_file) {
 static int parseFiles(xmlNodePtr node, FomodCondFile_t * cond_file) {
 	xmlNodePtr filesNode = node->children;
 
-
+	if(!xml_validate_node(&filesNode, true, "folder", "file", NULL)) {
+		//TODO: handle error
+		printf("parsing error: parser.c: %d\n", __LINE__);
+		return EXIT_FAILURE;
+	}
 	while(filesNode != NULL) {
-		if(!xml_validate_node(&filesNode, true, "folder", "file", NULL)) {
-			//TODO: handle error
-			printf("parsing error: parser.c: %d\n", __LINE__);
-			return EXIT_FAILURE;
-		}
-
 		cond_file->file_count += 1;
 		cond_file->files = realloc(cond_file->files, cond_file->file_count * sizeof(FomodFile_t));
 		FomodFile_t * flag = &(cond_file->files[cond_file->file_count - 1]);
@@ -147,6 +150,11 @@ static int parseFiles(xmlNodePtr node, FomodCondFile_t * cond_file) {
 		flag->isFolder = xmlStrcmp(filesNode->name, (xmlChar *) "folder") == 0;
 
 		filesNode = filesNode->next;
+		if(!xml_validate_node(&filesNode, true, "folder", "file", NULL)) {
+			//TODO: handle error
+			printf("parsing error: parser.c: %d\n", __LINE__);
+			return EXIT_FAILURE;
+		}
 	}
 
 	return EXIT_SUCCESS;
@@ -154,45 +162,65 @@ static int parseFiles(xmlNodePtr node, FomodCondFile_t * cond_file) {
 
 static int parseConditionalInstalls(xmlNodePtr node, Fomod_t * fomod) {
 	xmlNodePtr patterns = node->children;
+	if(!xml_validate_node(&patterns, true, "patterns", NULL)) {
+		//TODO: handle error
+		printf("parsing error: parser.c: %d\n", __LINE__);
+		return EXIT_FAILURE;
+	}
 	if(patterns != NULL) {
-		if(!xml_validate_node(&patterns, true, "patterns", NULL)) {
+		xmlNodePtr current_pattern = patterns->children;
+		if(!xml_validate_node(&current_pattern, true, "pattern", NULL)) {
 			//TODO: handle error
-			printf("parsing error: parser.c: %d\n", __LINE__);
+			printf("parsing error: parser.c: %d for node %s\n", __LINE__, current_pattern->name);
 			return EXIT_FAILURE;
 		}
-		xmlNodePtr current_pattern = patterns->children;
 		while(current_pattern != NULL) {
-			xmlNodePtr pattern_child = current_pattern->children;
 
-			if(!xml_validate_node(&pattern_child, true, "pattern", NULL)) {
+			xmlNodePtr pattern_child = current_pattern->children;
+			if(!xml_validate_node(&pattern_child, true, "dependencies", "files", NULL)) {
 				//TODO: handle error
 				printf("parsing error: parser.c: %d for node %s\n", __LINE__, pattern_child->name);
 				return EXIT_FAILURE;
 			}
-
-			while(pattern_child != NULL) {
-				fomod->cond_files_count += 1;
-				fomod->cond_files = realloc(fomod->cond_files, fomod->cond_files_count * sizeof(FomodCondFile_t));
-				FomodCondFile_t * cond_file = &(fomod->cond_files[fomod->cond_files_count - 1]);
-
-				cond_file->file_count = 0;
-				cond_file->files = NULL;
-				cond_file->flag_count = 0;
-				cond_file->required_flags = NULL;
-
-				if(xmlStrcmp(pattern_child->name, (xmlChar *)"dependencies") == 0) {
-					if(parseDependencies(pattern_child, cond_file) != EXIT_SUCCESS) {
-						//TODO: handle error
-						return EXIT_FAILURE;
-					}
-				} else if(xmlStrcmp(pattern_child->name, (xmlChar *)"files") == 0) {
-					if(parseFiles(pattern_child, cond_file) != EXIT_SUCCESS) {
-						return EXIT_FAILURE;
-					}
+			if(pattern_child != NULL) {
+				if(!xml_validate_node(&pattern_child, true, "dependencies", "files", NULL)) {
+					//TODO: handle error
+					printf("parsing error: parser.c: %d for node %s\n", __LINE__, pattern_child->name);
+					return EXIT_FAILURE;
 				}
-				pattern_child = pattern_child->next;
+
+				FomodCondFile_t cond_file;
+				cond_file.file_count = 0;
+				cond_file.files = NULL;
+				cond_file.flag_count = 0;
+				cond_file.required_flags = NULL;
+
+				while(pattern_child != NULL) {
+					if(xmlStrcmp(pattern_child->name, (xmlChar *)"dependencies") == 0) {
+						if(parseDependencies(pattern_child, &cond_file) != EXIT_SUCCESS) {
+							//TODO: handle error
+							return EXIT_FAILURE;
+						}
+					} else if(xmlStrcmp(pattern_child->name, (xmlChar *)"files") == 0) {
+						if(parseFiles(pattern_child, &cond_file) != EXIT_SUCCESS) {
+							return EXIT_FAILURE;
+						}
+					}
+					pattern_child = pattern_child->next;
+				}
+
+				if(cond_file.file_count > 0) {
+					fomod->cond_files_count += 1;
+					fomod->cond_files = realloc(fomod->cond_files, fomod->cond_files_count * sizeof(FomodCondFile_t));
+					fomod->cond_files[fomod->cond_files_count - 1] = cond_file;
+				}
 			}
 			current_pattern = current_pattern->next;
+			if(!xml_validate_node(&current_pattern, true, "pattern", NULL)) {
+				//TODO: handle error
+				printf("parsing error: parser.c: %d for node %s\n", __LINE__, current_pattern->name);
+				return EXIT_FAILURE;
+			}
 		}
 	}
 	return EXIT_SUCCESS;
