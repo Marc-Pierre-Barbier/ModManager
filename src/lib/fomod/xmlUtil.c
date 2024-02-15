@@ -4,8 +4,19 @@
 #include <string.h>
 #include <sys/types.h>
 
+static char * trim_start(const char * string) {
+	const char * it = string;
+	while(*it != '\0' && (*it == ' ' || *it == '\t' || *it == '\n'))
+		it++;
+	unsigned long length = strlen(it) + 1; // add space for \0
+	char * trimmed = g_malloc(length);
+	memcpy(trimmed, it, length);
+	return trimmed;
+}
+
 char * xml_free_and_dup(xmlChar * line) {
-	char * free = strdup((const char *) line);
+	//some nodes start with cariage return and indentation leading to a massive amount of white spaces being read.
+	char * free = trim_start((const char *) line);
 	xmlFree(line);
 	return free;
 }

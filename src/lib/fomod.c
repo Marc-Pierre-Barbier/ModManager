@@ -78,17 +78,17 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 		//TODO: check if it can build from 2 path
 		GFile * source = g_file_new_build_filename(mod_folder_path, file->source, NULL);
 
-		int copy_result = EXIT_SUCCESS;
+		error_t copy_result = ERR_SUCCESS;
 		if(file->isFolder) {
 			copy_result = file_recursive_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL);
 		} else {
 			GError * err = NULL;
 			if(!g_file_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, &err)) {
 				fprintf(stderr, "%s\n", err->message);
-				copy_result = EXIT_FAILURE;
+				copy_result = ERR_FAILURE;
 			}
 		}
-		if(copy_result != EXIT_SUCCESS) {
+		if(copy_result != ERR_SUCCESS) {
 			g_error( "Copy failed, some file might be corrupted\n");
 		}
 		g_free(source);

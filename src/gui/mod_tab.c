@@ -134,6 +134,7 @@ static void on_file_chooser_open_add_mod(GObject* source_object, GAsyncResult* r
 	if(file == NULL)
 		return;
 
+	//TODO: add popup while it is loading, as the waitpid causes freezes
 	error_t err = mods_add_mod(file, GAMES_APPIDS[current_game]);
 	if(err != ERR_SUCCESS) {
 		//TODO: error popup

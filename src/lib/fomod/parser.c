@@ -166,7 +166,7 @@ static int parseConditionalInstalls(xmlNodePtr node, Fomod_t * fomod) {
 
 			if(!xml_validate_node(&pattern_child, true, "pattern", NULL)) {
 				//TODO: handle error
-				printf("parsing error: parser.c: %d\n", __LINE__);
+				printf("parsing error: parser.c: %d for node %s\n", __LINE__, pattern_child->name);
 				return EXIT_FAILURE;
 			}
 

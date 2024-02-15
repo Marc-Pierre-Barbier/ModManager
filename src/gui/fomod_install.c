@@ -1,6 +1,7 @@
 #include <fomod.h>
 #include <constants.h>
 #include <stdbool.h>
+#include <adwaita.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -15,20 +16,21 @@
 #include "fomod_install.h"
 
 GtkWidget * popover_image;
-GtkWidget * popover_description;
+GtkLabel * popover_description;
 
 
 // fomod specific globs
 GList * flagList = NULL;
 GList * pendingFileOperations = NULL;
 GList * buttons;
-GtkWindow *  dialog_window;
+AdwWindow * dialog_window;
 
 bool install_in_progress = FALSE;
 Fomod_t current_fomod;
 int fomod_step_id;
 int current_group_id;
 int mod_id;
+char * mod_folder;
 
 //used for most one
 GtkCheckButton * last_selected;
@@ -40,13 +42,14 @@ static void on_next();
 
 static void popover_on_enter(GtkEventControllerMotion*, gdouble, gdouble, gpointer user_data) {
 	FomodPlugin_t * plugin = user_data;
-	gtk_image_set_from_file(GTK_IMAGE(popover_image), plugin->image);
-	gtk_label_set_text(GTK_LABEL(popover_description), plugin->description);
+	char * imagepath = g_build_filename(mod_folder, plugin->image, NULL);
+	gtk_image_set_from_file(GTK_IMAGE(popover_image), imagepath);
+	gtk_label_set_text(popover_description, plugin->description);
 }
 
 static void popover_on_leave(GtkEventControllerMotion*, gdouble, gdouble, gpointer) {
 	gtk_image_clear(GTK_IMAGE(popover_image));
-	gtk_label_set_text(GTK_LABEL(popover_description), "");
+	gtk_label_set_text(popover_description, NULL);
 }
 
 static void on_button_toggeled_least_one(GtkCheckButton* self, gpointer) {
@@ -62,12 +65,16 @@ static void on_button_toggeled_least_one(GtkCheckButton* self, gpointer) {
 }
 
 static void on_button_toggeled_most_one(GtkCheckButton* self, gpointer) {
+	/*
+		gtk_check_button_set_active will trigger this event,
+		keep that in mind while editing.
+	*/
 	if(last_selected != NULL) {
+		gtk_check_button_set_active(last_selected, FALSE);
 		if(last_selected == self) {
-			gtk_check_button_set_active(last_selected, TRUE);
+			last_selected = NULL;
 			return;
 		}
-		gtk_check_button_set_active(last_selected, FALSE);
 	}
 	last_selected = self;
 }
@@ -119,19 +126,49 @@ static GList * popover_checked(const FomodGroup_t *group) {
 }
 
 static void popover_fomod_container(const FomodGroup_t *group) {
-	//GtkWidget * popover = gtk_popover_new();
-	dialog_window = GTK_WINDOW(gtk_window_new());
+	//TODO: handle force closure
+	dialog_window = ADW_WINDOW(adw_window_new());
+	gtk_window_set_title(GTK_WINDOW(dialog_window), group->name);
+
+	GtkWidget * root = adw_toolbar_view_new();
+	GtkWidget *header = adw_header_bar_new();
+	adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(root), header);
+	const int WIDTH = 800;
+
 	GtkWidget * left_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+	gtk_widget_set_size_request(left_box, WIDTH*0.2, -1);
 	GtkWidget * right_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+	gtk_widget_set_size_request(right_box, WIDTH*0.8, -1);
+	gtk_widget_set_hexpand(right_box, FALSE);
+
 	GtkWidget * paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
-	GtkWidget * next_button = gtk_button_new();
-	gtk_button_set_label(GTK_BUTTON(next_button), "Next");
-	gtk_widget_set_valign(next_button, GTK_ALIGN_CENTER);
-	g_signal_connect(next_button, "clicked", G_CALLBACK(on_next), NULL);
+	gtk_paned_set_resize_start_child (GTK_PANED (paned), TRUE);
+	gtk_paned_set_shrink_start_child (GTK_PANED (paned), FALSE);
+	gtk_paned_set_resize_end_child (GTK_PANED (paned), FALSE);
+	gtk_paned_set_shrink_end_child (GTK_PANED (paned), FALSE);
+
+	gtk_paned_set_resize_start_child (GTK_PANED (paned), FALSE);
+	gtk_paned_set_shrink_start_child (GTK_PANED (paned), FALSE);
+
+
 
 	gtk_paned_set_start_child(GTK_PANED(paned), left_box);
 	gtk_paned_set_end_child(GTK_PANED(paned), right_box);
-	gtk_window_set_child(GTK_WINDOW(dialog_window), paned);
+	adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(root), paned);
+
+	GtkWidget * next_button = gtk_button_new();
+	gtk_button_set_label(GTK_BUTTON(next_button), "Next");
+	gtk_widget_set_valign(next_button, GTK_ALIGN_END);
+	g_signal_connect(next_button, "clicked", G_CALLBACK(on_next), NULL);
+	adw_toolbar_view_add_bottom_bar(ADW_TOOLBAR_VIEW(root), next_button);
+
+	popover_image = gtk_image_new();
+	gtk_image_set_pixel_size(GTK_IMAGE(popover_image), WIDTH*0.5);
+	gtk_box_append(GTK_BOX(right_box), popover_image);
+	popover_description = GTK_LABEL(gtk_label_new(NULL));
+	gtk_label_set_wrap(popover_description, TRUE);
+	gtk_label_set_justify(popover_description, GTK_JUSTIFY_CENTER);
+	gtk_box_append(GTK_BOX(right_box), GTK_WIDGET(popover_description));
 
 	buttons = popover_checked(group);
 	GList * btn_iterator = buttons;
@@ -139,15 +176,10 @@ static void popover_fomod_container(const FomodGroup_t *group) {
 		gtk_box_append(GTK_BOX(left_box), btn_iterator->data);
 		btn_iterator = g_list_next(btn_iterator);
 	}
+	popover_on_enter(NULL, 0, 0, &group->plugins[0]);
 
-	popover_image = gtk_image_new();
-	//TODO: find how images work
-	gtk_box_append(GTK_BOX(right_box), popover_image);
-	popover_description = gtk_label_new(NULL);
-	gtk_box_append(GTK_BOX(right_box), popover_description);
-	gtk_box_append(GTK_BOX(right_box), next_button);
-
-	gtk_window_present(GTK_WINDOW(dialog_window));
+	adw_window_set_content(GTK_WINDOW (dialog_window), root);
+	gtk_window_present(GTK_WINDOW (dialog_window));
 }
 
 //match the definirion of gcompare func
@@ -198,12 +230,13 @@ static void last_install_step() {
 	fomod_free_file_operations(pendingFileOperations);
 	flagList = NULL;
 	pendingFileOperations = NULL;
+	g_free(mod_folder);
 	mod_tab_generate_ui();
 }
 
 
 static void on_next() {
-	gtk_window_close(dialog_window);
+	gtk_window_close(GTK_WINDOW(dialog_window));
 	//extract user choices
 	const FomodStep_t * step = &current_fomod.steps[fomod_step_id];
 	FomodGroup_t * group = &step->groups[current_group_id];
@@ -295,7 +328,7 @@ error_t gui_fomod_installer(int modid) {
 		}
 	}
 
-	g_autofree char * mod_folder = g_build_filename(mods_folder, mod->data, NULL);
+	mod_folder = g_build_filename(mods_folder, mod->data, NULL);
 	g_list_free_full(mod_list, g_free);
 
 	//everything should be lowercase since we use casefold() before calling any install function

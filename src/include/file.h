@@ -26,6 +26,6 @@ const char * file_extract_extension(const char * filePath);
 
 
 gboolean file_delete_recursive(GFile *file, GCancellable *cancellable, GError **error);
-gboolean file_recursive_copy(GFile * src, GFile * dest, GFileCopyFlags flags, GCancellable *cancellable, GError **error);
+error_t file_recursive_copy(GFile * src, GFile * dest, GFileCopyFlags flags, GCancellable *cancellable, GError **error);
 
 #endif

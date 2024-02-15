@@ -130,7 +130,12 @@ static int parseNodeElement(FomodPlugin_t * plugin, xmlNodePtr node_element) {
 	if(xmlStrcmp(node_element->name, (const xmlChar *) "description") == 0) {
 		plugin->description = xml_free_and_dup(xmlNodeGetContent(node_element));
 	} else if(xmlStrcmp(node_element->name, (const xmlChar *) "image") == 0) {
-		plugin->image = xml_free_and_dup(xmlGetProp(node_element, (const xmlChar *) "path"));
+		//TODO: maybe absolute path
+		char * path = xml_free_and_dup(xmlGetProp(node_element, (const xmlChar *) "path"));
+		xml_fix_path(path);
+		//TODO: make it safer.
+		plugin->image = g_ascii_strdown(path,strlen(path));
+		free(path);
 	} else if(xmlStrcmp(node_element->name, (const xmlChar *) "conditionFlags") == 0) {
 		return parse_condition_flags(plugin, node_element);
 	} else if(xmlStrcmp(node_element->name, (const xmlChar *) "files") == 0) {

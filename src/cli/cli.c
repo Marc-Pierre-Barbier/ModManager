@@ -236,7 +236,7 @@ static int setup(int argc, char ** argv) {
 
 	//links don't conflict with overlayfs and avoid coping 17Gb of files.
 	//but links require the files to be on the same filesystem
-	if(!file_recursive_copy(dataFolder, gameFolder, G_FILE_COPY_NONE, NULL, NULL)) {
+	if(file_recursive_copy(dataFolder, gameFolder, G_FILE_COPY_NONE, NULL, NULL) != ERR_SUCCESS) {
 		printf("Coping game files.  HINT: having the game on the same partition as you home director will make this operation use zero extra space\n");
 		return EXIT_FAILURE;
 	}

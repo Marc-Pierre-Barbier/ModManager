@@ -62,7 +62,8 @@ const char * file_extract_extension(const char * file_path) {
 }
 
 
-gboolean file_recursive_copy(GFile * src, GFile * dest, GFileCopyFlags flags, GCancellable *cancellable, GError **error) {
+error_t file_recursive_copy(GFile * src, GFile * dest, GFileCopyFlags flags, GCancellable *cancellable, GError **error) {
+	//TODO: add error handling
 // stolen from https://stackoverflow.com/questions/16453739/how-do-i-recursively-copy-a-directory-using-vala
 	GFileType src_type = g_file_query_file_type(src, G_FILE_QUERY_INFO_NONE, cancellable);
 	if (src_type == G_FILE_TYPE_DIRECTORY) {
@@ -81,8 +82,7 @@ gboolean file_recursive_copy(GFile * src, GFile * dest, GFileCopyFlags flags, GC
 	} else if (src_type == G_FILE_TYPE_REGULAR) {
 		g_file_copy(src, dest, flags, cancellable, NULL, NULL, error);
 	}
-
-	return TRUE;
+	return ERR_SUCCESS;
 }
 
 gboolean file_delete_recursive(GFile *file, GCancellable *cancellable, GError **error) {
