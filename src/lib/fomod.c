@@ -69,20 +69,19 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 		////fix the / and \ windows - unix paths
 		xml_fix_path(file->source);
 
-		//see basename man page
-		char * posix_source = strdup(file->source);
-		GFile * destination = g_file_new_build_filename(destination_folder, basename(posix_source), NULL);
-		free(posix_source);
-
-
 		//TODO: check if it can build from 2 path
 		GFile * source = g_file_new_build_filename(mod_folder_path, file->source, NULL);
 
 		error_t copy_result = ERR_SUCCESS;
 		if(file->isFolder) {
-			copy_result = file_recursive_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL);
+			g_autofree GFile * dest_folder = g_file_new_for_path(destination_folder);
+			copy_result = file_recursive_copy(source, dest_folder, G_FILE_COPY_NONE, NULL, NULL);
 		} else {
 			GError * err = NULL;
+			//see basename man page
+			char * posix_source = strdup(file->source);
+			g_autofree GFile * destination = g_file_new_build_filename(destination_folder, basename(posix_source), NULL);
+			free(posix_source);
 			if(!g_file_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, &err)) {
 				fprintf(stderr, "%s\n", err->message);
 				copy_result = ERR_FAILURE;

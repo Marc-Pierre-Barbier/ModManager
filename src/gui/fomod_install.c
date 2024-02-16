@@ -178,7 +178,7 @@ static void popover_fomod_container(const FomodGroup_t *group) {
 	}
 	popover_on_enter(NULL, 0, 0, &group->plugins[0]);
 
-	adw_window_set_content(GTK_WINDOW (dialog_window), root);
+	adw_window_set_content(dialog_window, root);
 	gtk_window_present(GTK_WINDOW (dialog_window));
 }
 
