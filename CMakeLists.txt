@@ -51,11 +51,6 @@ set(LIB_PUBLIC_HEADERS
 	src/include/steam.h
 )
 
-set(CLI_SOURCES
-	src/cli/cli.c
-	src/cli/fomod.c
-)
-
 set(GUI_SOURCES
 	src/gui/main.c
 	src/gui/game_tab.c
@@ -68,8 +63,6 @@ set(GUI_SOURCES
 #  BINARIES CONFIG  #
 #####################
 
-# add the executable
-add_executable(mod-manager-cli ${CLI_SOURCES})
 add_executable(mod-manager-gui ${GUI_SOURCES})
 add_library(libmod-manager SHARED ${LIB_SOURCES})
 
@@ -87,10 +80,6 @@ pkg_check_modules(GIO REQUIRED IMPORTED_TARGET gio-2.0)
 # LIB
 target_link_libraries(libmod-manager PUBLIC PkgConfig::GLIB PkgConfig::LIBXML PkgConfig::AUDIT PkgConfig::GIO)
 
-# CLI
-target_include_directories(mod-manager-cli PUBLIC src/include)
-target_link_libraries(mod-manager-cli PUBLIC libmod-manager PkgConfig::GLIB PkgConfig::GIO)
-
 # GUI
 target_include_directories(mod-manager-gui PUBLIC src/include)
 target_link_libraries(mod-manager-gui PUBLIC libmod-manager PkgConfig::GTK4 PkgConfig::GLIB PkgConfig::ADWAIDA PkgConfig::GIO)
@@ -99,7 +88,6 @@ target_link_libraries(mod-manager-gui PUBLIC libmod-manager PkgConfig::GTK4 PkgC
 #  INSTALL OPTIONS  #
 #####################
 
-install(TARGETS mod-manager-cli OPTIONAL DESTINATION bin)
 install(TARGETS mod-manager-gui OPTIONAL DESTINATION bin)
 
 target_sources(libmod-manager PUBLIC FILE_SET HEADERS
