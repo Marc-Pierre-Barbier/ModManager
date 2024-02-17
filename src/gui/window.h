@@ -3,5 +3,6 @@
 #include <gtk/gtk.h>
 
 extern GtkWidget *window;
+extern GtkButton *start_button;
 
 #endif

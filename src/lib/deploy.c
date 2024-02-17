@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/mount.h>
 #include <unistd.h>
@@ -12,18 +13,27 @@
 #include "mods.h"
 #include "overlayfs.h"
 
-
-
-DeploymentErrors_t deploy(char * appid_str, GList ** ignored_mods) {
-	int appid = steam_parseAppId(appid_str);
-	if(appid < 0) {
-		return INVALID_APPID;
+error_t undeploy(int appid) {
+	GFile * destination = NULL;
+	error_t err = game_data_get_data_path(appid, &destination);
+	if(err != ERR_SUCCESS)
+		return err;
+	g_autofree char * path = g_file_get_path(destination);
+	if(umount2(path, MNT_FORCE | MNT_DETACH) == 0) {
+		return ERR_SUCCESS;
 	}
+	printf("Failed to unmount errno: %d\n", errno);
+	return ERR_FAILURE;
+}
+
+DeploymentErrors_t deploy(int appid) {
+	char appid_str[snprintf(NULL, 0, "%d\0", appid)];
+	sprintf(appid_str, "%d", appid);
 
 	const char * home_path = g_get_home_dir();
 	g_autofree char * game_folder = g_build_filename(home_path, MODLIB_WORKING_DIR, GAME_FOLDER_NAME, appid_str, NULL);
 
-	//is the game present in the disk
+	//is the game clone for the manager present
 	if(access(game_folder, F_OK) != 0) {
 		return GAME_NOT_FOUND;
 	}
@@ -58,7 +68,6 @@ DeploymentErrors_t deploy(char * appid_str, GList ** ignored_mods) {
 
 		//if the mod is not marked to be deployed then don't
 		if(access(mod_flag, F_OK) != 0) {
-			*ignored_mods = g_list_append(*ignored_mods, mod_name);
 			mods = g_list_next(mods);
 			continue;
 		}

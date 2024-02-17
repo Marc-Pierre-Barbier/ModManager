@@ -7,7 +7,7 @@
 
 static GtkApplication *app;
 GtkWidget *window;
-
+GtkButton * start_button;
 
 static void show_about(GSimpleAction*, GVariant*, gpointer)
 {
@@ -70,6 +70,11 @@ static void game_selector(void) {
 
 	adw_view_switcher_title_set_stack(ADW_VIEW_SWITCHER_TITLE(viewswitcher), ADW_VIEW_STACK(content));
 	adw_header_bar_set_title_widget(ADW_HEADER_BAR(header), viewswitcher);
+
+	start_button = GTK_BUTTON(gtk_button_new());
+	gtk_button_set_icon_name(GTK_BUTTON(start_button), "media-playback-start-symbolic"); //media-playback-stop-symbolic
+	adw_header_bar_pack_start(ADW_HEADER_BAR(header), GTK_WIDGET(start_button));
+	gtk_widget_set_sensitive(GTK_WIDGET(start_button), FALSE);
 
 	GtkWidget * burger_menu = gtk_menu_button_new();
 	gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(burger_menu), "open-menu-symbolic");

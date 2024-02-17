@@ -1,12 +1,37 @@
 #include <gtk/gtk.h>
 #include <steam.h>
 #include <adwaita.h>
+#include <deploy.h>
 #include "game_tab.h"
 #include "mod_tab.h"
 #include "plugin_tab.h"
+#include "window.h"
+
 
 int current_game = -1;
+static int appid = 0;
 static GHashTable * gamePaths;
+
+
+static void on_undeploy();
+
+static void on_deploy() {
+	if(deploy(appid) == ERR_SUCCESS) {
+		gtk_button_set_icon_name(start_button, "media-playback-stop-symbolic");
+		g_signal_handlers_disconnect_by_func(start_button, on_deploy, NULL);
+		g_signal_connect(start_button, "clicked", G_CALLBACK(on_undeploy), NULL);
+	} else {
+		printf("Failed to deploy\n");
+	}
+}
+
+static void on_undeploy() {
+	if(undeploy(appid) == ERR_SUCCESS) {
+		gtk_button_set_icon_name(start_button, "media-playback-start-symbolic");
+		g_signal_handlers_disconnect_by_func(start_button, on_undeploy, NULL);
+		g_signal_connect(start_button, "clicked", G_CALLBACK(on_deploy), NULL);
+	}
+}
 
 static void row_selected (GtkListBox*, GtkListBoxRow* row, gpointer) {
 	if(row == NULL) {
@@ -17,6 +42,14 @@ static void row_selected (GtkListBox*, GtkListBoxRow* row, gpointer) {
 	GList * gamesIds = g_hash_table_get_keys(gamePaths);
 	int index = gtk_list_box_row_get_index(row);
 	current_game = *(int *)g_list_nth_data(gamesIds, index);
+	appid = GAMES_APPIDS[current_game];
+
+	//enable the button
+	g_signal_handlers_disconnect_by_func(start_button, on_undeploy, NULL);
+	g_signal_connect(start_button, "clicked", G_CALLBACK(on_deploy), NULL);
+	gtk_widget_set_sensitive(GTK_WIDGET(start_button), TRUE);
+
+
 	mod_tab_generate_ui();
 	plugin_tab_generate_ui();
 	g_list_free(gamesIds);
@@ -60,7 +93,6 @@ GtkWidget * game_tab_generate_ui(GtkWindow * window) {
 		adw_preferences_row_set_title(ADW_PREFERENCES_ROW(row), GAMES_NAMES[gameIndex]);
 
 		gtk_list_box_append(GTK_LIST_BOX(list_box), row);
-
 		gameIdsIterator = g_list_next(gameIdsIterator);
 	}
 
