@@ -109,8 +109,10 @@ static int parseGroupFiles(FomodPlugin_t * plugin, xmlNodePtr node_element) {
 		plugin->files = realloc(plugin->files, (plugin->file_count + 1) * sizeof(FomodFile_t));
 		FomodFile_t * file = &plugin->files[plugin->file_count - 1];
 
-		file->destination = xml_free_and_dup(xmlGetProp(file_node, (const xmlChar *) "destination"));
-		file->source = xml_free_and_dup(xmlGetProp(file_node, (const xmlChar *) "source"));
+		g_autofree char * destination = xml_free_and_dup(xmlGetProp(file_node, (const xmlChar *) "destination"));
+		file->destination = g_ascii_strdown(destination, -1);
+		g_autofree char * source = xml_free_and_dup(xmlGetProp(file_node, (const xmlChar *) "source"));
+		file->source = g_ascii_strdown(source, -1);
 
 		//TODO: test if it's a number
 		xmlChar * priority = xmlGetProp(file_node, (const xmlChar *) "priority");

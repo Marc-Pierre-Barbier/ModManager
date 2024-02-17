@@ -39,6 +39,7 @@ error_t file_casefold(GFile * folder) {
 
 			g_free(destination);
 		}
+		g_object_unref(enumerator);
 	}
 	return ERR_SUCCESS;
 }
@@ -79,6 +80,7 @@ error_t file_recursive_copy(GFile * src, GFile * dest, GFileCopyFlags flags, GCa
 				flags, cancellable, error
 			);
 		}
+		g_object_unref(enumerator);
 	} else if (src_type == G_FILE_TYPE_REGULAR) {
 		g_file_copy(src, dest, flags, cancellable, NULL, NULL, error);
 	}
@@ -96,6 +98,7 @@ gboolean file_delete_recursive(GFile *file, GCancellable *cancellable, GError **
 				cancellable, error
 			);
 		}
+		g_object_unref(enumerator);
 		g_file_delete(file, cancellable, error);
 	} else if (file_type == G_FILE_TYPE_REGULAR) {
 		g_file_delete(file, cancellable, error);

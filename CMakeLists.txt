@@ -26,7 +26,6 @@ set(LIB_SOURCES
 	src/lib/loadOrder.c
 	src/lib/overlayfs.c
 	src/lib/gameData.c
-	src/lib/getHome.c
 	src/lib/file.c
 	src/lib/mods.c
 	src/lib/archives.c
@@ -45,7 +44,6 @@ set(LIB_PUBLIC_HEADERS
 	src/include/file.h
 	src/include/fomod.h
 	src/include/gameData.h
-	src/include/getHome.h
 	src/include/loadOrder.h
 	src/include/mods.h
 	src/include/steam.h

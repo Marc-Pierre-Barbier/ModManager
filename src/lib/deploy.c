@@ -8,7 +8,6 @@
 #include <constants.h>
 
 #include "gameData.h"
-#include "getHome.h"
 #include "file.h"
 #include "mods.h"
 #include "overlayfs.h"
@@ -21,16 +20,15 @@ DeploymentErrors_t deploy(char * appid_str, GList ** ignored_mods) {
 		return INVALID_APPID;
 	}
 
-	g_autofree GFile * home = audit_get_home();
-	g_autofree char * home_path = g_file_get_path(home);
+	const char * home_path = g_get_home_dir();
 	g_autofree char * game_folder = g_build_filename(home_path, MODLIB_WORKING_DIR, GAME_FOLDER_NAME, appid_str, NULL);
 
-    //is the game present in the disk
+	//is the game present in the disk
 	if(access(game_folder, F_OK) != 0) {
 		return GAME_NOT_FOUND;
 	}
 
-    GFile * data_folder_file = NULL;
+	GFile * data_folder_file = NULL;
 	error_t error = game_data_get_data_path(appid, &data_folder_file);
 	if(error != ERR_SUCCESS) {
 		return GAME_NOT_FOUND;

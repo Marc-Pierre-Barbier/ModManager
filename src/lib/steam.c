@@ -1,9 +1,8 @@
 #include "steam.h"
 #include "macro.h"
-#include "getHome.h"
 
 #include <constants.h>
-
+#include <gio/gio.h>
 #include <unistd.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -209,8 +208,7 @@ error_t steam_search_games(GHashTable ** p_hash_table) {
 
 	SteamLibraries_t * libraries = NULL;
 	size_t size = 0;
-	GFile * home = audit_get_home();
-	g_autofree char * home_path = g_file_get_path(home);
+	const char * home_path = g_get_home_dir();
 
 	for(unsigned long i = 0; i < LEN(steamLibraries); i++) {
 		GFile * path = g_file_new_build_filename(home_path, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
@@ -226,7 +224,6 @@ error_t steam_search_games(GHashTable ** p_hash_table) {
 		g_free(path);
 	}
 
-	free(home);
 	if(libraries == NULL) {
 		return ERR_FAILURE;
 	}

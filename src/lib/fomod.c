@@ -49,7 +49,7 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 
 	GList * mods = mods_list(appid);
 	const char * souce_name = g_list_nth(mods, mod_id)->data;
-	g_autofree const char * home = g_get_home_dir();
+	const char * home = g_get_home_dir();
 	g_autofree const char * mods_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, app_id_str, NULL);
 	g_autofree  GFile * mod_folder = g_file_new_build_filename(mods_folder, souce_name, NULL);
 	g_autofree const char * destination_name = g_strconcat(souce_name, "__FOMOD", NULL);
@@ -116,18 +116,14 @@ GList * fomod_process_cond_files(const Fomod_t * fomod, GList * flag_list, GList
 		}
 
 		if(are_all_flags_valid) {
-			for(long file_id = 0; file_id < cond_file->flag_count; file_id++) {
+			for(long file_id = 0; file_id < cond_file->file_count; file_id++) {
 				const FomodFile_t * file = &(cond_file->files[file_id]);
 
 				FomodFile_t * file_copy = g_malloc(sizeof(*file));
 				*file_copy = *file;
 
-				//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
-				char * destination = g_ascii_strdown(file->destination, -1);
-				file_copy->destination = destination;
-
-				char * source = g_ascii_strdown(file->source, -1);
-				file_copy->source = source;
+				file_copy->destination = strdup(file->destination);
+				file_copy->source = strdup(file->source);
 
 				pending_file_operations = g_list_append(pending_file_operations, file_copy);
 			}

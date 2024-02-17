@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <mods.h>
 #include <steam.h>
-#include <getHome.h>
 #include <gtk/gtk.h>
 
 #include "mod_tab.h"
@@ -226,11 +225,21 @@ static void last_install_step() {
 	fomod_process_file_operations(&pendingFileOperations, mod_id, GAMES_APPIDS[current_game]);
 
 	printf("FOMod successfully installed!\n");
-	g_list_free(flagList);
+
+	//cleanup
+	fomod_free_fomod(&current_fomod);
 	fomod_free_file_operations(pendingFileOperations);
-	flagList = NULL;
 	pendingFileOperations = NULL;
+	g_list_free(flagList);
+	flagList = NULL;
 	g_free(mod_folder);
+	mod_folder = NULL;
+	install_in_progress = FALSE;
+	last_selected = NULL;
+	fomod_step_id = 0;
+	current_group_id = 0;
+	mod_id = 0;
+
 	mod_tab_generate_ui();
 }
 
@@ -267,13 +276,11 @@ static void on_next() {
 
 		//do the install
 		for(int pluginId = 0; pluginId < plugin->file_count; pluginId++) {
-			FomodFile_t * file = &plugin->files[pluginId];
-			//changing pathes to lowercase since we used casefold and the pathes in the xml might not like it
-			file->destination = g_ascii_strdown(file->destination, -1);
-
-			char * source = g_ascii_strdown(file->source, -1);
-			file->source = strdup(source);
-			g_free(source);
+			FomodFile_t * file = g_malloc(sizeof(FomodFile_t));
+			//copy the file implies that we need to also clone the strings in it
+			*file = plugin->files[pluginId];
+			file->destination = strdup(file->destination);
+			file->source = strdup(file->source);
 
 			pendingFileOperations = g_list_append(pendingFileOperations, file);
 		}
@@ -308,8 +315,7 @@ error_t gui_fomod_installer(int modid) {
 	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	//might crash if no mods were installed
-	g_autofree GFile * home = audit_get_home();
-	g_autofree char * home_path = g_file_get_path(home);
+	const char * home_path = g_get_home_dir();
 	g_autofree char * mods_folder = g_build_filename(home_path, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
 	GList * mod_list = mods_list(appid);
 	GList * mod = g_list_nth(mod_list, mod_id);

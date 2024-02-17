@@ -28,7 +28,7 @@ static void on_fomod_install(GtkMenuButton *, gpointer user_data) {
 	error_t err = gui_fomod_installer(mod_id);
 	if(err != ERR_SUCCESS) {
 		//TODO: error popup
-		printf("err %d\n", mod_id);
+		printf("Error while starting install fomod %d\n", mod_id);
 	}
 }
 
@@ -73,11 +73,16 @@ static GtkWidget * create_mod_row(int mod_id, char * mod_name, bool first, bool 
 
 	GtkWidget * mod_row = adw_action_row_new();
 
-	adw_preferences_row_set_title(ADW_PREFERENCES_ROW(mod_row), mod_name);
 	adw_action_row_set_title_lines(ADW_ACTION_ROW(mod_row),2);
-
-	if(details.is_fomod)
+	if(details.is_fomod) {
 		adw_action_row_set_subtitle(ADW_ACTION_ROW(mod_row), "This is a fomod mod");
+		g_autofree char * cut_name = strdup(mod_name);
+		//cut the string before the __FOMOD
+		cut_name[strlen(cut_name) - 7] = '\0';
+		adw_preferences_row_set_title(ADW_PREFERENCES_ROW(mod_row), cut_name);
+	} else {
+		adw_preferences_row_set_title(ADW_PREFERENCES_ROW(mod_row), mod_name);
+	}
 
 	GtkWidget * enable_switch = gtk_switch_new();
 	gtk_widget_set_valign(enable_switch, GTK_ALIGN_CENTER);

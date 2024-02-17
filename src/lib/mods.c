@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <glib.h>
 #include <constants.h>
-#include <getHome.h>
 #include <file.h>
 #include <unistd.h>
 #include "mods.h"
@@ -11,7 +10,7 @@
 //no function are declared in main it's just macros
 #include <constants.h>
 
-#include "getHome.h"
+
 #include "steam.h"
 
 typedef struct Mod {
@@ -34,9 +33,8 @@ GList * mods_list(int appid) {
 	char appid_str[GAMES_MAX_APPID_LENGTH];
 	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
-	g_autofree GFile * home_file = audit_get_home();
-	g_autofree char * home = g_file_get_path(home_file);
-	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
+	const char * home = g_get_home_dir();
+	g_autofree const char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
 
 	GList * list = NULL;
 	DIR *d;
@@ -107,8 +105,7 @@ error_t mods_swap_place(int appid, int mod_id_a, int mod_id_b) {
 
 	g_message("flipping mod%d and mod%d", mod_id_a, mod_id_b);
 
-	g_autofree GFile * home_file = audit_get_home();
-	g_autofree char * home = g_file_get_path(home_file);
+	const char * home = g_get_home_dir();
 	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidStr, NULL);
 
 	GList * list = mods_list(appid);
@@ -149,8 +146,7 @@ mods_mod_detail_t mods_mod_details(const int appid, int modid) {
 	GList * mod = g_list_nth(mods, modid);
 	const char * mod_name = (char*)mod->data;
 
-	g_autofree GFile * home_file = audit_get_home();
-	g_autofree char * home = g_file_get_path(home_file);
+	const char * home = g_get_home_dir();
 	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	g_autofree char * current_mod_path = g_build_filename(mod_folder, mod_name, NULL);
 	g_autofree char * current_mod_install_flag =  g_build_filename(current_mod_path, INSTALLED_FLAG_FILE, NULL);
@@ -179,8 +175,7 @@ error_t mods_enable_mod(int appid, int modId) {
 	char appidstr[GAMES_MAX_APPID_LENGTH];
 	snprintf(appidstr, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
-	g_autofree GFile * home_file = audit_get_home();
-	g_autofree char * home = g_file_get_path(home_file);
+	const char * home = g_get_home_dir();
 	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidstr, NULL);
 
 	const char * modName = (char*)mod->data;
@@ -222,8 +217,7 @@ error_t mods_disable_mod(int appid, int modId) {
 	char appidstr[GAMES_MAX_APPID_LENGTH];
 	snprintf(appidstr, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
-	g_autofree GFile * home_file = audit_get_home();
-	g_autofree char * home = g_file_get_path(home_file);
+	const char * home = g_get_home_dir();
 	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidstr, NULL);
 
 	const char * mod_name = (char*)mod->data;
@@ -262,10 +256,13 @@ error_t mods_remove_mod(int appid, int modId) {
 	//so i wired up file_delete_recursive which at the same time improve support for fs without trash handling
 	if(!g_file_trash(folder, NULL, &err)) {
 		printf("%s\n", err->message);
-		err = NULL;
+		g_clear_error(&err);
 		if(!file_delete_recursive(folder, NULL, &err)) {
 			printf("%s\n", err->message);
+			g_clear_error(&err);
 			return ERR_FAILURE;
+		} else {
+			printf("It's safe to ignore the previous error \n");
 		}
 	}
 	return ERR_SUCCESS;
@@ -274,8 +271,7 @@ error_t mods_remove_mod(int appid, int modId) {
 GFile * mods_get_mods_folder(int appid) {
 	char appidstr[GAMES_MAX_APPID_LENGTH];
 	snprintf(appidstr, GAMES_MAX_APPID_LENGTH, "%d", appid);
-	g_autofree GFile * home_file = audit_get_home();
-	g_autofree char * home = g_file_get_path(home_file);
+	const char * home = g_get_home_dir();
 	return g_file_new_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidstr, NULL);
 }
 
@@ -321,9 +317,14 @@ error_t mods_add_mod(GFile * file_path, int appId) {
 		return ERR_FAILURE;
 	}
 
-	const char * filename = g_file_get_basename(file_path);
-	const char * extension = file_extract_extension(filename);
+	const char * archive_name = g_file_get_basename(file_path);
+	const char * extension = file_extract_extension(archive_name);
 	g_autofree char * lowercase_extension = g_ascii_strdown(extension, -1);
+
+	const int length_no_extension = strlen(archive_name) - strlen(extension); // we replace the . by \0 so ne need for +1
+	char filename[length_no_extension];
+	memcpy(filename, archive_name, length_no_extension);
+	filename[length_no_extension - 1] = '\0';
 
 	char appIdStr[20];
 	sprintf(appIdStr, "%d", appId);
