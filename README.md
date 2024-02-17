@@ -1,5 +1,7 @@
 
-# A Bethesda game mod manager for Linux
+# A work in progress Bethesda game mod manager for Linux
+
+The current version si not usable, the previous cli based version is still available from the release page.
 
 This mod manager is made to protect the original game files files at all costs.
 if an operation or a mod tries to modify the files they will be stocked in and overlay folder (~/.local/share/modmanager/UPPER_DIRS/appid)
@@ -25,6 +27,7 @@ mods conflicts are solved by priority like in mo3
 1. Find a name
 2. Support more games
 3. adding a hook for %command% in steam
+4. Fix the deployement
 
 ## How to contribute:
 if you have creation engine based games not listed in src/steam.h
