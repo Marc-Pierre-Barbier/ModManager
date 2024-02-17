@@ -3,6 +3,7 @@
 
 #include "errorType.h"
 #include <glib.h>
+#include <gio/gio.h>
 #include "fomodTypes.h"
 
 /**
@@ -11,7 +12,7 @@
  * @param fomodFile path to the moduleconfig.xml
  * @param fomod pointer to a new FOMod_t
  */
-error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod);
+error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod);
 
 /**
  * @brief In fomod there is file operations which depends on multiple flags this function find the ones that mach our current flags and append them to a list.
@@ -21,30 +22,29 @@ error_t parser_parseFOMod(const char * fomodFile, FOMod_t* fomod);
  * @param pendingFileOperations a list of pending FOModFile_t operation to which add the new ones. (can be null)
  * @return a list of pendingFileOperations(FOModFile_t)
  */
-GList * fomod_processCondFiles(const FOMod_t * fomod, GList * flagList, GList * pendingFileOperations) __attribute__((warn_unused_result));
+GList * fomod_process_cond_files(const Fomod_t * fomod, GList * flag_list, GList * pending_file_operations) __attribute__((warn_unused_result));
 
 /**
  * @brief FOModFile_t have a priority option and this function execute the file operation while taking this into account.
- *
+ * this create a new mod with the __FOMOD postfix in the name
  * @param pendingFileOperations list of FOModFile_t to process
- * @param modFolder folder of the fomod file.
- * @param destination folder of the new mod that contains the result of the process.
+ * @param modFolder mod_name
  * @return error code
  */
-error_t fomod_processFileOperations(GList ** pendingFileOperations, const char * modFolder, const char * destination);
+error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_id, int appid);
 
 /**
  * @brief
  *
  * @param fileOperations
  */
-void fomod_freeFileOperations(GList * fileOperations);
+void fomod_free_file_operations(GList * file_operations);
 
 
 /**
  * @brief Free content of a fomod file.
  * @param fomod
  */
-void fomod_freeFOMod(FOMod_t * fomod);
+void fomod_free_fomod(Fomod_t * fomod);
 
 #endif

@@ -1,4 +1,6 @@
 * Add tests
 * Add safe interrupt support
-* Add a gui in an external binary
-* Move all print from the lib to the cli
+* Plugin conflict solver. (maybe forking loot ?)
+* make it possible start any EXE inside the game folder (FNIS, Bodyslide & others)
+* archives with root in subfolder (ex: logical crime report)
+* automaticaly detect file change

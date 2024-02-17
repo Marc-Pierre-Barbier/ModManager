@@ -8,24 +8,27 @@
 #include <glib.h>
 #include <errorType.h>
 
-typedef struct steam_App {
+typedef struct SteamApp {
 	unsigned int appid;
 	unsigned int update;
-} steam_App_t;
+} SteamApp_t;
 
-typedef struct steam_Libraries {
+typedef struct SteamLibraries {
 	char * path;
 	char * label;
 	char * contentId;
 	unsigned long totalSize;
 	char * update_clean_bytes_tally;
 	char * time_last_update_corruption;
-	steam_App_t * apps;
-	size_t appsCount;
-} steam_Libraries_t;
+	SteamApp_t * apps;
+	size_t apps_count;
+} SteamLibraries_t;
 
 //todo add the older games
 // order has to be the same as in GAMES_NAMES
+// 7 is enough to know if it's in GAMES_APPIDS no need to have the real value
+#define GAMES_MAX_APPID_LENGTH 7
+
 static const u_int32_t GAMES_APPIDS[] = {
 	489830,
 	22330,
@@ -51,7 +54,7 @@ _Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPI
  * @param status pointer to a status variable that will be modified to EXIT_SUCCESS or EXIT_FAILURE
  * @return GHashTable* a map gameId(int) => path(char *) to the corresponding steam library
  */
-error_t steam_searchGames(GHashTable** tablePointer);
+error_t steam_search_games(GHashTable** table_pointer);
 
 void steam_freeGameTable(void);
 
@@ -61,7 +64,7 @@ void steam_freeGameTable(void);
  * @param appid
  * @return -1 in case of failure or the index of the game.
  */
-int steam_gameIdFromAppId(u_int32_t appid);
+int steam_game_id_from_app_id(u_int32_t appid);
 
 /**
  * @brief Parse the steamId string
@@ -69,6 +72,6 @@ int steam_gameIdFromAppId(u_int32_t appid);
  * @param appIdStr steamId string
  * @return int -1 if failures or an int containing the steamId
  */
-int steam_parseAppId(const char * appIdStr);
+int steam_parseAppId(const char * app_id_str);
 
 #endif

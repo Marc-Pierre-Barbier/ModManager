@@ -7,8 +7,8 @@
 #include <stdio.h>
 
 overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * upperdir, const char * workdir) {
-	char * lowerdir = g_strjoinv(":", sources);
-	char * mountData = g_strjoin("", "lowerdir=", lowerdir, ",workdir=", workdir, ",upperdir=", upperdir, NULL);
+	char * lower_dir = g_strjoinv(":", sources);
+	char * mount_data = g_strjoin("", "lowerdir=", lower_dir, ",workdir=", workdir, ",upperdir=", upperdir, NULL);
 
 	overlay_errors_t result = SUCESS;
 
@@ -16,19 +16,19 @@ overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * 
 		int pid = fork();
 		if(pid == 0) {
 			//exit is used to get the return value when using waitpid
-			exit(execl("/usr/bin/fuse-overlayfs", "/usr/bin/fuse-overlayfs", "-o", mountData, dest, NULL));
+			exit(execl("/usr/bin/fuse-overlayfs", "/usr/bin/fuse-overlayfs", "-o", mount_data, dest, NULL));
 		} else {
 
-			int returnValue = 0;
-			waitpid(pid, &returnValue, 0);
-			if(returnValue != 0) {
+			int return_value = 0;
+			waitpid(pid, &return_value, 0);
+			if(return_value != 0) {
 				result = FAILURE;
 			}
 		}
 	} else {
 		result = NOT_INSTALLED;
 	}
-	free(lowerdir);
-	free(mountData);
+	free(lower_dir);
+	free(mount_data);
 	return result;
 }

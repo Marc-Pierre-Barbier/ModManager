@@ -8,14 +8,17 @@
 #include <stdio.h>
 #include <glib.h>
 
-int archive_unzip(char * path, char * outdir) {
+int archive_unzip(GFile * file, GFile * out_dir) {
+	g_autofree char * path = g_file_get_path(file);
+	g_autofree char * out_dir_path = g_file_get_path(out_dir);
+
 	char * const args[] = {
 		"unzip",
 		"-LL", // to lowercase
 		"-q",
 		path,
 		"-d",
-		outdir,
+		out_dir_path,
 		NULL
 	};
 
@@ -25,24 +28,26 @@ int archive_unzip(char * path, char * outdir) {
 		execv("/usr/bin/unzip", args);
 		return EXIT_FAILURE;
 	} else {
-		int returnValue;
-		waitpid(pid, &returnValue, 0);
+		int return_value;
+		waitpid(pid, &return_value, 0);
 
-		if(returnValue != 0) {
-			fprintf(stderr, "\nFailed to decompress archive\n");
+		if(return_value != 0) {
+			g_error( "\nFailed to decompress archive\n");
 		}
-		return returnValue;
+		return return_value;
 	}
 }
 
-int archive_unrar(char * path, char * outdir) {
+int archive_unrar(GFile * file, GFile * out_dir) {
+	g_autofree char * path = g_file_get_path(file);
+	g_autofree char * out_dir_path = g_file_get_path(out_dir);
 	char * const args[] = {
 		"unrar",
 		"x",
 		"-y", //assume yes
 		"-cl", // to lowercase
 		path,
-		outdir,
+		out_dir_path,
 		NULL
 	};
 
@@ -52,19 +57,21 @@ int archive_unrar(char * path, char * outdir) {
 		execv("/usr/bin/unrar", args);
 		return EXIT_FAILURE;
 	} else {
-		int returnValue;
-		waitpid(pid, &returnValue, 0);
+		int return_value;
+		waitpid(pid, &return_value, 0);
 
-		if(returnValue != 0) {
-			fprintf(stderr, "\nFailed to decompress archive\n");
+		if(return_value != 0) {
+			g_error( "\nFailed to decompress archive\n");
 		}
-		return returnValue;
+		return return_value;
 	}
 }
 
 
-int archive_un7z(char * path, const char * outdir) {
-	gchar * outParameter = g_strjoin("", "-o", outdir, NULL);
+int archive_un7z(GFile * file, GFile * out_dir) {
+	g_autofree char * out_dir_path = g_file_get_path(out_dir);
+	g_autofree gchar * outParameter = g_strjoin("", "-o", out_dir_path, NULL);
+	g_autofree char * path = g_file_get_path(file);
 
 	char * const args[] = {
 		"7z",
@@ -81,16 +88,15 @@ int archive_un7z(char * path, const char * outdir) {
 		execv("/usr/bin/7z", args);
 		return EXIT_FAILURE;
 	} else {
-		g_free(outParameter);
-		int returnValue;
-		waitpid(pid, &returnValue, 0);
+		int return_value;
+		waitpid(pid, &return_value, 0);
 
-		if(returnValue != 0) {
-			fprintf(stderr, "\nFailed to decompress archive\n");
-			return returnValue;
+		if(return_value != 0) {
+			g_error( "\nFailed to decompress archive\n");
+			return return_value;
 		}
 		//make everything lowercase since 7z don't have an argument for that.
-		file_casefold(outdir);
-		return returnValue;
+		file_casefold(out_dir);
+		return return_value;
 	}
 }
