@@ -45,10 +45,25 @@ static void row_selected (GtkListBox*, GtkListBoxRow* row, gpointer) {
 	appid = GAMES_APPIDS[current_game];
 
 	//enable the button
-	g_signal_handlers_disconnect_by_func(start_button, on_undeploy, NULL);
-	g_signal_connect(start_button, "clicked", G_CALLBACK(on_deploy), NULL);
-	gtk_widget_set_sensitive(GTK_WIDGET(start_button), TRUE);
-
+	bool status;
+	error_t err = is_deployed(appid, &status);
+	if(err != ERR_SUCCESS) {
+		g_error("No button");
+		//TODO: error handling
+		gtk_button_set_icon_name(start_button, "edit-delete-symbolic");
+		gtk_widget_set_sensitive(GTK_WIDGET(start_button), FALSE);
+	} else {
+		if(status) {
+			g_signal_handlers_disconnect_by_func(start_button, on_deploy, NULL);
+			g_signal_connect(start_button, "clicked", G_CALLBACK(on_undeploy), NULL);
+			gtk_button_set_icon_name(start_button, "media-playback-stop-symbolic");
+		} else {
+			g_signal_handlers_disconnect_by_func(start_button, on_undeploy, NULL);
+			g_signal_connect(start_button, "clicked", G_CALLBACK(on_deploy), NULL);
+			gtk_button_set_icon_name(start_button, "media-playback-start-symbolic");
+		}
+		gtk_widget_set_sensitive(GTK_WIDGET(start_button), TRUE);
+	}
 
 	mod_tab_generate_ui();
 	plugin_tab_generate_ui();

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <errorType.h>
@@ -59,20 +60,60 @@ static error_t generate_symlink_copy(const char * source, const char * destinati
 	return ERR_SUCCESS;
 }
 
-error_t undeploy(int appid) {
+error_t is_deployed(int appid, bool * status) {
 	g_autofree GFile * destination = steam_get_game_folder_path(appid);
 	if(destination == NULL)
 		return ERR_FAILURE;
 
 	g_autofree char * path = g_file_get_path(destination);
-	//unmount the game folder
-	//DETACH + FORCE allow us to be sure it will be unload.
-	//it might crash / corrupt game file if the user do it while the game is running
-	//but it's still very unlikely
-	if(umount2(path, MNT_FORCE | MNT_DETACH) == 0) {
-		return ERR_SUCCESS;
+	pid_t pid = fork();
+	if(pid == -1) {
+		g_error("Failed to fork");
+		exit(EXIT_FAILURE);
+		return ERR_FAILURE;
 	}
-	printf("Failed to unmount errno: %d\n", errno);
+
+	if(pid == 0) {
+		execl("/usr/bin/fuser", "fuser", "-M", path, NULL);
+		g_error("failed to run fuser");
+		exit(ENOENT);
+	} else {
+		int value;
+		waitpid(pid, &value, 0);
+		if(value == ENOENT) {
+			return ERR_FAILURE;
+		} else if(value == 0) {
+			*status = TRUE;
+		} else {
+			*status = FALSE;
+		}
+	}
+
+	return ERR_SUCCESS;
+}
+
+error_t undeploy(int appid) {
+	char appid_str[snprintf(NULL, 0, "%d\0", appid)];
+	sprintf(appid_str, "%d", appid);
+
+	g_autofree char * path = g_build_filename(g_get_tmp_dir(), MODLIB_NAME, appid_str, NULL);
+
+	pid_t pid = fork();
+	if(pid == -1) {
+		g_error("Failed to fork");
+		exit(EXIT_FAILURE);
+		return ERR_FAILURE;
+	}
+	if(pid == 0) {
+		execl("/usr/bin/fusermount", "fusermount", "-u", path, NULL);
+		g_error("failed to run fusermount");
+		exit(1);
+	}
+
+	int value;
+	waitpid(pid, &value, 0);
+	if(value == 0)
+		return ERR_SUCCESS;
 	return ERR_FAILURE;
 }
 

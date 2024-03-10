@@ -15,11 +15,10 @@ mods conflicts are solved by priority like in mo3
 ![Plugins list](screenshots/plugins.png)
 
 ## Requirements:
+* gtk4
 * glib2
 * 7z unzip unrar (used for each respective formats)
 * libaudit
-
-### Optional requirements:
 * Fuse 3
 * Fuse-overlayfs
 
@@ -27,7 +26,6 @@ mods conflicts are solved by priority like in mo3
 1. Find a name
 2. Support more games
 3. adding a hook for %command% in steam
-4. Fix the deployement
 
 ## How to contribute:
 if you have creation engine based games not listed in src/steam.h

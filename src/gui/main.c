@@ -37,7 +37,7 @@ static void game_selector(void) {
 	gtk_widget_add_css_class(window, "devel");
 	#endif
 
-	gtk_window_set_title(GTK_WINDOW(window),	"Mod manager - Pick your game");
+	gtk_window_set_title(GTK_WINDOW(window), "Mod manager - Pick your game");
 	gtk_window_set_default_size(GTK_WINDOW(window), 800, 400);
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 

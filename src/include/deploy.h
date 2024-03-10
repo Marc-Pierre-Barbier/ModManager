@@ -8,5 +8,6 @@ typedef enum DeploymentErrors { INVALID_APPID, GAME_NOT_FOUND, OK, CANNOT_MOUNT,
 
 [[nodiscard]] DeploymentErrors_t deploy(int appid);
 [[nodiscard]] error_t undeploy(int appid);
+[[nodiscard]] error_t is_deployed(int appid, bool * status);
 
 #endif
