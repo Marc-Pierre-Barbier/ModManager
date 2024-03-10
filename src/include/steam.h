@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <glib.h>
+#include <gio/gio.h>
 #include <errorType.h>
 
 typedef struct SteamApp {
@@ -44,8 +45,20 @@ static const char * GAMES_NAMES[] = {
 	"Morrowind"
 };
 
+//the directory in which mods will be installed.
+//TODO: allow to override this so we can install skse/obse through the manager
+static const char * GAMES_MOD_TARGET[] = {
+	"data",
+	"data",
+	"data",
+	"Data Files"
+};
+
 _Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and Game Names doesn't match");
+
+_Static_assert(sizeof(GAMES_MOD_TARGET) / sizeof(GAMES_MOD_TARGET[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+	"Game mod target and Game Names doesn't match");
 
 /**
  * @brief list all installed games and the paths to the game's files
@@ -73,5 +86,14 @@ int steam_game_id_from_app_id(u_int32_t appid);
  * @return int -1 if failures or an int containing the steamId
  */
 int steam_parseAppId(const char * app_id_str);
+
+
+/**
+ * @brief Find the game folder
+ *
+ * @param appid game app id
+ * @return GFile* can be null
+ */
+GFile * steam_get_game_folder_path(int appid);
 
 #endif

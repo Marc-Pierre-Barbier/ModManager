@@ -1,7 +1,7 @@
 #ifndef __OVERLAY_H__
 #define __OVERLAY_H__
 
-typedef enum overlay_errors { SUCESS, NOT_INSTALLED, FAILURE } overlay_errors_t;
+typedef enum overlay_errors { SUCCESS, NOT_INSTALLED, FAILURE } overlay_errors_t;
 
 
 /**

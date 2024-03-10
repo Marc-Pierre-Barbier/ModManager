@@ -8,8 +8,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include "gameData.h"
+#include <steam.h>
 
 static gint order_find_file_with_name(gconstpointer list_entry, gconstpointer user_data) {
 	const order_plugin_entry_t * entry = (const order_plugin_entry_t *)list_entry;
@@ -25,11 +24,17 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 	char appid_str[GAMES_MAX_APPID_LENGTH];
 	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
-	GFile * data_folder_file = NULL;
-	error_t error = game_data_get_data_path(appid, &data_folder_file);
-	if(error != ERR_SUCCESS) {
+	const int game_id = steam_game_id_from_app_id(appid);
+	if(game_id == -1) {
 		return ERR_FAILURE;
 	}
+
+	GFile * game_folder_file = steam_get_game_folder_path(appid);
+	if(game_folder_file == NULL) {
+		return ERR_FAILURE;
+	}
+	g_autofree char * game_folder = g_file_get_path(game_folder_file);
+	GFile * data_folder_file = g_file_new_build_filename(game_folder, GAMES_MOD_TARGET[game_id], NULL);
 
 	g_autofree char * data_folder = g_file_get_path(data_folder_file);
 

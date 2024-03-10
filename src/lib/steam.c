@@ -287,3 +287,34 @@ int steam_parseAppId(const char * appid_str) {
 	//no valid appid goes far enough to justify long
 	return (int)appid;
 }
+
+GFile * steam_get_game_folder_path(int appid) {
+	GHashTable * gamePaths;
+	error_t status = steam_search_games(&gamePaths);
+	if(status == ERR_FAILURE) {
+		g_error("Steam not found");
+		return NULL;
+	}
+
+	int gameId = steam_game_id_from_app_id(appid);
+	if(gameId < 0 ) {
+		g_error( "invalid appid");
+		return NULL;
+	}
+
+	const char * path = g_hash_table_lookup(gamePaths, &gameId);
+
+	if(path == NULL) {
+		g_error( "game not found\n");
+		return NULL;
+	}
+
+	GFile * game_folder = g_file_new_build_filename(path, "steamapps/common", GAMES_NAMES[gameId], NULL);
+
+	if(g_file_query_exists(game_folder, NULL)) {
+		return game_folder;
+	}
+
+	g_free(game_folder);
+	return NULL;
+}

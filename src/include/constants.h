@@ -8,8 +8,7 @@
 // in c "A" "B" is the same as "AB"
 #define MODLIB_WORKING_DIR ".local/share/" MODLIB_NAME
 #define MOD_FOLDER_NAME "MOD_FOLDER"
-//the folder in which the games file will be linked or copied
-#define GAME_FOLDER_NAME "GAME_FOLDER"
+
 //the director that will contain all modifications to game files while being deployed
 #define GAME_UPPER_DIR_NAME "UPPER_DIRS"
 //overlayfs temporary dir.

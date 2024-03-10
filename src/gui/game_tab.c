@@ -16,7 +16,7 @@ static GHashTable * gamePaths;
 static void on_undeploy();
 
 static void on_deploy() {
-	if(deploy(appid) == ERR_SUCCESS) {
+	if(deploy(appid) == OK) {
 		gtk_button_set_icon_name(start_button, "media-playback-stop-symbolic");
 		g_signal_handlers_disconnect_by_func(start_button, on_deploy, NULL);
 		g_signal_connect(start_button, "clicked", G_CALLBACK(on_undeploy), NULL);
