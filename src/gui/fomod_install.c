@@ -342,7 +342,7 @@ error_t gui_fomod_installer(int modid) {
 	g_autofree GFile * fomod_file = g_file_new_build_filename(fomod_folder, "moduleconfig.xml", NULL);
 
 	if(!g_file_query_exists(fomod_file, NULL)) {
-		g_error( "FOMod file not found, are you sure this is a fomod mod ?\n");
+		g_warning( "FOMod file not found, are you sure this is a fomod mod ?\n");
 		return ERR_FAILURE;
 	}
 

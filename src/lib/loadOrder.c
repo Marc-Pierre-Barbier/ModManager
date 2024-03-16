@@ -216,7 +216,7 @@ error_t order_get_mod_dependencies(const char * esm_path, GList ** dependencies)
 		record_header_to_ignore = 16;
 		size_field_size = 2;
 	} else {
-		g_error( "Unrecognized file format %s\n", section_name);
+		g_warning( "Unrecognized file format %s\n", section_name);
 		fclose(file);
 		return ERR_FAILURE;
 	}

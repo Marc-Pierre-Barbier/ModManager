@@ -48,9 +48,9 @@ static const char * GAMES_NAMES[] = {
 //the directory in which mods will be installed.
 //TODO: allow to override this so we can install skse/obse through the manager
 static const char * GAMES_MOD_TARGET[] = {
-	"data",
-	"data",
-	"data",
+	"Data",
+	"Data",
+	"Data",
 	"Data Files"
 };
 

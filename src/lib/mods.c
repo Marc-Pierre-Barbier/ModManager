@@ -113,7 +113,7 @@ error_t mods_swap_place(int appid, int mod_id_a, int mod_id_b) {
 	GList * list_b = g_list_nth(list, mod_id_b);;
 
 	if(list_a == NULL || list_b == NULL) {
-		g_error( "Invalid modId\n");
+		g_warning( "Invalid modId\n");
 		return ERR_FAILURE;
 	}
 
@@ -124,7 +124,7 @@ error_t mods_swap_place(int appid, int mod_id_a, int mod_id_b) {
 	FILE * file_b = fopen(mod_b_folder, "w");
 
 	if(file_a == NULL || file_b == NULL) {
-		g_error( "Error could not open order file\n");
+		g_warning( "Error could not open order file\n");
 		return ERR_FAILURE;
 	}
 
@@ -284,7 +284,7 @@ GFile * mods_get_mod_folder(int appid, int mod_id) {
 	GFile * mod_folder = NULL;
 
 	if(mod == NULL) {
-		g_error( "Mod not found\n");
+		g_warning( "Mod not found\n");
 		goto exit;
 	}
 
@@ -294,26 +294,62 @@ exit:
 	return mod_folder;
 }
 
-//TODO: Replace print with errors
-error_t mods_add_mod(GFile * file_path, int appId) {
+static bool search_fomod_data(GFile * path_file, int appid) {
+	g_autofree const char * path = g_file_get_path(path_file);
+	g_autofree GFile * fomod = g_file_new_build_filename(path, "fomod", NULL);
+
+	if(g_file_query_exists(fomod, NULL)) {
+		return true;
+	}
+
+	const int gameId = steam_game_id_from_app_id(appid);
+	g_autofree char * target = g_ascii_strdown(GAMES_MOD_TARGET[gameId], -1);
+	g_autofree GFile * data = g_file_new_build_filename(path, target, NULL);
+	return g_file_query_exists(data, NULL);
+}
+
+static bool check_for_unwrap(GFile * path_file, int appid) {
+	/* Some mods come with a single folder inside their archive these mods need to be unwraped */
+	g_autofree char * path = g_file_get_path(path_file);
+	const int gameId = steam_game_id_from_app_id(appid);
+	g_autofree char * target = g_ascii_strdown(GAMES_MOD_TARGET[gameId], -1);
+
+	const gchar *filename;
+	GDir * dir = g_dir_open(path, 0, NULL);
+	int filecount = 0;
+	while ((filename = g_dir_read_name(dir))) {
+		if(strcmp(filename, "fomod") == 0 || strcmp(filename, target) == 0) {
+			filecount = INT_MAX;
+			break;
+		}
+		filecount++;
+		if(filecount > 1)
+			break;
+	}
+
+	//equal to 1 mean unwrap is needed
+	return filecount == 1;
+}
+
+error_t mods_add_mod(GFile * file_path, int app_id) {
 	g_autofree GFileInfo * file_info = g_file_query_info(file_path, "access::*", G_FILE_QUERY_INFO_NONE, NULL, NULL);
 
 	gboolean can_read = g_file_info_get_attribute_boolean (file_info, G_FILE_ATTRIBUTE_ACCESS_CAN_READ);
 	gboolean exits = g_file_query_exists(file_path, NULL);
 
 	if (!exits) {
-		g_error("File not found\n");
+		g_warning("File not found\n");
 		return ERR_FAILURE;
 	}
 
 	if (!can_read) {
-		g_error("File not readable\n");
+		g_warning("File not readable\n");
 		return ERR_FAILURE;
 	}
 
 	g_autofree char * config_folder = g_build_filename(getenv("HOME"), MODLIB_WORKING_DIR, NULL);
 	if(g_mkdir_with_parents(config_folder, 0755) < 0) {
-		g_error( "Could not create mod folder\n");
+		g_warning( "Could not create mod folder\n");
 		return ERR_FAILURE;
 	}
 
@@ -327,7 +363,7 @@ error_t mods_add_mod(GFile * file_path, int appId) {
 	filename[length_no_extension - 1] = '\0';
 
 	char appIdStr[20];
-	sprintf(appIdStr, "%d", appId);
+	sprintf(appIdStr, "%d", app_id);
 	g_autofree GFile * outdir = g_file_new_build_filename(config_folder, MOD_FOLDER_NAME, appIdStr, filename, NULL);
 
 	if(!g_file_make_directory_with_parents(outdir, NULL, NULL)) {
@@ -344,17 +380,53 @@ error_t mods_add_mod(GFile * file_path, int appId) {
 	} else if (strcmp(lowercase_extension, "7z") == 0) {
 		return_value = archive_un7z(file_path, outdir);
 	} else {
-		g_error( "Unsupported format only zip/7z/rar are supported\n");
+		g_warning( "Unsupported format only zip/7z/rar are supported\n");
 		return_value = EXIT_FAILURE;
 	}
 
+	#define EXIT_FAIL(a) if(!a) { return_value = EXIT_FAILURE; goto exit; }
+
+	g_autofree GFile * tmp_dir = g_file_new_build_filename(config_folder, MOD_FOLDER_NAME, appIdStr, "TMP", NULL);
+	g_autofree char * outdir_str = g_file_get_path(outdir);
+
+	if(check_for_unwrap(outdir, app_id)) {
+		GDir * dir = g_dir_open(outdir_str, 0, NULL);
+		const char * filename = g_dir_read_name(dir);
+		if(filename != NULL) {
+			EXIT_FAIL(g_file_move(outdir, tmp_dir, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
+			g_autofree GFile * wrapper_file = g_file_new_build_filename(config_folder, MOD_FOLDER_NAME, appIdStr, "TMP", filename, NULL);
+			EXIT_FAIL(g_file_move(wrapper_file, outdir, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
+		}
+	}
+
+
+	if(!search_fomod_data(outdir, app_id)) {
+		const int gameId = steam_game_id_from_app_id(app_id);
+
+		if(g_file_query_exists(tmp_dir, NULL)) {
+			EXIT_FAIL(g_file_delete(tmp_dir, NULL, NULL))
+		}
+
+		EXIT_FAIL(g_file_move(outdir, tmp_dir, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
+		char * target = g_ascii_strdown(GAMES_MOD_TARGET[gameId], -1);
+		g_autofree GFile * outdir2 = g_file_new_build_filename(outdir_str, target, NULL);
+		g_mkdir_with_parents(outdir_str, 0777);
+		EXIT_FAIL(g_file_move(tmp_dir, outdir2, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
+	}
+
+exit:
+	if(g_file_query_exists(tmp_dir, NULL)) {
+		if(!g_file_delete(tmp_dir, NULL, NULL)) {
+			g_warning("Could not delete tmp file");
+		}
+	}
 	if(return_value == EXIT_FAILURE) {
-		printf("Failed to install mod\n");
+		g_warning("Failed to install mod\n");
 		g_file_trash(outdir, NULL, NULL);
 		return ERR_FAILURE;
+	} else {
+		g_info("Done\n");
 	}
-	else
-		printf("Done\n");
 
 	return ERR_SUCCESS;
 }

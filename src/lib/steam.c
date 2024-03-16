@@ -40,7 +40,7 @@ static int get_filed_id(const char * field) {
 	} else if(strcmp(field, "apps") == 0) {
 		return FIELD_APPS;
 	} else {
-		g_error( "unknown field\n");
+		g_warning( "unknown field\n");
 		return -1;
 	}
 }
@@ -154,7 +154,7 @@ static SteamLibraries_t * parse_vdf(GFile * file_path, size_t * size, int * stat
 				break;
 			case '}':
 				if(in_quotes) {
-					g_error( "Syntax error in VDF\n");
+					g_warning( "Syntax error in VDF\n");
 					//TODO: fix this leak
 					free(libraries);
 					libraries = NULL;
@@ -269,18 +269,18 @@ int steam_parseAppId(const char * appid_str) {
 	//strtoul set EINVAL(after C99) if the string is invalid
 	unsigned long appid = strtoul(appid_str, &strtoulSentinel, 10);
 	if(errno == EINVAL || strtoulSentinel == appid_str) {
-		g_error( "Appid has to be a valid number\n");
+		g_warning( "Appid has to be a valid number\n");
 		return -1;
 	}
 
 	int gameId = steam_game_id_from_app_id((int)appid);
 	if(gameId < 0) {
-		g_error( "Game is not compatible\n");
+		g_warning( "Game is not compatible\n");
 		return -1;
 	}
 
 	if(!g_hash_table_contains(gamePaths, &gameId)) {
-		g_error( "Game not found\n");
+		g_warning( "Game not found\n");
 		return -1;
 	}
 
@@ -292,20 +292,20 @@ GFile * steam_get_game_folder_path(int appid) {
 	GHashTable * gamePaths;
 	error_t status = steam_search_games(&gamePaths);
 	if(status == ERR_FAILURE) {
-		g_error("Steam not found");
+		g_warning("Steam not found");
 		return NULL;
 	}
 
 	int gameId = steam_game_id_from_app_id(appid);
 	if(gameId < 0 ) {
-		g_error( "invalid appid");
+		g_warning( "invalid appid");
 		return NULL;
 	}
 
 	const char * path = g_hash_table_lookup(gamePaths, &gameId);
 
 	if(path == NULL) {
-		g_error( "game not found\n");
+		g_warning( "game not found\n");
 		return NULL;
 	}
 

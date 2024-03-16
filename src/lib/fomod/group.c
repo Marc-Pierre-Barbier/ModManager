@@ -97,7 +97,7 @@ static int parseGroupFiles(FomodPlugin_t * plugin, xmlNodePtr node_element) {
 	xmlNodePtr file_node = node_element->children;
 	while(file_node != NULL) {
 		if(!xml_validate_node(&file_node, true, "folder", "file", NULL)) {
-			g_error( "Unexpected node in files\n");
+			g_warning( "Unexpected node in files\n");
 			//TODO: free
 			return EXIT_FAILURE;
 		}
@@ -146,7 +146,7 @@ static int parseNodeElement(FomodPlugin_t * plugin, xmlNodePtr node_element) {
 		//WEIRD SHIT
 		xmlNodePtr typeNode = node_element->children;
 		if(!xml_validate_node(&typeNode, true, "type", "dependencyType", NULL)) {
-			g_error( "Unexpected node in typeDescriptor: %s at %d\n", typeNode->name, typeNode->line);
+			g_warning( "Unexpected node in typeDescriptor: %s at %d\n", typeNode->name, typeNode->line);
 			return EXIT_FAILURE;
 		}
 

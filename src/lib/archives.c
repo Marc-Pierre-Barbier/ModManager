@@ -32,7 +32,7 @@ int archive_unzip(GFile * file, GFile * out_dir) {
 		waitpid(pid, &return_value, 0);
 
 		if(return_value != 0) {
-			g_error( "\nFailed to decompress archive\n");
+			g_warning( "\nFailed to decompress archive\n");
 		}
 		return return_value;
 	}
@@ -61,7 +61,7 @@ int archive_unrar(GFile * file, GFile * out_dir) {
 		waitpid(pid, &return_value, 0);
 
 		if(return_value != 0) {
-			g_error( "\nFailed to decompress archive\n");
+			g_warning( "\nFailed to decompress archive\n");
 		}
 		return return_value;
 	}
@@ -92,7 +92,7 @@ int archive_un7z(GFile * file, GFile * out_dir) {
 		waitpid(pid, &return_value, 0);
 
 		if(return_value != 0) {
-			g_error( "\nFailed to decompress archive\n");
+			g_warning( "\nFailed to decompress archive\n");
 			return return_value;
 		}
 		//make everything lowercase since 7z don't have an argument for that.

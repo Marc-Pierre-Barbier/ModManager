@@ -144,6 +144,7 @@ void plugin_tab_generate_ui(void) {
 		prev_it = plugins_iterator;
 		plugins_iterator = next_it;
 	}
+	//TODO:
 	//g_list_free_full(plugins, free);
 
 	return;

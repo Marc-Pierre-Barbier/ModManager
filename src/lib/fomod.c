@@ -88,7 +88,7 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 			}
 		}
 		if(copy_result != ERR_SUCCESS) {
-			g_error( "Copy failed, some file might be corrupted\n");
+			g_warning( "Copy failed, some file might be corrupted\n");
 		}
 		g_free(source);
 

@@ -69,14 +69,11 @@ error_t is_deployed(int appid, bool * status) {
 	pid_t pid = fork();
 	if(pid == -1) {
 		g_error("Failed to fork");
-		exit(EXIT_FAILURE);
-		return ERR_FAILURE;
 	}
 
 	if(pid == 0) {
 		execl("/usr/bin/fuser", "fuser", "-M", path, NULL);
 		g_error("failed to run fuser");
-		exit(ENOENT);
 	} else {
 		int value;
 		waitpid(pid, &value, 0);
@@ -101,13 +98,11 @@ error_t undeploy(int appid) {
 	pid_t pid = fork();
 	if(pid == -1) {
 		g_error("Failed to fork");
-		exit(EXIT_FAILURE);
 		return ERR_FAILURE;
 	}
 	if(pid == 0) {
 		execl("/usr/bin/fusermount", "fusermount", "-u", path, NULL);
 		g_error("failed to run fusermount");
-		exit(1);
 	}
 
 	int value;
@@ -211,10 +206,10 @@ DeploymentErrors_t deploy(int appid) {
 	if(status == SUCCESS) {
 		return OK;
 	} else if(status == FAILURE) {
-		//g_error("Mount failure");
+		g_warning("Mount failure");
 		return CANNOT_MOUNT;
 	} else if(status == NOT_INSTALLED) {
-		//g_error("Fuse is missing");
+		g_warning("Fuse is missing");
 		return FUSE_NOT_INSTALLED;
 	} else {
 		return BUG;

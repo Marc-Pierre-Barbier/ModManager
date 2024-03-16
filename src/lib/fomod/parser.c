@@ -295,20 +295,20 @@ error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod) {
 	doc = xmlParseFile(fomod_file_path);
 
 	if(doc == NULL) {
-		g_error( "Document is not a valid xml file\n");
+		g_warning( "Document is not a valid xml file\n");
 		return ERR_FAILURE;
 	}
 
 
 	cur = xmlDocGetRootElement(doc);
 	if(cur == NULL) {
-		g_error( "emptyDocument\n");
+		g_warning( "emptyDocument\n");
 		xmlFreeDoc(doc);
 		return ERR_FAILURE;
 	}
 
 	if(xmlStrcmp(cur->name, (const xmlChar *) "config") != 0) {
-		g_error( "document of the wrong type, root node is '%s' instead of config\n", cur->name);
+		g_warning( "document of the wrong type, root node is '%s' instead of config\n", cur->name);
 		xmlFreeDoc(doc);
 		return ERR_FAILURE;
 	}
@@ -341,7 +341,7 @@ error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod) {
 			}
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"installSteps") == 0) {
 			if(fomod->steps != NULL) {
-				g_error( "Multiple 'installSteps' tags\n");
+				g_warning( "Multiple 'installSteps' tags\n");
 				//TODO: handle error
 				return ERR_FAILURE;
 			}
@@ -354,7 +354,7 @@ error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod) {
 			FomodStep_t * steps = parse_install_steps(cur, &stepCount);
 
 			if(steps == NULL) {
-				g_error( "Failed to parse the install steps\n");
+				g_warning( "Failed to parse the install steps\n");
 
 				//TODO: manage the error properly
 				return ERR_FAILURE;

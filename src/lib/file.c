@@ -26,7 +26,7 @@ error_t file_casefold(GFile * folder) {
 
 			if(strcmp(destination_name, name) != 0) {
 				if(!g_file_move(file, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL)) {
-					g_error( "Move failed: %s => %s \n", name, destination_name);
+					g_warning( "Move failed: %s => %s \n", name, destination_name);
 				}
 			}
 			g_free(destination_name);
