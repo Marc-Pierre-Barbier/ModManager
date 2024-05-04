@@ -2,8 +2,8 @@
 #define __LOAD_ORDER_H__
 
 #include <glib.h>
-#include <errorType.h>
-#include <stdbool.h>
+
+#include "errorType.h"
 
 typedef struct order_mod_entry {
     bool activated;

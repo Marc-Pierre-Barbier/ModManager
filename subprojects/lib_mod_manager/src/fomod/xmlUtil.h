@@ -2,7 +2,6 @@
 #define __XML_UTIL_H__
 
 #include <libxml/parser.h>
-#include <stdbool.h>
 #include <fomod.h>
 
 /**

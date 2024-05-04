@@ -18,7 +18,6 @@ overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * 
 			//exit is used to get the return value when using waitpid
 			exit(execl("/usr/bin/fuse-overlayfs", "fuse-overlayfs", "-o", mount_data, dest, NULL));
 		} else {
-
 			int return_value = 0;
 			waitpid(pid, &return_value, 0);
 			if(return_value != 0) {

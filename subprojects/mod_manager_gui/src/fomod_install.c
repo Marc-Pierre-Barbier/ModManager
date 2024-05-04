@@ -1,6 +1,6 @@
 #include <fomod.h>
 #include <constants.h>
-#include <stdbool.h>
+
 #include <adwaita.h>
 #include <stdio.h>
 #include <sys/stat.h>

@@ -41,9 +41,7 @@ download a version from the releases.
 
 then run this inside the folder:
 ```bash
-mkdir build
-cd build
-cmake ..
-make
-sudo make install
+meson builddir
+cd builddir
+ninja
 ```

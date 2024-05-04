@@ -28,7 +28,7 @@ static error_t generate_symlink_copy(const char * source, const char * destinati
 			return ERR_FAILURE;
 	}
 
-	//the catual copy
+	//the actual copy
 	DIR * d = opendir(source);
 	struct dirent *dir_ent;
 	if (d != NULL) {
@@ -61,11 +61,7 @@ static error_t generate_symlink_copy(const char * source, const char * destinati
 }
 
 error_t is_deployed(int appid, bool * status) {
-	g_autofree GFile * destination = steam_get_game_folder_path(appid);
-	if(destination == NULL)
-		return ERR_FAILURE;
-
-	g_autofree char * path = g_file_get_path(destination);
+	g_autofree char * path = get_deploy_target(appid);
 	pid_t pid = fork();
 	if(pid == -1) {
 		g_error("Failed to fork");
@@ -73,11 +69,11 @@ error_t is_deployed(int appid, bool * status) {
 
 	if(pid == 0) {
 		execl("/usr/bin/fuser", "fuser", "-M", path, NULL);
-		g_error("failed to run fuser");
+		exit(EIO);
 	} else {
 		int value;
 		waitpid(pid, &value, 0);
-		if(value == ENOENT) {
+		if(value == EIO) {
 			return ERR_FAILURE;
 		} else if(value == 0) {
 			*status = TRUE;
@@ -90,7 +86,7 @@ error_t is_deployed(int appid, bool * status) {
 }
 
 error_t undeploy(int appid) {
-	char appid_str[snprintf(NULL, 0, "%d\0", appid)];
+	char appid_str[snprintf(NULL, 0, "%d", appid)];
 	sprintf(appid_str, "%d", appid);
 
 	g_autofree char * path = g_build_filename(g_get_tmp_dir(), MODLIB_NAME, appid_str, NULL);
@@ -113,7 +109,7 @@ error_t undeploy(int appid) {
 }
 
 static char ** list_overlay_dirs(const int appid, const char * game_folder) {
-	char appid_str[snprintf(NULL, 0, "%d\0", appid)];
+	char appid_str[snprintf(NULL, 0, "%d", appid)];
 	sprintf(appid_str, "%d", appid);
 
 	g_autofree char * mod_folder = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
@@ -152,9 +148,15 @@ static char ** list_overlay_dirs(const int appid, const char * game_folder) {
 	return mods_to_install;
 }
 
+char * get_deploy_target(int appid) {
+	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	sprintf(appid_str, "%d", appid);
+
+	return g_build_filename(g_get_tmp_dir(), MODLIB_NAME, appid_str, NULL);
+}
 
 DeploymentErrors_t deploy(int appid) {
-	char appid_str[snprintf(NULL, 0, "%d\0", appid)];
+	char appid_str[snprintf(NULL, 0, "%d", appid)];
 	sprintf(appid_str, "%d", appid);
 
 	const char * home_path = g_get_home_dir();

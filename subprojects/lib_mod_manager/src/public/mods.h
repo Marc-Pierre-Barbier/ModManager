@@ -3,8 +3,8 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <stdbool.h>
-#include <errorType.h>
+
+#include "errorType.h"
 
 #define ORDER_FILE "__ORDER__"
 #define INSTALLED_FLAG_FILE "__DO_NOT_REMOVE__"

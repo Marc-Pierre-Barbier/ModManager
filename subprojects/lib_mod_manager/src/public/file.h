@@ -1,7 +1,6 @@
 #ifndef __FILE_H__
 #define __FILE_H__
 
-#include <stdbool.h>
 #include <glib.h>
 #include <sys/types.h>
 

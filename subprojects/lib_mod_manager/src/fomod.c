@@ -1,7 +1,6 @@
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/xmlstring.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>

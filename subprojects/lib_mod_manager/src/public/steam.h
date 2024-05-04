@@ -1,13 +1,12 @@
 #ifndef __STEAM_H__
 #define __STEAM_H__
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <glib.h>
 #include <gio/gio.h>
-#include <errorType.h>
+#include "errorType.h"
 
 typedef struct SteamApp {
 	unsigned int appid;
