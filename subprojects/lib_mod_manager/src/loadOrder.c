@@ -173,10 +173,17 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	const char * path = g_hash_table_lookup(game_paths, &gameId);
-	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
+	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], NULL);
+	g_autofree char * plugin_txt_path = g_build_filename(load_order_path, "Plugins.txt", NULL);
 
+	//TODO: check output
+	g_mkdir_with_parents(load_order_path, 755);
 
-	FILE * f_loadOrder = fopen(load_order_path, "w");
+	FILE * f_loadOrder = fopen(plugin_txt_path, "w");
+	if(f_loadOrder == NULL) {
+		return ERR_FAILURE;
+	}
+
 	while(loadOrder != NULL) {
 		order_plugin_entry_t * entry = loadOrder->data;
 		if(entry->activated) {
