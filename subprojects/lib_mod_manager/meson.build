@@ -7,6 +7,8 @@ project('libmodManager', 'c',
 glib2_dep = dependency('glib-2.0')
 libxml_dep = dependency('libxml-2.0')
 gio_dep = dependency('gio-2.0')
+libarchive_dep = dependency('libarchive')
+
 
 lib_sources = files(
 	'src/steam.c',
@@ -42,7 +44,7 @@ incdir = [ include_directories('src/public') ]
 lib_mod_manager = library(
 	'modManager',
 	sources: [lib_sources + lib_headers],
-	dependencies: [ glib2_dep, libxml_dep, gio_dep ],
+	dependencies: [ glib2_dep, libxml_dep, gio_dep, libarchive_dep ],
 	include_directories: incdir,
 	install : true
 )

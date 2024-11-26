@@ -1,7 +1,5 @@
-#include "steam.h"
+#include "public/steam.h"
 #include "macro.h"
-
-#include <constants.h>
 #include <gio/gio.h>
 #include <unistd.h>
 #include <stddef.h>
@@ -11,6 +9,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <wordexp.h>
+
+#define UNKNOWN_FIELD INT_MAX
 
 enum FieldIds { FIELD_PATH, FIELD_LABEL, FIELD_CONTENT_ID, FIELD_TOTAL_SIZE, FIELD_CLEAN_BYTES, FIELD_CORRUPTION, FIELD_APPS };
 
@@ -40,12 +40,12 @@ static int get_filed_id(const char * field) {
 	} else if(strcmp(field, "apps") == 0) {
 		return FIELD_APPS;
 	} else {
-		g_warning( "unknown field\n");
-		return -1;
+		g_warning( "Unknown field in VDF\n");
+		return UNKNOWN_FIELD;
 	}
 }
 
-static SteamLibraries_t * parse_vdf(GFile * file_path, size_t * size, int * status) {
+static SteamLibrary_t * parse_vdf(GFile * file_path, size_t * size, int * status) {
 	g_autofree const char * path = g_file_get_path(file_path);
 	FILE * fd = fopen(path, "r");
 	char * line = NULL;
@@ -55,7 +55,7 @@ static SteamLibraries_t * parse_vdf(GFile * file_path, size_t * size, int * stat
 
 	bool in_quotes = false;
 
-	SteamLibraries_t * libraries = NULL;
+	SteamLibrary_t * libraries = NULL;
 	*size = 0;
 
 	//skip the "libraryfolders" label & the first opening brace
@@ -64,7 +64,7 @@ static SteamLibraries_t * parse_vdf(GFile * file_path, size_t * size, int * stat
 
 	int brace_depth = 0;
 
-	//can support up to 1024 car in quotes;
+	//can support up to 1024 char in quotes;
 	char buffer[1024];
 	bool is_app_id = TRUE;
 	int buffer_index = 0;
@@ -84,15 +84,9 @@ static SteamLibraries_t * parse_vdf(GFile * file_path, size_t * size, int * stat
 						buffer[buffer_index] = '\0';
 						if(next_field_to_fill == -1) {
 							next_field_to_fill = get_filed_id(buffer);
-							if(next_field_to_fill == -1) {
-								if(libraries != NULL) free(libraries);
-								libraries = NULL;
-								goto exit;
-							}
-
 						} else {
 							char * value = strndup(buffer, buffer_index);
-							SteamLibraries_t * library = &libraries[*size - 1];
+							SteamLibrary_t * library = &libraries[*size - 1];
 							switch (next_field_to_fill) {
 							case FIELD_PATH:
 								library->path = value;
@@ -132,6 +126,7 @@ static SteamLibraries_t * parse_vdf(GFile * file_path, size_t * size, int * stat
 								is_app_id = !is_app_id;
 								break;
 							default:
+								g_warning("Discarding value from unknown field");
 								free(value);
 							}
 							//field apps is using braces so the syntax is different
@@ -148,8 +143,8 @@ static SteamLibraries_t * parse_vdf(GFile * file_path, size_t * size, int * stat
 				brace_depth++;
 				if(brace_depth == 1) {
 					*size += 1;
-					libraries = realloc(libraries, sizeof(SteamLibraries_t) * (*size));
-					memset(&libraries[*size - 1], 0, sizeof(SteamLibraries_t));
+					libraries = realloc(libraries, sizeof(SteamLibrary_t) * (*size));
+					memset(&libraries[*size - 1], 0, sizeof(SteamLibrary_t));
 				}
 				break;
 			case '}':
@@ -181,7 +176,7 @@ exit:
 	return libraries;
 }
 
-static void freeLibraries(SteamLibraries_t * libraries, int size) {
+static void freeLibraries(SteamLibrary_t * libraries, int size) {
 	for(int i = 0; i < size; i++) {
 		free(libraries[i].path);
 		free(libraries[i].label);
@@ -206,22 +201,19 @@ error_t steam_search_games(GHashTable ** p_hash_table) {
 		return ERR_SUCCESS;
 	}
 
-	SteamLibraries_t * libraries = NULL;
+	SteamLibrary_t * libraries = NULL;
 	size_t size = 0;
 	const char * home_path = g_get_home_dir();
 
 	for(unsigned long i = 0; i < LEN(steamLibraries); i++) {
-		GFile * path = g_file_new_build_filename(home_path, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
+		g_autofree GFile * path = g_file_new_build_filename(home_path, steamLibraries[i], "steamapps/libraryfolders.vdf", NULL);
 		if (g_file_query_exists(path, NULL)) {
 			int parserStatus;
 			libraries = parse_vdf(path, &size, &parserStatus);
 			if(parserStatus == EXIT_SUCCESS) {
-				g_free(path);
 				break;
 			}
 		}
-
-		g_free(path);
 	}
 
 	if(libraries == NULL) {

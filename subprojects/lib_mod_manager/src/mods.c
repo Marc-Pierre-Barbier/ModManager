@@ -371,16 +371,10 @@ error_t mods_add_mod(GFile * file_path, int app_id) {
 		return EXIT_FAILURE;
 	}
 
-	int return_value = EXIT_SUCCESS;
 	printf("Adding mod, this process can be slow depending on your hardware\n");
-	if(strcmp(lowercase_extension, "rar") == 0) {
-		return_value = archive_unrar(file_path, outdir);
-	} else if (strcmp(lowercase_extension, "zip") == 0) {
-		return_value = archive_unzip(file_path, outdir);
-	} else if (strcmp(lowercase_extension, "7z") == 0) {
-		return_value = archive_un7z(file_path, outdir);
-	} else {
-		g_warning( "Unsupported format only zip/7z/rar are supported\n");
+	int return_value = archive_deflate(file_path, outdir);
+	if(return_value != AR_ERR_OK) { //TODO: add more errors
+		g_warning( "Error occured during decompression are supported\n");
 		return_value = EXIT_FAILURE;
 	}
 

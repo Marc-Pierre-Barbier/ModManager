@@ -3,30 +3,20 @@
 
 #include <gio/gio.h>
 
+typedef enum archive_error
+{
+	AR_ERR_OK,
+	AR_ERR_NOT_FOUND
+} archive_error_t;
+
 //all of these function will make every file into lowercase
 
 /**
- * @brief Execute the unzip command
+ * @brief decompress archive
  * @param path path to archive
  * @param outdir output director
- * @return int return code
+ * @return //TODO:
  */
-int archive_unzip(GFile * file, GFile * outdir);
-
-/**
- * @brief Execute the unrar command
- * @param path path to archive
- * @param outdir output director
- * @return int return code
- */
-int archive_unrar(GFile * file, GFile * out_dir);
-
-/**
- * @brief Execute the 7z command
- * @param path path to archive
- * @param outdir output director
- * @return int return code
- */
-int archive_un7z(GFile * file, GFile * outdir);
+archive_error_t archive_deflate(GFile * file, GFile * outdir);
 
 #endif

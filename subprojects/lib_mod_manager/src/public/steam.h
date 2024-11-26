@@ -13,7 +13,7 @@ typedef struct SteamApp {
 	unsigned int update;
 } SteamApp_t;
 
-typedef struct SteamLibraries {
+typedef struct SteamLibrary {
 	char * path;
 	char * label;
 	char * contentId;
@@ -22,7 +22,7 @@ typedef struct SteamLibraries {
 	char * time_last_update_corruption;
 	SteamApp_t * apps;
 	size_t apps_count;
-} SteamLibraries_t;
+} SteamLibrary_t;
 
 //todo add the older games
 // order has to be the same as in GAMES_NAMES

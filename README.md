@@ -17,7 +17,7 @@ mods conflicts are solved by priority like in mo3
 ## Requirements:
 * gtk4
 * glib2
-* 7z unzip unrar (used for each respective formats)
+* libarchive
 * libaudit
 * Fuse 3
 * Fuse-overlayfs
