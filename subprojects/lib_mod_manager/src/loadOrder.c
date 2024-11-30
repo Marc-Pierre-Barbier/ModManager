@@ -34,7 +34,7 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 		return ERR_FAILURE;
 	}
 	g_autofree char * game_folder = g_file_get_path(game_folder_file);
-	GFile * data_folder_file = g_file_new_build_filename(game_folder, GAMES_MOD_TARGET[game_id], NULL);
+	g_autofree GFile * data_folder_file = g_file_new_build_filename(game_folder, GAMES_MOD_TARGET[game_id], NULL);
 
 	g_autofree char * data_folder = g_file_get_path(data_folder_file);
 
@@ -55,7 +55,6 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 		closedir(d);
 	}
 
-	free(data_folder_file);
 	return ERR_SUCCESS;
 }
 
@@ -94,7 +93,7 @@ error_t order_get_load_order(int appid, GList ** order) {
 
 	//this is the path i would use in windows but it seems it is not avaliable in all wine versions.
 	//char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
-	char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/Local Settings/Application Data/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
+	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/Local Settings/Application Data/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
 
 	GList * l_current_load_order = NULL;
 	if(access(load_order_path, R_OK) == 0) {
@@ -149,9 +148,8 @@ error_t order_get_load_order(int appid, GList ** order) {
 
 	*order = l_complete_load_order;
 
-	g_list_free_full(l_plugins, free);
-	g_list_free_full(l_current_load_order, free);
-	g_free(load_order_path);
+	g_list_free_full(l_plugins, g_free);
+	g_list_free_full(l_current_load_order, g_free);
 	return ERR_SUCCESS;
 }
 
@@ -176,9 +174,7 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], NULL);
 	g_autofree char * plugin_txt_path = g_build_filename(load_order_path, "Plugins.txt", NULL);
 
-	//TODO: check output
 	g_mkdir_with_parents(load_order_path, 755);
-
 	FILE * f_loadOrder = fopen(plugin_txt_path, "w");
 	if(f_loadOrder == NULL) {
 		return ERR_FAILURE;

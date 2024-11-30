@@ -57,7 +57,7 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 	//priority higher a less important and should be processed first.
 	*pending_file_operations = g_list_sort(*pending_file_operations, priority_cmp);
 	GList * file_operation_iterator = *pending_file_operations;
-	char * mod_folder_path = g_file_get_path(mod_folder);
+	g_autofree char * mod_folder_path = g_file_get_path(mod_folder);
 	mkdir(destination_folder, 0700);
 
 	while(file_operation_iterator != NULL) {
@@ -69,7 +69,7 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 		xml_fix_path(file->source);
 
 		//TODO: check if it can build from 2 path
-		GFile * source = g_file_new_build_filename(mod_folder_path, file->source, NULL);
+		g_autofree GFile * source = g_file_new_build_filename(mod_folder_path, file->source, NULL);
 
 		error_t copy_result = ERR_SUCCESS;
 		if(file->isFolder) {
@@ -78,9 +78,8 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 		} else {
 			GError * err = NULL;
 			//see basename man page
-			char * posix_source = strdup(file->source);
+			g_autofree char * posix_source = strdup(file->source);
 			g_autofree GFile * destination = g_file_new_build_filename(destination_folder, basename(posix_source), NULL);
-			free(posix_source);
 			if(!g_file_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, &err)) {
 				fprintf(stderr, "%s\n", err->message);
 				copy_result = ERR_FAILURE;
@@ -89,11 +88,9 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 		if(copy_result != ERR_SUCCESS) {
 			g_warning( "Copy failed, some file might be corrupted\n");
 		}
-		g_free(source);
 
 		file_operation_iterator = g_list_next(file_operation_iterator);
 	}
-	g_free(mod_folder_path);
 
 	g_list_free_full(mods, g_free);
 	return ERR_SUCCESS;

@@ -46,10 +46,10 @@ GList * mods_list(int appid) {
 			if(strcmp(dir->d_name, "..") != 0 && strcmp(dir->d_name, ".") != 0) {
 				int modId = -1;
 				//TODO: remove order file
-				char * mod_path = g_build_filename(mod_folder, dir->d_name, NULL);
-				char * mod_order = g_build_filename(mod_path, ORDER_FILE, NULL);
+				g_autofree char * mod_path = g_build_filename(mod_folder, dir->d_name, NULL);
+				g_autofree char * mod_order = g_build_filename(mod_path, ORDER_FILE, NULL);
 				FILE * fd_order = fopen(mod_order, "r");
-				g_free(mod_order);
+
 				if(fd_order != NULL) {
 					fscanf(fd_order, "%d", &modId);
 					fclose(fd_order);
@@ -64,9 +64,7 @@ GList * mods_list(int appid) {
 				mod->path = alloca((strlen(mod_path) + 1) * sizeof(char));
 				memcpy(mod->path, mod_path, (strlen(mod_path) + 1) * sizeof(char));
 
-
 				list = g_list_append(list, mod);
-				g_free(mod_path);
 			}
 		}
 		closedir(d);

@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <glib.h>
 
 #include <errorType.h>
 #include <deploy.h>
@@ -119,15 +120,15 @@ static char ** list_overlay_dirs(const int appid, const char * game_folder) {
 	//and we need to bind the least important first
 	//and the most important last
 	//we have to reverse the list
-	mods = g_list_reverse(mods);
+	GList * mods_reverse_it = g_list_reverse(mods);
 
 	//probably over allocating but this doesn't matter that much
 	// +2 since we add the game folder
 	char ** mods_to_install = malloc(g_list_length(mods) + 1);
 	int mod_count = 0;
 
-	for(;mods != NULL; mods = g_list_next(mods)) {
-		char * mod_name = (char *)mods->data;
+	for(;mods_reverse_it != NULL; mods_reverse_it = g_list_next(mods)) {
+		const char * mod_name = (char *)mods_reverse_it->data;
 		char * mod_path = g_build_path("/", mod_folder, mod_name, NULL);
 		g_autofree char * mod_flag = g_build_filename(mod_path, INSTALLED_FLAG_FILE, NULL);
 
@@ -145,6 +146,7 @@ static char ** list_overlay_dirs(const int appid, const char * game_folder) {
 	mods_to_install[mod_count] = strdup(game_folder);
 	mods_to_install[mod_count + 1] = NULL;
 
+	g_list_free_full(mods, g_free);
 	return mods_to_install;
 }
 
@@ -170,11 +172,11 @@ DeploymentErrors_t deploy(int appid) {
 		return GAME_NOT_FOUND;
 	}
 
-	GFile * dest = g_file_new_build_filename(g_get_tmp_dir(), appid_str, NULL);
+	g_autofree GFile * dest = g_file_new_build_filename(g_get_tmp_dir(), appid_str, NULL); //TODO: put it in a subfolder
 
 	g_autofree char * game_folder = g_file_get_path(game_folder_gfile);
 	g_autofree char * destination = g_file_get_path(dest);
-	if(!g_file_query_exists(dest, NULL)) {
+	if(!g_file_query_exists(dest, NULL)) { //TODO: check if file changes happened in the source (IE: handle updates and manual installs)
 		//it's a direct X is needed to open it
 		g_mkdir_with_parents(destination, 0777);
 		error_t err = generate_symlink_copy(game_folder, destination);

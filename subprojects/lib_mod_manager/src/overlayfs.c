@@ -10,6 +10,8 @@ overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * 
 	g_autofree char * lower_dir = g_strjoinv(":", sources);
 	g_autofree char * mount_data = g_strjoin("", "lowerdir=", lower_dir, ",workdir=", workdir, ",upperdir=", upperdir, NULL);
 
+	printf("\n\n\n\n%s -- %s\n\n\n\n", lower_dir, mount_data);
+
 	overlay_errors_t result = SUCCESS;
 
 	if(access("/usr/bin/fuse-overlayfs", F_OK) == 0) {
