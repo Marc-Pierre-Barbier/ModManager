@@ -33,9 +33,6 @@ please open an issue with the name of the game folder in steamapps/common/
 
 otherwise don't hesitate to open an issue and suggest changes. if you event know how to code in C don't be scared to create merge request.
 
-## Note on the licence
-i chose gpl2 as the only thing i want is that if i give you code you give me your changes back.
-
 ## Compilation and install instructions:
 download a version from the releases.
 
