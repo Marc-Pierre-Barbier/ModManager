@@ -1,5 +1,6 @@
 #include <adwaita.h>
 #include "game_tab.h"
+#include "gtk/gtk.h"
 #include "plugin_tab.h"
 #include "mod_tab.h"
 #include <constants.h>
@@ -23,7 +24,7 @@ static void show_about(GSimpleAction*, GVariant*, gpointer)
 		"version", "GUI 0.0.1 - LIB " MODLIB_VERSION ,
 		"copyright", "© 2023 Marc barbier",
 		"issue-url", "https://gitlab.gnome.org/example/example/-/issues/new",
-		"license-type", GTK_LICENSE_GPL_2_0,
+		"license-type", GTK_LICENSE_LGPL_3_0_ONLY,
 		"developers", developers,
 		NULL
 	);
