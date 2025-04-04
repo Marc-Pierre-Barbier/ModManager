@@ -46,11 +46,6 @@ static void popover_on_enter(GtkEventControllerMotion*, gdouble, gdouble, gpoint
 	gtk_label_set_text(popover_description, plugin->description);
 }
 
-static void popover_on_leave(GtkEventControllerMotion*, gdouble, gdouble, gpointer) {
-	gtk_image_clear(GTK_IMAGE(popover_image));
-	gtk_label_set_text(popover_description, NULL);
-}
-
 static void on_button_toggeled_least_one(GtkCheckButton* self, gpointer) {
 	if(gtk_check_button_get_active(self)) {
 		selection_count++;
@@ -115,7 +110,6 @@ static GList * popover_checked(const FomodGroup_t *group) {
 
 		GtkEventController * controller = gtk_event_controller_motion_new();
 		g_signal_connect(controller, "enter", G_CALLBACK(popover_on_enter), &(group->plugins[i]));
-		g_signal_connect(controller, "leave", G_CALLBACK(popover_on_leave), NULL);
 
 		gtk_widget_add_controller(button, controller);
 		gtk_check_button_set_label(GTK_CHECK_BUTTON(button), group->plugins[i].name);
@@ -209,7 +203,11 @@ static void next_install_step() {
 
 	if(!validFlags) {
 		fomod_step_id += 1;
-		return;
+		//exit condition.
+		if(current_fomod.step_count == fomod_step_id) {
+			return;
+		}
+		return next_install_step();
 	}
 
 	//don't remember
@@ -291,7 +289,7 @@ static void on_next() {
 	current_group_id += 1;
 	if(step->group_count == current_group_id) {
 		fomod_step_id += 1;
-		current_group_id = 1;
+		current_group_id = 0;
 	}
 
 	if(current_fomod.step_count == fomod_step_id) {
