@@ -6,16 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int parse_visible_node(xmlNodePtr node, FomodStep_t * step) {
-	printf("Warning unsuported function used\n");
-	return EXIT_SUCCESS;
-/*
-this code in one node deeper than it should
+[[nodiscard]] static int parse_visible_node(xmlNodePtr node, FomodStep_t * step) {
 	xmlNodePtr required_flagsNode = node->children;
 
 	while (required_flagsNode != NULL) {
 
-		if(!xml_validateNode(&required_flagsNode, true, "flagDependency", NULL)) {
+		if(!xml_validate_node(&required_flagsNode, true, "flagDependency", NULL)) {
 			//TODO: handle error
 			printf("error in parser.c: %d\n", __LINE__);
 			return EXIT_FAILURE;
@@ -23,19 +19,19 @@ this code in one node deeper than it should
 
 		if(required_flagsNode == NULL)break;
 
-		step->flag_count += 1;
-		step->required_flags = realloc(step->required_flags, step->flag_count * sizeof(fomod_Flag_t));
-		fomod_Flag_t * flag = &(step->required_flags[step->flag_count - 1]);
-		flag->name = xml_freeAndDup(xmlGetProp(required_flagsNode, (const xmlChar *) "flag"));
-		flag->value = xml_freeAndDup(xmlGetProp(required_flagsNode, (const xmlChar *) "value"));
+		step->flag_count++;
+		step->required_flags = realloc(step->required_flags, step->flag_count * sizeof(FomodFlag_t));
+		FomodFlag_t * flag = &(step->required_flags[step->flag_count - 1]);
+		flag->name = xml_free_and_dup(xmlGetProp(required_flagsNode, (const xmlChar *) "flag"));
+		flag->value = xml_free_and_dup(xmlGetProp(required_flagsNode, (const xmlChar *) "value"));
 
 		required_flagsNode = required_flagsNode->next;
 	}
-*/
+
 	return EXIT_SUCCESS;
 }
 
-static int parse_optional_file_group(xmlNodePtr node, FomodStep_t * step) {
+[[nodiscard]] static int parse_optional_file_group(xmlNodePtr node, FomodStep_t * step) {
 	xmlChar * option_order = xmlGetProp(node, (const xmlChar *)"order");
 	step->option_order = fomod_get_order((char *)option_order);
 	xmlFree(option_order);

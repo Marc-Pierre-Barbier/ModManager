@@ -150,11 +150,12 @@ static int parseNodeElement(FomodPlugin_t * plugin, xmlNodePtr node_element) {
 			return EXIT_FAILURE;
 		}
 
-		if(xmlStrcmp(node_element->name, (const xmlChar *) "dependencyType")) {
+		if(xmlStrcmp(typeNode->name, (const xmlChar *) "dependencyType") == 0) {
 			//TODO: add support for it
-			printf("Warning using unsupported functionnality\n");
+			printf("Warning using unsupported functionnality: %s\n", typeNode->name);
+			//default to optional
 			plugin->type = OPTIONAL;
-		} else {
+		} else { // <type>
 			xmlChar * name = xmlGetProp(typeNode, (const xmlChar *) "name");
 			plugin->type = get_descriptor((char *) name);
 			xmlFree(name);
