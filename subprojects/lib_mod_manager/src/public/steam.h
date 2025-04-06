@@ -29,19 +29,28 @@ typedef struct SteamLibrary {
 // 7 is enough to know if it's in GAMES_APPIDS no need to have the real value
 #define GAMES_MAX_APPID_LENGTH 7
 
+//sorted by appid, most of this data was aquired through old youtube modding tutorial and steamdb.info
 static const u_int32_t GAMES_APPIDS[] = {
 	489830,
-	22330,
 	377160,
-	22320
+	72850,
+	22380,
+	22370,
+	22330,
+	22320,
+	22300
 };
 
 //the name of the game in the steamapps/common folder
 static const char * GAMES_NAMES[] = {
 	"Skyrim Special Edition",
-	"Oblivion",
 	"Fallout 4",
-	"Morrowind"
+	"skyrim",
+	"Fallout New Vegas",
+	"Fallout 3 goty",
+	"Oblivion",
+	"Morrowind",
+	"Fallout 3"
 };
 
 //the directory in which mods will be installed.
@@ -50,14 +59,36 @@ static const char * GAMES_MOD_TARGET[] = {
 	"Data",
 	"Data",
 	"Data",
-	"Data Files"
+	"Data",
+	"Data",
+	"Data",
+	"Data Files",
+	"Data"
 };
 
+/*
+static const char * GAMES_SCRIPT_EXTENDER_EXECUTABLE[] = {
+	"skse64_loader.exe",
+	"f4se_loader.exe",
+	"skse_loader.exe",
+	"nvse_loader.exe", //while it does have a steam_loader if the game has the 4gb patch it is required to use the exe.
+	"fose_loader.exe",
+	"obse_loader.exe", //the executable is not required for steam as obse_steam_loader.dll can load it dynamically but using it allows us to not have to fiddle with WINE_DLL_OVERRIDES.
+	NULL, //TODO
+	"fose_loader.exe"
+};
+
+
+_Static_assert(sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE) / sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+	"Game APPIDS and GAMES_SCRIPT_EXTENDER_EXECUTABLE doesn't match");
+*/
+
+
 _Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
-	"Game APPIDS and Game Names doesn't match");
+	"Game APPIDS and GAMES_NAMES doesn't match");
 
 _Static_assert(sizeof(GAMES_MOD_TARGET) / sizeof(GAMES_MOD_TARGET[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
-	"Game mod target and Game Names doesn't match");
+	"Game mod target and GAMES_MOD_TARGET doesn't match");
 
 /**
  * @brief list all installed games and the paths to the game's files

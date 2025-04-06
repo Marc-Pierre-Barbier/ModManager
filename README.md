@@ -28,7 +28,7 @@ mods conflicts are solved by priority like in mo3
 3. adding a hook for %command% in steam
 
 ## How to contribute:
-if you have creation engine based games not listed in src/steam.h
+if you have Gamebryo or creation engine based games not listed in subprojects/lib_mod_manager/steam.h
 please open an issue with the name of the game folder in steamapps/common/
 
 otherwise don't hesitate to open an issue and suggest changes. if you event know how to code in C don't be scared to create merge request.
