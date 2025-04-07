@@ -219,7 +219,7 @@ void mod_tab_generate_ui() {
 		if(mod_row != NULL) {
 			gtk_list_box_append(GTK_LIST_BOX(mod_box), mod_row);
 		} else {
-			printf("ignoring mod %s since it's has a fomod sibling\n", mod_name);
+			printf("ignoring mod %s since it has a fomod sibling\n", mod_name);
 		}
 		index++;
 		prev_it = mods_iterator;

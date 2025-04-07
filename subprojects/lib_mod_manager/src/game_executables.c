@@ -1,16 +1,18 @@
 #include <linux/limits.h>
-#include <errorType.h>
+#include <sys/stat.h>
+#include <stdio.h>
 #include <gio/gio.h>
 #include <glib.h>
+
 #include <game_executables.h>
-#include <stdio.h>
 #include <steam.h>
 #include <constants.h>
 #include <string.h>
 #include <time.h>
 #include <deploy.h>
 #include <mods.h>
-#include <sys/stat.h>
+#include <errorType.h>
+#include "file.h"
 
 static error_t find_all_executables(const char * directory, GList ** output) {
 	struct dirent * dirent;
@@ -28,13 +30,8 @@ static error_t find_all_executables(const char * directory, GList ** output) {
 			continue;
 		}
 
-		const int len = strlen(dirent->d_name);
-		if(len < 4) {
-			continue;
-		}
-
-		const char * file_extention = &dirent->d_name[len - 4];
-		if(strcmp(file_extention, ".exe") == 0) {
+		const char * file_extention = file_extract_extension(dirent->d_name);
+		if(strcmp(file_extention, "exe") == 0) {
 			*output = g_list_append(*output, strdup(filepath));
 		}
 	}

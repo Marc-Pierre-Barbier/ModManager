@@ -19,6 +19,7 @@ lib_sources = files(
 	'src/archives.c',
 	'src/fomod.c',
 	'src/deploy.c',
+	'src/game_executables.c',
 	'src/fomod/group.c',
 	'src/fomod/xmlUtil.c',
 	'src/fomod/parser.c'
@@ -36,7 +37,8 @@ lib_headers = files(
 	'src/public/fomodTypes.h',
 	'src/public/loadOrder.h',
 	'src/public/mods.h',
-	'src/public/steam.h'
+	'src/public/steam.h',
+	'src/public/game_executables.h',
 )
 
 incdir = [ include_directories('src/public') ]
