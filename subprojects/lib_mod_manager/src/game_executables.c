@@ -21,17 +21,20 @@ static error_t find_all_executables(const char * directory, GList ** output) {
 		return ERR_FAILURE;
 	while ((dirent = readdir(dir))) {
 		g_autofree const char * filepath = g_build_filename(directory, dirent->d_name, NULL);
-		if(S_ISDIR(dirent->d_type)) {
+		if(strcmp(dirent->d_name, ".") == 0 || strcmp(dirent->d_name, "..") == 0) {
+			continue;
+		}
+		if(dirent->d_type == DT_DIR) {
 			error_t error = find_all_executables(filepath, output);
 			if(error == ERR_FAILURE)
 				return error;
-			continue;
-		} else if (!S_ISREG(dirent->d_type)) {
+		} else if (dirent->d_type != DT_REG) {
 			continue;
 		}
 
 		const char * file_extention = file_extract_extension(dirent->d_name);
 		if(strcmp(file_extention, "exe") == 0) {
+			printf("%s\n", filepath);
 			*output = g_list_append(*output, strdup(filepath));
 		}
 	}
@@ -49,7 +52,14 @@ error_t list_game_executables(int appid, GList ** executables) {
 	GList * mods = mods_list(appid);
 	GList * mods_it = mods;
 
-	for(;mods_it != NULL; mods_it = g_list_next(mods)) {
+	GFile * game_folder_gfile = steam_get_game_folder_path(appid);
+	g_autofree const char * mod_path = g_file_get_path(game_folder_gfile);
+	error_t err = find_all_executables(mod_path, executables);
+	if(err == ERR_FAILURE) {
+		return ERR_FAILURE;
+	}
+
+	for(;mods_it != NULL; mods_it = g_list_next(mods_it)) {
 		const char * mod_name = (char *)mods_it->data;
 		g_autofree char * mod_path = g_build_path("/", mod_folder, mod_name, NULL);
 		g_autofree char * mod_flag = g_build_filename(mod_path, INSTALLED_FLAG_FILE, NULL);
