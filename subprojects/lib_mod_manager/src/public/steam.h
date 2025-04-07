@@ -54,14 +54,14 @@ static const char * GAMES_NAMES[] = {
 };
 
 static const char * GAMES_PLUGINS_FILE[] = {
-	"/users/steamuser/AppData/Local/Skyrim Special Edition/Plugins.txt",
-	"/users/steamuser/AppData/Local/Fallout 4/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
-	"/users/steamuser/AppData/Local/skyrim/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
-	"/users/steamuser/AppData/Local/FalloutNV/plugins.txt",
-	"/users/steamuser/AppData/Local/Fallout 3/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
-	"/users/steamuser/AppData/Local/Oblivion/Plugins.txt",
-//	Morrowind doesn't use Plugins.txt but Morrowind.ini the format is completely different.
-	"/users/steamuser/AppData/Local/Fallout 3/Plugins.txt" //Filled in assuming game name is identical and plugins is Plugins.txt
+	"steamapps/compatdata/489830/pfx/drive_c/users/steamuser/AppData/Local/Skyrim Special Edition/Plugins.txt",
+	"steamapps/compatdata/377160/pfx/drive_c/users/steamuser/AppData/Local/Fallout 4/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"steamapps/compatdata/72850/pfx/drive_c/users/steamuser/AppData/Local/skyrim/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"steamapps/compatdata/22380/pfx/drive_c/users/steamuser/AppData/Local/FalloutNV/plugins.txt",
+	"steamapps/compatdata/22370/pfx/drive_c/users/steamuser/AppData/Local/Fallout 3/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"steamapps/compatdata/22330/pfx/drive_c/users/steamuser/AppData/Local/Oblivion/Plugins.txt",
+	//"steamapps/common/Morrowind/Morrowind.ini" Morrowind doesn't use Plugins.txt but Morrowind.ini the format is completely different. and is located within the game folder
+	"steamapps/compatdata/22300/pfx/drive_c/users/steamuser/AppData/Local/Fallout 3/Plugins.txt" //Filled in assuming game name is identical and plugins is Plugins.txt
 };
 
 //the directory in which mods will be installed.

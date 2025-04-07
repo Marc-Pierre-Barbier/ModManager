@@ -116,8 +116,8 @@ static void remove_line_ending(char * string) {
 
 error_t order_get_load_order(int appid, GList ** order) {
 
-	GHashTable * game_paths;
-	error_t status = steam_search_games(&game_paths);
+	GHashTable * library_paths;
+	error_t status = steam_search_games(&library_paths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
@@ -136,11 +136,11 @@ error_t order_get_load_order(int appid, GList ** order) {
 	char appid_str[GAMES_MAX_APPID_LENGTH];
 	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
-	const char * path = g_hash_table_lookup(game_paths, &gameId);
+	const char * steam_library = g_hash_table_lookup(library_paths, &gameId);
 
 
 	//this is the path i would use in windows but it seems it is not avaliable in all wine versions.
-	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c", GAMES_PLUGINS_FILE[gameId], NULL);
+	g_autofree char * load_order_path = g_build_filename(steam_library, GAMES_PLUGINS_FILE[gameId], NULL);
 	GList * l_current_load_order = NULL;
 	if(access(load_order_path, R_OK) == 0) {
 		FILE * f_load_order = fopen(load_order_path, "r");
