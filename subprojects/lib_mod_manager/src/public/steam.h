@@ -37,7 +37,7 @@ static const u_int32_t GAMES_APPIDS[] = {
 	22380,
 	22370,
 	22330,
-	22320,
+//	22320,
 	22300
 };
 
@@ -49,8 +49,19 @@ static const char * GAMES_NAMES[] = {
 	"Fallout New Vegas",
 	"Fallout 3 goty",
 	"Oblivion",
-	"Morrowind",
+//	"Morrowind",
 	"Fallout 3"
+};
+
+static const char * GAMES_PLUGINS_FILE[] = {
+	"/users/steamuser/AppData/Local/Skyrim Special Edition/Plugins.txt",
+	"/users/steamuser/AppData/Local/Fallout 4/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"/users/steamuser/AppData/Local/skyrim/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"/users/steamuser/AppData/Local/FalloutNV/plugins.txt",
+	"/users/steamuser/AppData/Local/Fallout 3/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"/users/steamuser/AppData/Local/Oblivion/Plugins.txt",
+//	Morrowind doesn't use Plugins.txt but Morrowind.ini the format is completely different.
+	"/users/steamuser/AppData/Local/Fallout 3/Plugins.txt" //Filled in assuming game name is identical and plugins is Plugins.txt
 };
 
 //the directory in which mods will be installed.
@@ -62,7 +73,7 @@ static const char * GAMES_MOD_TARGET[] = {
 	"Data",
 	"Data",
 	"Data",
-	"Data Files",
+//	"Data Files",
 	"Data"
 };
 
@@ -87,7 +98,7 @@ static const char * GAMES_EXECUTABLE[] = {
 	"FalloutNV.exe",
 	"Fallout3.exe",
 	"Oblivion.exe",
-	"Morrowind.exe",
+//	"Morrowind.exe",
 	"Fallout3.exe"
 };
 
@@ -98,6 +109,9 @@ _Static_assert(sizeof(GAMES_EXECUTABLE) / sizeof(GAMES_EXECUTABLE[0]) == sizeof(
 _Static_assert(sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE) / sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_SCRIPT_EXTENDER_EXECUTABLE doesn't match");
 */
+
+_Static_assert(sizeof(GAMES_PLUGINS_FILE) / sizeof(GAMES_PLUGINS_FILE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+	"Game APPIDS and GAMES_PLUGINS_FILE doesn't match");
 
 
 _Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
