@@ -6,9 +6,6 @@
 
 #include "errorType.h"
 
-#define ORDER_FILE "__ORDER__"
-#define INSTALLED_FLAG_FILE "__DO_NOT_REMOVE__"
-
 //This file manager the load order of mods.
 // the current solution is using ORDER_FILE to store a number corresponding to the mod
 // this might be sub-optimal but at least it will work just fine

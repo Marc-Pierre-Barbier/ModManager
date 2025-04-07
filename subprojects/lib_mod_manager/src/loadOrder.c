@@ -194,6 +194,7 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 	return ERR_SUCCESS;
 }
 
+//TODO: use this to remake a minimal LOOT
 //TODO: support compression since it can change how we read the file
 //https://en.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Records
 //https://www.mwmythicmods.com/argent/tech/es_format.html

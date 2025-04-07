@@ -77,8 +77,24 @@ static const char * GAMES_SCRIPT_EXTENDER_EXECUTABLE[] = {
 	NULL, //TODO
 	"fose_loader.exe"
 };
+*/
 
+//Set the default executable to launch if the player didn't set another.
+static const char * GAMES_EXECUTABLE[] = {
+	"SkyrimSE.exe",
+	"Fallout4.exe",
+	"TESV.exe",
+	"FalloutNV.exe",
+	"Fallout3.exe",
+	"Oblivion.exe",
+	"Morrowind.exe",
+	"Fallout3.exe"
+};
 
+_Static_assert(sizeof(GAMES_EXECUTABLE) / sizeof(GAMES_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+	"Game APPIDS and GAMES_EXECUTABLE doesn't match");
+
+/*
 _Static_assert(sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE) / sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_SCRIPT_EXTENDER_EXECUTABLE doesn't match");
 */
