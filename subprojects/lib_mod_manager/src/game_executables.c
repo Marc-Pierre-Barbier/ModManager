@@ -34,8 +34,12 @@ static error_t find_all_executables(const char * directory, GList ** output) {
 
 		const char * file_extention = file_extract_extension(dirent->d_name);
 		if(strcmp(file_extention, "exe") == 0) {
-			printf("%s\n", filepath);
-			*output = g_list_append(*output, strdup(filepath));
+			//filename contains "directory" we don't want that.
+			int dir_length = strlen(directory);
+			if(filepath[dir_length] == '/')
+				dir_length++;
+
+			*output = g_list_append(*output, strdup(&filepath[dir_length]));
 		}
 	}
 
@@ -79,7 +83,7 @@ error_t list_game_executables(int appid, GList ** executables) {
 }
 
 error_t set_game_executable(int appid, const char * executable) {
-	if(executable == NULL || executable[0] != '/')
+	if(executable == NULL)
 		return ERR_FAILURE;
 
 	char appid_str[snprintf(NULL, 0, "%d", appid)];

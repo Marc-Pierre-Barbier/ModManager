@@ -5,6 +5,7 @@
 #include "game_tab.h"
 #include "mod_tab.h"
 #include "plugin_tab.h"
+#include "src/settings_tab.h"
 #include "window.h"
 
 
@@ -65,8 +66,10 @@ static void row_selected (GtkListBox*, GtkListBoxRow* row, gpointer) {
 		gtk_widget_set_sensitive(GTK_WIDGET(start_button), TRUE);
 	}
 
+	//regenerate uis.
 	mod_tab_generate_ui();
 	plugin_tab_generate_ui();
+	settings_tab_generate_ui();
 	g_list_free(gamesIds);
 }
 
