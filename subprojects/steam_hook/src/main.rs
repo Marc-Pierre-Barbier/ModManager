@@ -39,17 +39,9 @@ fn main() {
 		.expect("[MOD_MANAGER] Could not extract game path")
 	);
 
-	let default_game_executable = binding::bind_get_default_game_executable(appid);
-	//assert_eq!(
-	//	default_game_executable,
-	//	steam_game_path.file_name()
-	//		.expect("[MOD_MANAGER]Failed to extract game executable")
-	//);
-
 	//The path where we deployed
 	let game_path = binding::bind_get_deploy_target(appid);
 	let game_executable = binding::bind_get_game_executable(appid);
-	println!("[MOD_MANAGER] Debug: {} -- {} -- {}", default_game_executable.to_str().expect("fuck this"), game_path.to_str().expect("fuck this"), game_executable.to_str().expect("fuck this"));
 
 	let mut new_path = replace_path_at_common(steam_game_path, game_path.clone());
 	new_path.set_file_name(game_executable);

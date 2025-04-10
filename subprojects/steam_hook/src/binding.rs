@@ -1,5 +1,4 @@
 use std::ffi::CString;
-use std::ffi::CStr;
 
 //obviously C code doesn't follow rust's conventions
 #[repr(C)]
@@ -18,7 +17,6 @@ extern "C" {
 	fn is_deployed(appid: std::os::raw::c_int, status: * mut bool) -> error_t;
 	fn get_deploy_target(appid: std::os::raw::c_int) -> * mut std::os::raw::c_char;
 	fn get_game_executable(appid: std::os::raw::c_int) -> * mut std::os::raw::c_char;
-	fn get_default_game_executable(appid: std::os::raw::c_int) -> * const std::os::raw::c_char;
 }
 
 pub fn bind_deploy(appid: i32) -> DeploymentErrors_t {
@@ -61,18 +59,6 @@ pub fn bind_get_game_executable(appid: i32) -> std::path::PathBuf {
 	unsafe {
 		let c_path = get_game_executable(appid);
 		let cstr_path: CString = CString::from_raw(c_path);
-		path = cstr_path.to_str().expect("Failed to convert cstr to str").to_string();
-	}
-
-	return std::path::PathBuf::from(&path);
-}
-
-
-pub fn bind_get_default_game_executable(appid: i32) -> std::path::PathBuf {
-	let path: String;
-	unsafe {
-		let c_path = get_default_game_executable(appid);
-		let cstr_path = CStr::from_ptr(c_path);
 		path = cstr_path.to_str().expect("Failed to convert cstr to str").to_string();
 	}
 
