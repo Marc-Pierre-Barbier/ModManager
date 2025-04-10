@@ -89,10 +89,10 @@ error_t set_game_executable(int appid, const char * executable) {
 	char appid_str[snprintf(NULL, 0, "%d", appid)];
 	sprintf(appid_str, "%d", appid);
 	g_autofree char * executable_flag_file = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, GAME_EXECUTABLE_FLAG_FILE, NULL);
-	size_t length = strlen(executable_flag_file);
+	size_t length = strlen(executable);
 
 	FILE * file = fopen(executable_flag_file, "w");
-	long written = fwrite(executable_flag_file, sizeof(char), length, file);
+	long written = fwrite(executable, sizeof(char), length, file);
 	fclose(file);
 
 	if(written == length) {

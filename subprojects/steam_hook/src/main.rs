@@ -34,13 +34,25 @@ fn main() {
 		.expect("[MOD_MANAGER] Failed to find GamePath index") + 1;
 
 	//The path where the game expect to start
-	let steam_game_path = env::args()
+	let steam_game_path = std::path::PathBuf::from(env::args()
 		.nth(game_path_index)
-		.expect("[MOD_MANAGER] Could not extract game path");
+		.expect("[MOD_MANAGER] Could not extract game path")
+	);
+
+	let default_game_executable = binding::bind_get_default_game_executable(appid);
+	//assert_eq!(
+	//	default_game_executable,
+	//	steam_game_path.file_name()
+	//		.expect("[MOD_MANAGER]Failed to extract game executable")
+	//);
 
 	//The path where we deployed
 	let game_path = binding::bind_get_deploy_target(appid);
-	let new_path = replace_path_at_common(std::path::PathBuf::from(steam_game_path), game_path.clone());
+	let game_executable = binding::bind_get_game_executable(appid);
+	println!("[MOD_MANAGER] Debug: {} -- {} -- {}", default_game_executable.to_str().expect("fuck this"), game_path.to_str().expect("fuck this"), game_executable.to_str().expect("fuck this"));
+
+	let mut new_path = replace_path_at_common(steam_game_path, game_path.clone());
+	new_path.set_file_name(game_executable);
 
 	//replace the arg where the path is stored by our altered path
 	let mut child_args: Vec<_> = env::args()
