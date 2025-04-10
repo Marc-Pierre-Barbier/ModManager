@@ -7,3 +7,4 @@
 #include "loadOrder.h"
 #include "mods.h"
 #include "steam.h"
+#include "game_executables.h"

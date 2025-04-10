@@ -1,6 +1,9 @@
 #include <constants.h>
 
 #include "loadOrder.h"
+#include "errorType.h"
+#include "glibconfig.h"
+#include "mods.h"
 #include "steam.h"
 #include "file.h"
 
@@ -9,6 +12,29 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <steam.h>
+#include <sys/stat.h>
+
+static const char * plugin_extensions[] = {
+	"esp",
+	"esm",
+	"esl",
+	NULL
+};
+
+static void directory_list_plugins(const char * directory, GList ** output) {
+	const gchar *filename;
+	GDir * dir = g_dir_open(directory, 0, NULL);
+	while ((filename = g_dir_read_name(dir))) {
+		const char * file_extention = file_extract_extension(filename);
+		const char ** ext = plugin_extensions;
+		for(; *ext != NULL; ext++) {
+			if(strcmp(file_extention, *ext) == 0) {
+				*output = g_list_append(*output, strdup(filename));
+				break;
+			}
+		}
+	}
+}
 
 static gint order_find_file_with_name(gconstpointer list_entry, gconstpointer user_data) {
 	const order_plugin_entry_t * entry = (const order_plugin_entry_t *)list_entry;
@@ -16,9 +42,39 @@ static gint order_find_file_with_name(gconstpointer list_entry, gconstpointer us
 	return strcmp(entry->filename, (const char *)filename);
 }
 
-//TODO: detect if the game is running
-//TODO: deploy the game or list undeployed plugins
-error_t order_listPlugins(int appid, GList ** plugins) {
+error_t list_mods_plugins(int appid, GList ** plugins) {
+	if(plugins == NULL)
+		return EXIT_FAILURE;
+
+	const int game_id = steam_game_id_from_app_id(appid);
+	if(game_id == -1) {
+		return ERR_FAILURE;
+	}
+
+	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	sprintf(appid_str, "%d", appid);
+	g_autofree char * mod_folder = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
+	GList * mods = mods_list(appid);
+	GList * mods_it = mods;
+
+	for(;mods_it != NULL; mods_it = g_list_next(mods_it)) {
+		const char * mod_name = (char *)mods_it->data;
+		g_autofree char * mod_flag = g_build_filename(mod_folder, mod_name, INSTALLED_FLAG_FILE, NULL);
+		g_autofree char * data_dir = g_ascii_strdown(GAMES_MOD_TARGET[game_id], -1);
+		g_autofree char * mod_path = g_build_path("/", mod_folder, mod_name, data_dir, NULL);
+
+		//if the mod is not marked to be deployed or don't contains a data folder then skip
+		if(access(mod_flag, F_OK) != 0 || access(mod_path, F_OK) != 0) {
+			continue;
+		}
+
+		//find all executable
+		directory_list_plugins(mod_path, plugins);
+	}
+	return ERR_SUCCESS;
+}
+
+static error_t list_game_plugins(int appid, GList ** plugins) {
 	//save appid parsing
 	//TODO: apply a similar mechanism everywhere
 	char appid_str[GAMES_MAX_APPID_LENGTH];
@@ -35,27 +91,19 @@ error_t order_listPlugins(int appid, GList ** plugins) {
 	}
 	g_autofree char * game_folder = g_file_get_path(game_folder_file);
 	g_autofree GFile * data_folder_file = g_file_new_build_filename(game_folder, GAMES_MOD_TARGET[game_id], NULL);
-
 	g_autofree char * data_folder = g_file_get_path(data_folder_file);
 
-	//esp && esm files are loadable
-	DIR * d = opendir(data_folder);
-	struct dirent *dir;
-	if (d != NULL) {
-		while ((dir = readdir(d)) != NULL) {
-			const char * extension = file_extract_extension(dir->d_name);
-			//folder don't have file extensions
-			if(extension == NULL)
-				continue;
-
-			if(strcmp(extension, "esp") == 0 || strcmp(extension, "esm") == 0) {
-				*plugins = g_list_append(*plugins, strdup(dir->d_name));
-			}
-		}
-		closedir(d);
-	}
-
+	directory_list_plugins(data_folder, plugins);
 	return ERR_SUCCESS;
+}
+
+//TODO: detect if the game is running
+error_t order_listPlugins(int appid, GList ** plugins) {
+	error_t err = list_mods_plugins(appid, plugins);
+	if(err == ERR_FAILURE) {
+		return err;
+	}
+	return list_game_plugins(appid, plugins);
 }
 
 static void remove_line_ending(char * string) {
@@ -68,8 +116,8 @@ static void remove_line_ending(char * string) {
 
 error_t order_get_load_order(int appid, GList ** order) {
 
-	GHashTable * game_paths;
-	error_t status = steam_search_games(&game_paths);
+	GHashTable * library_paths;
+	error_t status = steam_search_games(&library_paths);
 	if(status == ERR_FAILURE) {
 		return ERR_FAILURE;
 	}
@@ -88,13 +136,11 @@ error_t order_get_load_order(int appid, GList ** order) {
 	char appid_str[GAMES_MAX_APPID_LENGTH];
 	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
-	const char * path = g_hash_table_lookup(game_paths, &gameId);
+	const char * steam_library = g_hash_table_lookup(library_paths, &gameId);
 
 
 	//this is the path i would use in windows but it seems it is not avaliable in all wine versions.
-	//char * loadOrderPath = g_build_filename(path, "steamapps/compatdata", appidStr, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], "loadorder.txt", NULL);
-	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/Local Settings/Application Data/", GAMES_NAMES[gameId], "Plugins.txt", NULL);
-
+	g_autofree char * load_order_path = g_build_filename(steam_library, GAMES_PLUGINS_FILE[gameId], NULL);
 	GList * l_current_load_order = NULL;
 	if(access(load_order_path, R_OK) == 0) {
 		FILE * f_load_order = fopen(load_order_path, "r");
@@ -118,8 +164,11 @@ error_t order_get_load_order(int appid, GList ** order) {
 	GList * l_complete_load_order = NULL;
 
 	while(l_current_load_order_iterator != NULL) {
-		//pointer arithmetic to skip the *
-		const char * mod_name = (const char *)l_current_load_order_iterator->data + 1;
+		const char * mod_name = (const char *)l_current_load_order_iterator->data;
+		if(appid == 377160) {
+			//pointer arithmetic to skip the *
+			mod_name++;
+		}
 
 		GList * mod = g_list_find_custom(l_plugins, mod_name, (GCompareFunc)strcmp);
 		if(mod != NULL) {
@@ -153,6 +202,7 @@ error_t order_get_load_order(int appid, GList ** order) {
 	return ERR_SUCCESS;
 }
 
+//TODO: https://loot.github.io/docs/help/Introduction-To-Load-Orders.html
 //TODO: Check if the default LF format is compatible with windows' CRLF in skyrim
 //TODO: add loadorder.txt along with plugins.txt
 error_t order_set_load_order(int appid, GList * loadOrder) {
@@ -171,7 +221,7 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	const char * path = g_hash_table_lookup(game_paths, &gameId);
-	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c/users/steamuser/AppData/Local/", GAMES_NAMES[gameId], NULL);
+	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c", GAMES_PLUGINS_FILE[gameId], NULL);
 	g_autofree char * plugin_txt_path = g_build_filename(load_order_path, "Plugins.txt", NULL);
 
 	g_mkdir_with_parents(load_order_path, 755);
@@ -183,7 +233,9 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 	while(loadOrder != NULL) {
 		order_plugin_entry_t * entry = loadOrder->data;
 		if(entry->activated) {
-			fwrite("*", sizeof(char), 1, f_loadOrder);
+			//fo4 behave differently.
+			if(appid == 377160)
+				fwrite("*", sizeof(char), 1, f_loadOrder);
 			fwrite(entry->filename, sizeof(char), strlen(entry->filename), f_loadOrder);
 			fwrite("\n", sizeof(char), 1, f_loadOrder);
 		}
@@ -194,6 +246,7 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 	return ERR_SUCCESS;
 }
 
+//TODO: use this to remake a minimal LOOT
 //TODO: support compression since it can change how we read the file
 //https://en.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Records
 //https://www.mwmythicmods.com/argent/tech/es_format.html

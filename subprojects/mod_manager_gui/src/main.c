@@ -3,6 +3,7 @@
 #include "gtk/gtk.h"
 #include "plugin_tab.h"
 #include "mod_tab.h"
+#include "src/settings_tab.h"
 #include <constants.h>
 
 
@@ -55,6 +56,7 @@ static void game_selector(void) {
 	GtkWidget * game_tab_widget = game_tab_generate_ui(GTK_WINDOW(window));
 	mod_tab_generate_ui();
 	plugin_tab_generate_ui();
+	settings_tab_generate_ui();
 
 	AdwViewStackPage* game_page = adw_view_stack_add(ADW_VIEW_STACK(content), game_tab_widget);
 	adw_view_stack_page_set_title(game_page, "Game");
@@ -68,6 +70,9 @@ static void game_selector(void) {
 	adw_view_stack_page_set_title(plugin_page, "Plugins");
 	adw_view_stack_page_set_icon_name(plugin_page, "preferences-other-symbolic");
 
+	AdwViewStackPage* executable_page = adw_view_stack_add(ADW_VIEW_STACK(content), settings_tab_widget);
+	adw_view_stack_page_set_title(executable_page, "Settings");
+	adw_view_stack_page_set_icon_name(executable_page, "applications-system-symbolic");
 
 	adw_view_switcher_title_set_stack(ADW_VIEW_SWITCHER_TITLE(viewswitcher), ADW_VIEW_STACK(content));
 	adw_header_bar_set_title_widget(ADW_HEADER_BAR(header), viewswitcher);

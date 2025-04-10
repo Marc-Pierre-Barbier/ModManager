@@ -17,7 +17,8 @@ gui_sources = files(
 	'src/game_tab.c',
 	'src/fomod_install.c',
 	'src/mod_tab.c',
-	'src/plugin_tab.c'
+	'src/plugin_tab.c',
+	'src/settings_tab.c'
 )
 
 executable(

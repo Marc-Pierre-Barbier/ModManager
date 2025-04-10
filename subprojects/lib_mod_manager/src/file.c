@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <glib.h>
 #include <gio/gio.h>
+#include <sys/stat.h>
+
 #include "file.h"
 
 //rename a folder and all subfolder and files to lowercase
@@ -51,7 +53,7 @@ static const char * file_extract_last_part(const char * file_path, const char de
 		}
 	}
 
-	if(index <= 0 || index == length) return NULL;
+	if(index <= 0 || index == length) return "";
 	return &file_path[index];
 }
 
