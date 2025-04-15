@@ -37,7 +37,7 @@ static const u_int32_t GAMES_APPIDS[] = {
 	22380,
 	22370,
 	22330,
-	22320,
+//	22320,
 	22300
 };
 
@@ -49,8 +49,19 @@ static const char * GAMES_NAMES[] = {
 	"Fallout New Vegas",
 	"Fallout 3 goty",
 	"Oblivion",
-	"Morrowind",
+//	"Morrowind",
 	"Fallout 3"
+};
+
+static const char * GAMES_PLUGINS_FILE[] = {
+	"steamapps/compatdata/489830/pfx/drive_c/users/steamuser/AppData/Local/Skyrim Special Edition/Plugins.txt",
+	"steamapps/compatdata/377160/pfx/drive_c/users/steamuser/AppData/Local/Fallout 4/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"steamapps/compatdata/72850/pfx/drive_c/users/steamuser/AppData/Local/skyrim/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"steamapps/compatdata/22380/pfx/drive_c/users/steamuser/AppData/Local/FalloutNV/plugins.txt",
+	"steamapps/compatdata/22370/pfx/drive_c/users/steamuser/AppData/Local/Fallout 3/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"steamapps/compatdata/22330/pfx/drive_c/users/steamuser/AppData/Local/Oblivion/Plugins.txt",
+	//"steamapps/common/Morrowind/Morrowind.ini" Morrowind doesn't use Plugins.txt but Morrowind.ini the format is completely different. and is located within the game folder
+	"steamapps/compatdata/22300/pfx/drive_c/users/steamuser/AppData/Local/Fallout 3/Plugins.txt" //Filled in assuming game name is identical and plugins is Plugins.txt
 };
 
 //the directory in which mods will be installed.
@@ -62,7 +73,7 @@ static const char * GAMES_MOD_TARGET[] = {
 	"Data",
 	"Data",
 	"Data",
-	"Data Files",
+//	"Data Files",
 	"Data"
 };
 
@@ -77,11 +88,30 @@ static const char * GAMES_SCRIPT_EXTENDER_EXECUTABLE[] = {
 	NULL, //TODO
 	"fose_loader.exe"
 };
+*/
 
+//Set the default executable to launch if the player didn't set another.
+static const char * GAMES_EXECUTABLE[] = {
+	"SkyrimSE.exe",
+	"Fallout4.exe",
+	"TESV.exe",
+	"FalloutNV.exe",
+	"Fallout3.exe",
+	"Oblivion.exe",
+//	"Morrowind.exe",
+	"Fallout3.exe"
+};
 
+_Static_assert(sizeof(GAMES_EXECUTABLE) / sizeof(GAMES_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+	"Game APPIDS and GAMES_EXECUTABLE doesn't match");
+
+/*
 _Static_assert(sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE) / sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_SCRIPT_EXTENDER_EXECUTABLE doesn't match");
 */
+
+_Static_assert(sizeof(GAMES_PLUGINS_FILE) / sizeof(GAMES_PLUGINS_FILE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+	"Game APPIDS and GAMES_PLUGINS_FILE doesn't match");
 
 
 _Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),

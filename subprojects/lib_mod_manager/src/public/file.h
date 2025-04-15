@@ -4,7 +4,6 @@
 #include <glib.h>
 #include <sys/types.h>
 
-#include "constants.h"
 #include "errorType.h"
 
 #include <gio/gio.h>
