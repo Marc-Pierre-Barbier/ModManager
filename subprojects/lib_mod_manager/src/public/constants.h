@@ -8,6 +8,7 @@
 // in c "A" "B" is the same as "AB"
 #define MODLIB_WORKING_DIR ".local/share/" MODLIB_NAME
 #define MOD_FOLDER_NAME "MOD_FOLDER"
+#define SETTINGS_FOLDER_NAME "SETTINGS_FOLDER"
 
 //the director that will contain all modifications to game files while being deployed
 #define GAME_UPPER_DIR_NAME "UPPER_DIRS"
