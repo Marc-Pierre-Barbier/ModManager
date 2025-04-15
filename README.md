@@ -1,8 +1,6 @@
 
 # A work in progress Bethesda game mod manager for Linux
 
-The current version si not usable, the previous cli based version is still available from the release page.
-
 This mod manager is made to protect the original game files files at all costs.
 if an operation or a mod tries to modify the files they will be stocked in and overlay folder (~/.local/share/modmanager/UPPER_DIRS/appid)
 
@@ -26,6 +24,7 @@ mods conflicts are solved by priority like in mo3
 1. Find a name
 2. Support more games
 3. adding a hook for %command% in steam
+4. Support morrowind's Morrowind.ini format.
 
 ## How to contribute:
 if you have Gamebryo or creation engine based games not listed in subprojects/lib_mod_manager/steam.h
