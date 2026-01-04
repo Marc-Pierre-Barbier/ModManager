@@ -234,8 +234,7 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 	while(loadOrder != NULL) {
 		order_plugin_entry_t * entry = loadOrder->data;
 		if(entry->activated) {
-			//fo4 behave differently.
-			if(appid == 377160)
+			if(appid >= 377160) //games since fo4
 				fwrite("*", sizeof(char), 1, f_loadOrder);
 			fwrite(entry->filename, sizeof(char), strlen(entry->filename), f_loadOrder);
 			fwrite("\n", sizeof(char), 1, f_loadOrder);
