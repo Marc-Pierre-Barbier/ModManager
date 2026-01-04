@@ -54,15 +54,26 @@ static const char * GAMES_NAMES[] = {
 	"Fallout 3"
 };
 
+//should probably be done programically
+static const char * GAMES_PREFIX_DIR[] = {
+	"steamapps/compatdata/489830/pfx/",
+	"steamapps/compatdata/377160/pfx/",
+	"steamapps/compatdata/72850/pfx/",
+	"steamapps/compatdata/22380/pfx/",
+	"steamapps/compatdata/22370/pfx/",
+	"steamapps/compatdata/22330/pfx/",
+	"steamapps/compatdata/22300/pfx/"
+};
+
 static const char * GAMES_PLUGINS_FILE[] = {
-	"steamapps/compatdata/489830/pfx/drive_c/users/steamuser/AppData/Local/Skyrim Special Edition/Plugins.txt",
-	"steamapps/compatdata/377160/pfx/drive_c/users/steamuser/AppData/Local/Fallout 4/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
-	"steamapps/compatdata/72850/pfx/drive_c/users/steamuser/AppData/Local/skyrim/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
-	"steamapps/compatdata/22380/pfx/drive_c/users/steamuser/AppData/Local/FalloutNV/plugins.txt",
-	"steamapps/compatdata/22370/pfx/drive_c/users/steamuser/AppData/Local/Fallout 3/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
-	"steamapps/compatdata/22330/pfx/drive_c/users/steamuser/AppData/Local/Oblivion/Plugins.txt",
+	"drive_c/users/steamuser/AppData/Local/Skyrim Special Edition/Plugins.txt",
+	"drive_c/users/steamuser/AppData/Local/Fallout 4/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"drive_c/users/steamuser/AppData/Local/skyrim/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"drive_c/users/steamuser/AppData/Local/FalloutNV/plugins.txt",
+	"drive_c/users/steamuser/AppData/Local/Fallout 3/Plugins.txt", //Filled in assuming game name is identical and plugins is Plugins.txt
+	"drive_c/users/steamuser/AppData/Local/Oblivion/Plugins.txt",
 	//"steamapps/common/Morrowind/Morrowind.ini" Morrowind doesn't use Plugins.txt but Morrowind.ini the format is completely different. and is located within the game folder
-	"steamapps/compatdata/22300/pfx/drive_c/users/steamuser/AppData/Local/Fallout 3/Plugins.txt" //Filled in assuming game name is identical and plugins is Plugins.txt
+	"drive_c/users/steamuser/AppData/Local/Fallout 3/Plugins.txt" //Filled in assuming game name is identical and plugins is Plugins.txt
 };
 
 //the directory in which mods will be installed.
@@ -114,6 +125,8 @@ _Static_assert(sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE) / sizeof(GAMES_SCRIPT_EX
 _Static_assert(sizeof(GAMES_PLUGINS_FILE) / sizeof(GAMES_PLUGINS_FILE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_PLUGINS_FILE doesn't match");
 
+_Static_assert(sizeof(GAMES_PREFIX_DIR) / sizeof(GAMES_PREFIX_DIR[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+	"Game APPIDS and GAMES_PREFIX_DIR doesn't match");
 
 _Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_NAMES doesn't match");

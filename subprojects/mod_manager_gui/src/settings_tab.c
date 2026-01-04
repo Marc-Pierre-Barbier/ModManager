@@ -1,7 +1,9 @@
 #include "settings_tab.h"
 #include <game_executables.h>
 #include <adwaita.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "errorType.h"
 #include "game_tab.h"
 #include "glib-object.h"
@@ -21,6 +23,23 @@ hook detection should not be useful as it can skip deployment.
 
 */
 GtkWidget * settings_tab_widget;
+
+static void open_mygames_handler(GtkWidget * dropdown, gpointer user_data) {
+	//TODO: optimize this i hate it or at least wrap it in the lib
+	GHashTable * library_paths;
+	error_t status = steam_search_games(&library_paths);
+	if(status == ERR_FAILURE) {
+		return;
+	}
+
+	const char * steam_library = g_hash_table_lookup(library_paths, &current_game);
+	g_autofree char * load_order_path = g_build_filename(steam_library, GAMES_PREFIX_DIR[current_game], "drive_c", "users", "steamuser", "Documents", "My Games", NULL);
+	g_autofree char * command = g_strjoin("", "xdg-open '", load_order_path, "'", NULL);
+	if(fork() == 0) {
+		system(command);
+		exit(EXIT_FAILURE);
+	}
+}
 
 static void executable_dropdown_handler(GtkWidget * dropdown, gpointer user_data) {
 	const int index = gtk_drop_down_get_selected(GTK_DROP_DOWN(dropdown));
@@ -110,34 +129,9 @@ void settings_tab_generate_ui() {
 	gtk_box_append(GTK_BOX(settingss_box_wrap), executables_dropdown);
 	g_signal_connect_after(executables_dropdown, "notify::selected", G_CALLBACK(executable_dropdown_handler), NULL);
 
-	/*GtkWidget * settingss_box = gtk_list_box_new();
-	gtk_list_box_set_selection_mode(GTK_LIST_BOX(settingss_box), GTK_SELECTION_NONE);
-	gtk_widget_add_css_class(settingss_box, "boxed-list");
-	gtk_box_append(GTK_BOX(settingss_box_wrap), settingss_box);
-
-	for(GList * settingss_iterator = settingss; settingss_iterator != NULL; settingss_iterator = g_list_next(settingss_iterator)) {
-		const char * settings_file = settingss_iterator->data;
-		g_autofree const char * filename = g_path_get_basename(settings_file);
-
-		GtkWidget * plugin_row = adw_action_row_new();
-		adw_preferences_row_set_title(ADW_PREFERENCES_ROW(plugin_row), filename);
-		adw_action_row_set_title_lines(ADW_ACTION_ROW(plugin_row),2);
-		gtk_list_box_append(GTK_LIST_BOX(settingss_box), plugin_row);
-
-		GtkWidget * button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-		adw_action_row_add_suffix(ADW_ACTION_ROW(plugin_row), button_box);
-
-		GtkWidget * enable_switch = gtk_switch_new();
-		gboolean is_current = strcmp(current_settings, filename) == 0;
-
-		gtk_switch_set_active(GTK_SWITCH(enable_switch), is_current);
-		gtk_switch_set_state(GTK_SWITCH(enable_switch), is_current);
-		gtk_widget_set_sensitive (enable_switch, !is_current);
-
-		gtk_widget_set_valign(enable_switch, GTK_ALIGN_CENTER);
-		//g_signal_connect(enable_switch, "state-set", G_CALLBACK(on_mod_toggled), plugin);
-		gtk_box_append(GTK_BOX(button_box), enable_switch);
-	}*/
+	GtkWidget * mygames_button = gtk_button_new_with_label("Open MyGames");
+	gtk_box_append(GTK_BOX(settingss_box_wrap), mygames_button);
+	g_signal_connect_after(mygames_button, "clicked", G_CALLBACK(open_mygames_handler), NULL);
 
 	g_list_free_full(executables, free);
 }

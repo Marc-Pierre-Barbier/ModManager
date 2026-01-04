@@ -92,9 +92,14 @@ error_t set_game_executable(int appid, const char * executable) {
 	char appid_str[snprintf(NULL, 0, "%d", appid)];
 	sprintf(appid_str, "%d", appid);
 	g_autofree char * executable_flag_file = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, SETTINGS_FOLDER_NAME, appid_str, GAME_EXECUTABLE_FLAG_FILE, NULL);
+	g_autofree char * parent_dir = g_path_get_dirname(executable_flag_file);
+	g_mkdir_with_parents(parent_dir, 0700);
 	size_t length = strlen(executable);
 
 	FILE * file = fopen(executable_flag_file, "w");
+	if(file == NULL){
+		g_error("Failed to open executable config file");
+	}
 	long written = fwrite(executable, sizeof(char), length, file);
 	fclose(file);
 

@@ -2,6 +2,7 @@
 
 #include "loadOrder.h"
 #include "errorType.h"
+#include "glib.h"
 #include "glibconfig.h"
 #include "mods.h"
 #include "steam.h"
@@ -140,7 +141,7 @@ error_t order_get_load_order(int appid, GList ** order) {
 
 
 	//this is the path i would use in windows but it seems it is not avaliable in all wine versions.
-	g_autofree char * load_order_path = g_build_filename(steam_library, GAMES_PLUGINS_FILE[gameId], NULL);
+	g_autofree char * load_order_path = g_build_filename(steam_library, GAMES_PREFIX_DIR[gameId], GAMES_PLUGINS_FILE[gameId], NULL);
 	GList * l_current_load_order = NULL;
 	if(access(load_order_path, R_OK) == 0) {
 		FILE * f_load_order = fopen(load_order_path, "r");
@@ -220,11 +221,11 @@ error_t order_set_load_order(int appid, GList * loadOrder) {
 	char appid_str[GAMES_MAX_APPID_LENGTH];
 	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
-	const char * path = g_hash_table_lookup(game_paths, &gameId);
-	g_autofree char * load_order_path = g_build_filename(path, "steamapps/compatdata", appid_str, "pfx/drive_c", GAMES_PLUGINS_FILE[gameId], NULL);
-	g_autofree char * plugin_txt_path = g_build_filename(load_order_path, "Plugins.txt", NULL);
+	const char * steam_library = g_hash_table_lookup(game_paths, &gameId);
+	g_autofree char * plugin_txt_path = g_build_filename(steam_library, GAMES_PREFIX_DIR[gameId], GAMES_PLUGINS_FILE[gameId], NULL);
+	g_autofree char * load_order_dir = g_path_get_dirname(plugin_txt_path);
 
-	g_mkdir_with_parents(load_order_path, 755);
+	g_mkdir_with_parents(load_order_dir, 755);
 	FILE * f_loadOrder = fopen(plugin_txt_path, "w");
 	if(f_loadOrder == NULL) {
 		return ERR_FAILURE;
