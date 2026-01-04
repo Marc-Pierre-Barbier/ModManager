@@ -6,3 +6,4 @@
 * archives with root in subfolder (ex: logical crime report)
 * automaticaly detect file change
 * Not storing disabled steam libraries
+* Refresh the executable list when enabling/disabling a plugin

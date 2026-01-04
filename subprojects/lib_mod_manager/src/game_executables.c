@@ -50,7 +50,7 @@ error_t list_game_executables(int appid, GList ** executables) {
 	if(executables == NULL)
 		return EXIT_FAILURE;
 
-	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	char appid_str[10];
 	sprintf(appid_str, "%d", appid);
 	g_autofree char * mod_folder = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
 	GList * mods = mods_list(appid);
@@ -89,7 +89,7 @@ error_t set_game_executable(int appid, const char * executable) {
 	if(executable == NULL)
 		return ERR_FAILURE;
 
-	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	char appid_str[10];
 	sprintf(appid_str, "%d", appid);
 	g_autofree char * executable_flag_file = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, SETTINGS_FOLDER_NAME, appid_str, GAME_EXECUTABLE_FLAG_FILE, NULL);
 	g_autofree char * parent_dir = g_path_get_dirname(executable_flag_file);
@@ -110,7 +110,7 @@ error_t set_game_executable(int appid, const char * executable) {
 }
 
 char * get_game_executable(int appid) {
-	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	char appid_str[10];
 	sprintf(appid_str, "%d", appid);
 	g_autofree GFile * executable_flag_file = g_file_new_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, SETTINGS_FOLDER_NAME, appid_str, GAME_EXECUTABLE_FLAG_FILE, NULL);
 

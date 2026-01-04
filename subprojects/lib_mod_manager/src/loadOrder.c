@@ -52,7 +52,7 @@ error_t list_mods_plugins(int appid, GList ** plugins) {
 		return ERR_FAILURE;
 	}
 
-	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	char appid_str[10];
 	sprintf(appid_str, "%d", appid);
 	g_autofree char * mod_folder = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
 	GList * mods = mods_list(appid);

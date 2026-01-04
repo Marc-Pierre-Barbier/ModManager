@@ -87,7 +87,7 @@ error_t is_deployed(int appid, bool * status) {
 }
 
 error_t undeploy(int appid) {
-	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	char appid_str[10];
 	sprintf(appid_str, "%d", appid);
 
 	g_autofree char * path = g_build_filename(g_get_tmp_dir(), MODLIB_NAME, appid_str, NULL);
@@ -110,30 +110,26 @@ error_t undeploy(int appid) {
 }
 
 static char ** list_overlay_dirs(const int appid, const char * game_folder) {
-	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	char appid_str[10];
 	sprintf(appid_str, "%d", appid);
 
 	g_autofree char * mod_folder = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
 
 	GList * mods = mods_list(appid);
-	//since the priority is by alphabetical order
-	//and we need to bind the least important first
-	//and the most important last
-	//we have to reverse the list
-	GList * mods_reverse_it = g_list_reverse(mods);
-
 	//probably over allocating but this doesn't matter that much
 	// +2 since we add the game folder
-	char ** mods_to_install = malloc(g_list_length(mods) + 1);
+	char ** mods_to_install = malloc(sizeof(char *) * (g_list_length(mods) + 2));
 	int mod_count = 0;
 
-	for(;mods_reverse_it != NULL; mods_reverse_it = g_list_next(mods)) {
-		const char * mod_name = (char *)mods_reverse_it->data;
+	GList * iterator = mods;
+	for(;iterator != NULL; iterator = g_list_next(iterator)) {
+		const char * mod_name = (char *)iterator->data;
 		char * mod_path = g_build_path("/", mod_folder, mod_name, NULL);
 		g_autofree char * mod_flag = g_build_filename(mod_path, INSTALLED_FLAG_FILE, NULL);
 
 		//if the mod is not marked to be deployed then don't
 		if(access(mod_flag, F_OK) != 0) {
+			g_free(mod_path);
 			continue;
 		}
 
@@ -151,14 +147,14 @@ static char ** list_overlay_dirs(const int appid, const char * game_folder) {
 }
 
 char * get_deploy_target(int appid) {
-	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	char appid_str[10];
 	sprintf(appid_str, "%d", appid);
 
 	return g_build_filename(g_get_tmp_dir(), MODLIB_NAME, appid_str, NULL);
 }
 
 DeploymentErrors_t deploy(int appid) {
-	char appid_str[snprintf(NULL, 0, "%d", appid)];
+	char appid_str[10];
 	sprintf(appid_str, "%d", appid);
 
 	const char * home_path = g_get_home_dir();
