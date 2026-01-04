@@ -5,3 +5,4 @@
 * make it possible start any EXE inside the game folder (FNIS, Bodyslide & others)
 * archives with root in subfolder (ex: logical crime report)
 * automaticaly detect file change
+* Not storing disabled steam libraries

@@ -58,6 +58,9 @@ error_t list_game_executables(int appid, GList ** executables) {
 
 	GFile * game_folder_gfile = steam_get_game_folder_path(appid);
 	g_autofree const char * mod_path = g_file_get_path(game_folder_gfile);
+	if(mod_path == NULL)
+		return EXIT_FAILURE;
+
 	error_t err = find_all_executables(mod_path, executables);
 	if(err == ERR_FAILURE) {
 		return ERR_FAILURE;

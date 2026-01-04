@@ -22,6 +22,7 @@ typedef struct SteamLibrary {
 	char * time_last_update_corruption;
 	SteamApp_t * apps;
 	size_t apps_count;
+	bool enabled;
 } SteamLibrary_t;
 
 //todo add the older games

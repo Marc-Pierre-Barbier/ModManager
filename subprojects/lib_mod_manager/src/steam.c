@@ -12,13 +12,13 @@
 
 #define UNKNOWN_FIELD INT_MAX
 
-enum FieldIds { FIELD_PATH, FIELD_LABEL, FIELD_CONTENT_ID, FIELD_TOTAL_SIZE, FIELD_CLEAN_BYTES, FIELD_CORRUPTION, FIELD_APPS };
+enum FieldIds { FIELD_PATH, FIELD_LABEL, FIELD_CONTENT_ID, FIELD_TOTAL_SIZE, FIELD_CLEAN_BYTES, FIELD_CORRUPTION, FIELD_APPS, FIELD_TIME_LAST_UPD };
 
 // relative to the home directory
 static const char * steamLibraries[] = {
+	"/.local/share/Steam",
 	"/.steam/root/",
 	"/.steam/steam/",
-	"/.local/share/steam",
 	//flatpack steam.
 	"/.var/app/com.valvesoftware.Steam/.local/share/Steam"
 };
@@ -39,8 +39,10 @@ static int get_filed_id(const char * field) {
 		return FIELD_CORRUPTION;
 	} else if(strcmp(field, "apps") == 0) {
 		return FIELD_APPS;
+	} else if(strcmp(field, "time_last_update_verified") == 0) {
+		return FIELD_TIME_LAST_UPD;
 	} else {
-		g_warning( "Unknown field in VDF\n");
+		g_warning( "Unknown field in VDF: %s\n", field);
 		return UNKNOWN_FIELD;
 	}
 }
@@ -89,6 +91,7 @@ static SteamLibrary_t * parse_vdf(GFile * file_path, size_t * size, int * status
 							SteamLibrary_t * library = &libraries[*size - 1];
 							switch (next_field_to_fill) {
 							case FIELD_PATH:
+								library->enabled = access(value, F_OK) == 0;
 								library->path = value;
 								break;
 
@@ -124,6 +127,10 @@ static SteamLibrary_t * parse_vdf(GFile * file_path, size_t * size, int * status
 								}
 								free(value);
 								is_app_id = !is_app_id;
+								break;
+							case FIELD_TIME_LAST_UPD:
+								//we don't use it
+								free(value);
 								break;
 							default:
 								g_warning("Discarding value from unknown field");
@@ -225,6 +232,9 @@ error_t steam_search_games(GHashTable ** p_hash_table) {
 	//fill the table
 	for(unsigned long i = 0; i < size; i++) {
 		for(unsigned long j = 0; j < libraries[i].apps_count; j++) {
+			if(!libraries[i].enabled)
+				continue;
+
 			int game_id = steam_game_id_from_app_id(libraries[i].apps[j].appid);
 			if(game_id >= 0) {
 				int * key = g_malloc(sizeof(int));
@@ -298,6 +308,13 @@ GFile * steam_get_game_folder_path(int appid) {
 
 	if(path == NULL) {
 		g_warning( "game not found\n");
+		return NULL;
+	}
+
+	g_autofree GFile * gfile_path = g_file_new_for_path(path);
+	//can be caused by the game being on a previously connected drive
+	if(!g_file_query_exists(gfile_path, NULL)) {
+		g_warning("game folder doesn't exists anymore");
 		return NULL;
 	}
 
