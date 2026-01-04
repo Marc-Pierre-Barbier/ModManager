@@ -19,12 +19,17 @@ mods conflicts are solved by priority like in mo3
 * libaudit
 * Fuse 3
 * Fuse-overlayfs
+* xdg-open
 
 ## TODO:
 1. Find a name
 2. Support more games
 3. adding a hook for %command% in steam
 4. Support morrowind's Morrowind.ini format.
+
+## Supported games:
+
+Skyrim SE is the only currently supported game, others might work and i have made code for them but it's untested.
 
 ## How to contribute:
 if you have Gamebryo or creation engine based games not listed in subprojects/lib_mod_manager/steam.h
