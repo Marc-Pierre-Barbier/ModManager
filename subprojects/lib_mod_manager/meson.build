@@ -1,6 +1,7 @@
-project('libmodManager', 'c',
+project('libmodManager', [ 'c', 'cpp' ],
 	default_options : [
-		'c_std=gnu2x' # 23 but it's not available yet
+		'c_std=gnu2x',
+		'cpp_std=c++2a,c++23'
 	],
 )
 

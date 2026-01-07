@@ -336,7 +336,7 @@ error_t gui_fomod_installer(int modid) {
 	mod_folder = g_build_filename(mods_folder, mod->data, NULL);
 	g_list_free_full(mod_list, g_free);
 
-	//everything should be lowercase since we use casefold() before calling any install function
+	//TODO: handle all casing
 	g_autofree char * fomod_folder = g_build_filename(mod_folder, "fomod", NULL);
 	g_autofree GFile * fomod_file = g_file_new_build_filename(fomod_folder, "moduleconfig.xml", NULL);
 

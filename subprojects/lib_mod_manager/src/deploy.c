@@ -14,58 +14,6 @@
 #include "mods.h"
 #include "overlayfs.h"
 
-
-static error_t generate_symlink_copy(const char * source, const char * destination) {
-	//generate a folder where all files contained within are symlinks and folders are just normal folders.
-	//this allow me to make everything lowercase so overlay fs can manage collisions
-
-	//is the game accecible
-	if(access(source, F_OK) != 0) {
-		return ERR_FAILURE;
-	}
-
-	if(access(destination, F_OK) != 0) {
-		if(mkdir(destination, 0777) != 0)
-			return ERR_FAILURE;
-	}
-
-	//the actual copy
-	DIR * d = opendir(source);
-	struct dirent *dir_ent;
-	if (d != NULL) {
-		while ((dir_ent = readdir(d)) != NULL) {
-			if (strcmp(dir_ent->d_name, ".") == 0 || strcmp(dir_ent->d_name, "..") == 0) {
-				continue;
-			}
-			g_autofree char * filename_low = g_ascii_strdown(dir_ent->d_name, -1);
-			g_autofree char * from = g_build_filename(source, dir_ent->d_name, NULL);
-			g_autofree char * to = g_build_filename(destination, filename_low, NULL);
-			//used for executables and dlls to allow runtime check for EnginePatches
-			g_autofree char * toHigh = g_build_filename(destination, dir_ent->d_name, NULL);
-			g_autofree GFile * from_f = g_file_new_for_path(from);
-			g_autofree GFile * to_f = g_file_new_for_path(to);
-
-			//TODO: error handling
-			switch(dir_ent->d_type) {
-			case DT_LNK:
-				g_file_copy(from_f, to_f, G_FILE_COPY_ALL_METADATA, NULL, NULL, NULL, NULL);
-				break;
-			case DT_DIR:
-				generate_symlink_copy(from, to);
-				break;
-			default:
-				if(g_str_has_suffix(filename_low, ".exe") || g_str_has_suffix(filename_low, ".dll"))
-					symlink(from, toHigh);
-				else
-					symlink(from, to);
-				break;
-			}
-		}
-		closedir(d);
-	}
-	return ERR_SUCCESS;
-}
-
 error_t is_deployed(int appid, bool * status) {
 	g_autofree char * path = get_deploy_target(appid);
 	pid_t pid = fork();
@@ -103,7 +51,8 @@ error_t undeploy(int appid) {
 		return ERR_FAILURE;
 	}
 	if(pid == 0) {
-		execl("/usr/bin/fusermount", "fusermount", "-u", path, NULL);
+		//lazy unmount for more reliability
+		execl("/usr/bin/fusermount", "fusermount", "-uz", path, NULL);
 		g_error("failed to run fusermount");
 	}
 
@@ -176,30 +125,17 @@ DeploymentErrors_t deploy(int appid) {
 	g_autofree GFile * dest = g_file_new_build_filename(g_get_tmp_dir(), appid_str, NULL); //TODO: put it in a subfolder
 
 	g_autofree char * game_folder = g_file_get_path(game_folder_gfile);
-	g_autofree char * destination = g_file_get_path(dest);
-	if(!g_file_query_exists(dest, NULL)) { //TODO: check if file changes happened in the source (IE: handle updates and manual installs)
-		//it's a direct X is needed to open it
-		g_mkdir_with_parents(destination, 0777);
-		error_t err = generate_symlink_copy(game_folder, destination);
-		if(err != ERR_SUCCESS) {
-			return CANNOT_SYM_COPY;
-		}
-	}
-
-	char ** overlay_dirs = list_overlay_dirs(appid, destination);
+	char ** overlay_dirs = list_overlay_dirs(appid, game_folder);
 
 	g_autofree char * game_upper_dir = g_build_filename(home_path, MODLIB_WORKING_DIR, GAME_UPPER_DIR_NAME, appid_str, NULL);
-	g_autofree char * game_work_dir = g_build_filename(home_path, MODLIB_WORKING_DIR, GAME_WORK_DIR_NAME, appid_str, NULL);
 	if(access(game_upper_dir, F_OK) != 0)
 		g_mkdir_with_parents(game_upper_dir, 0777);
-	if(access(game_work_dir, F_OK) != 0)
-		g_mkdir_with_parents(game_work_dir, 0777);
 
 	//discard the nodiscard as an unmounted fs will return an error, and in our case it's fine
 	(void) undeploy(appid);
 	g_autofree char * mount = g_build_filename(g_get_tmp_dir(), MODLIB_NAME, appid_str, NULL);
 	g_mkdir_with_parents(mount, 0777);
-	overlay_errors_t status = overlay_mount(overlay_dirs, mount, game_upper_dir, game_work_dir);
+	overlay_errors_t status = overlay_mount(overlay_dirs, mount, game_upper_dir);
 
 	char ** overlay_dirs_it = overlay_dirs;
 	while((*overlay_dirs_it) != NULL) {
@@ -214,8 +150,8 @@ DeploymentErrors_t deploy(int appid) {
 		g_warning("Mount failure");
 		return CANNOT_MOUNT;
 	} else if(status == NOT_INSTALLED) {
-		g_warning("Fuse is missing");
-		return FUSE_NOT_INSTALLED;
+		g_warning("Modfs is missing");
+		return MODFS_NOT_INSTALLED;
 	} else {
 		return BUG;
 	}

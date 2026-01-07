@@ -10,9 +10,8 @@ typedef enum overlay_errors { SUCCESS, NOT_INSTALLED, FAILURE } overlay_errors_t
  * @param sources a null ended table of folder that will overlay of the game files
  * @param dest the overlayed folder(the game data folder)
  * @param upperdir the director that will store the changed files
- * @param workdir a directory that will contains only temporary files.
  * @return int error code
  */
-overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * upperdir, const char * workdir);
+overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * upperdir);
 
 #endif

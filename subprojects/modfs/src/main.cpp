@@ -23,6 +23,8 @@ namespace fs = std::filesystem;
 #include <stdbool.h>
 #include <libgen.h>
 
+constexpr char delimiter = ':';
+
 char * mountpoint;
 
 //call free for the cleanup attribute
@@ -201,7 +203,7 @@ static int modfs_readdir(fs::path path, void *buf, fuse_fill_dir_t filler, off_t
 	if(adapted_path)
 		process_path(*adapted_path);
 
-	while (getline(ss, lowerdir, ',')) {
+	while (getline(ss, lowerdir, delimiter)) {
 		auto adapted_path = case_adapted_path(path, lowerdir);
 		if(adapted_path)
 			process_path(*adapted_path);
@@ -221,7 +223,7 @@ static std::optional<fs::path> search(fs::path path) {
 
 	std::stringstream ss(options.lowerdirs);
 	std::string lowerdir;
-	while (getline(ss, lowerdir, ',')) {
+	while (getline(ss, lowerdir, delimiter)) {
 		auto guessed_path = case_adapted_path(path, lowerdir);
 		if(guessed_path) {
 			return guessed_path;

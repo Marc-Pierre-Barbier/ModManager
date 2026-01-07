@@ -8,7 +8,7 @@ pub enum error_t { ErrSuccess, ErrFailure }
 #[allow(dead_code)]
 #[repr(C)]
 #[derive(PartialEq)]
-pub enum DeploymentErrors_t { Ok, InvalidAppid, GameNotFound, CannotMount, FuseNotInstalled, Bug, CannotSymCopy }
+pub enum DeploymentErrors_t { Ok, InvalidAppid, GameNotFound, CannotMount, ModfsNotInstalled, Bug, CannotSymCopy }
 
 //i have no clue if using these like that is leaking ram.
 extern "C" {
