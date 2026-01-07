@@ -65,7 +65,7 @@ fn main() {
 			DeploymentErrors_t::Bug => println!("[MOD_MANAGER] An unknown error occured, please report the issue"),
 			DeploymentErrors_t::CannotMount => println!("[MOD_MANAGER] Failed to mount the overlay filesystem"),
 			DeploymentErrors_t::CannotSymCopy => println!("[MOD_MANAGER] Failed to crate the virtual game folder"),
-			DeploymentErrors_t::FuseNotInstalled => println!("[MOD_MANAGER] fuse-overlayfs is not installed"),
+			DeploymentErrors_t::ModfsNotInstalled => println!("[MOD_MANAGER] ModFS is not installed"),
 			DeploymentErrors_t::GameNotFound => println!("[MOD_MANAGER] Failed to find the game, please report this issue"),
 			DeploymentErrors_t::InvalidAppid => println!("[MOD_MANAGER] The game is not supported"),
 			DeploymentErrors_t::Ok => println!("[MOD_MANAGER] Starting game")
