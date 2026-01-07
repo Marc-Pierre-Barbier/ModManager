@@ -40,6 +40,8 @@ static error_t generate_symlink_copy(const char * source, const char * destinati
 			g_autofree char * filename_low = g_ascii_strdown(dir_ent->d_name, -1);
 			g_autofree char * from = g_build_filename(source, dir_ent->d_name, NULL);
 			g_autofree char * to = g_build_filename(destination, filename_low, NULL);
+			//used for executables and dlls to allow runtime check for EnginePatches
+			g_autofree char * toHigh = g_build_filename(destination, dir_ent->d_name, NULL);
 			g_autofree GFile * from_f = g_file_new_for_path(from);
 			g_autofree GFile * to_f = g_file_new_for_path(to);
 
@@ -52,7 +54,10 @@ static error_t generate_symlink_copy(const char * source, const char * destinati
 				generate_symlink_copy(from, to);
 				break;
 			default:
-				symlink(from, to);
+				if(g_str_has_suffix(filename_low, ".exe") || g_str_has_suffix(filename_low, ".dll"))
+					symlink(from, toHigh);
+				else
+					symlink(from, to);
 				break;
 			}
 		}
@@ -87,8 +92,8 @@ error_t is_deployed(int appid, bool * status) {
 }
 
 error_t undeploy(int appid) {
-	char appid_str[10];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	g_autofree char * path = g_build_filename(g_get_tmp_dir(), MODLIB_NAME, appid_str, NULL);
 
@@ -110,8 +115,8 @@ error_t undeploy(int appid) {
 }
 
 static char ** list_overlay_dirs(const int appid, const char * game_folder) {
-	char appid_str[10];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	g_autofree char * mod_folder = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
 
@@ -147,15 +152,15 @@ static char ** list_overlay_dirs(const int appid, const char * game_folder) {
 }
 
 char * get_deploy_target(int appid) {
-	char appid_str[10];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	return g_build_filename(g_get_tmp_dir(), MODLIB_NAME, appid_str, NULL);
 }
 
 DeploymentErrors_t deploy(int appid) {
-	char appid_str[10];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 
 	const char * home_path = g_get_home_dir();
 

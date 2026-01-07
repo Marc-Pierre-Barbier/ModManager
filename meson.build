@@ -15,3 +15,4 @@ endif
 subproject('lib_mod_manager')
 subproject('mod_manager_gui')
 subproject('steam_hook')
+subproject('modfs')

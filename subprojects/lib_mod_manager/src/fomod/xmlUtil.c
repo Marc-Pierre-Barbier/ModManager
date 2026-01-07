@@ -1,4 +1,5 @@
 #include "xmlUtil.h"
+#include "fomodTypes.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -9,9 +10,7 @@ static char * trim_start(const char * string) {
 	while(*it != '\0' && (*it == ' ' || *it == '\t' || *it == '\n'))
 		it++;
 	unsigned long length = strlen(it) + 1; // add space for \0
-	char * trimmed = g_malloc(length);
-	memcpy(trimmed, it, length);
-	return trimmed;
+	return g_ascii_strdown(it, length);
 }
 
 char * xml_free_and_dup(xmlChar * line) {
@@ -38,17 +37,6 @@ void xml_fix_path(char * path) {
 		if(*path == '\\')*path = '/';
 		path++;
 	}
-}
-
-int fomod_count_until_null(char ** pointers) {
-	if(pointers == NULL) return 0;
-	int i = 0;
-	char ** arithmetic = pointers;
-	while(*arithmetic != NULL) {
-		arithmetic++;
-		i++;
-	}
-	return i;
 }
 
 //names cannot contain false

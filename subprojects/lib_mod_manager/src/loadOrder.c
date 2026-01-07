@@ -52,8 +52,8 @@ error_t list_mods_plugins(int appid, GList ** plugins) {
 		return ERR_FAILURE;
 	}
 
-	char appid_str[10];
-	sprintf(appid_str, "%d", appid);
+	char appid_str[GAMES_MAX_APPID_LENGTH];
+	snprintf(appid_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
 	g_autofree char * mod_folder = g_build_filename(g_get_home_dir(), MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appid_str, NULL);
 	GList * mods = mods_list(appid);
 	GList * mods_it = mods;
@@ -166,7 +166,7 @@ error_t order_get_load_order(int appid, GList ** order) {
 
 	while(l_current_load_order_iterator != NULL) {
 		const char * mod_name = (const char *)l_current_load_order_iterator->data;
-		if(appid == 377160) {
+		if(appid >= 377160) {
 			//pointer arithmetic to skip the *
 			mod_name++;
 		}

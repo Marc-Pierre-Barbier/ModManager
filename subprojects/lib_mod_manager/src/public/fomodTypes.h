@@ -59,7 +59,7 @@ typedef struct FomodStep {
 typedef struct Fomod {
 	char * module_name;
 	char * module_image;
-	char ** required_install_files;
+	FomodFile_t ** required_install_files;
 	fomod_Order_t step_order;
 	FomodStep_t * steps;
 	int step_count;

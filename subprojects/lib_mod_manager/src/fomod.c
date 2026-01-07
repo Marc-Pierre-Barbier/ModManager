@@ -13,6 +13,9 @@
 
 #include <fomod.h>
 #include "file.h"
+#include "fomodTypes.h"
+#include "gio/gio.h"
+#include "glib.h"
 #include "libxml/globals.h"
 #include <constants.h>
 
@@ -42,9 +45,10 @@ static gint fomod_flag_equal(const FomodFlag_t * a, const FomodFlag_t * b) {
 }
 
 //TODO: handle error
-error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_id, int appid) {
+error_t fomod_execute_file_operations(GList ** pending_file_operations, int mod_id, int appid) {
 	char app_id_str[GAMES_MAX_APPID_LENGTH];
 	snprintf(app_id_str, GAMES_MAX_APPID_LENGTH, "%d", appid);
+	const int gameId = steam_game_id_from_app_id(appid);
 
 	GList * mods = mods_list(appid);
 	const char * souce_name = g_list_nth(mods, mod_id)->data;
@@ -52,7 +56,8 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 	g_autofree const char * mods_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, app_id_str, NULL);
 	g_autofree  GFile * mod_folder = g_file_new_build_filename(mods_folder, souce_name, NULL);
 	g_autofree const char * destination_name = g_strconcat(souce_name, "__FOMOD", NULL);
-	g_autofree const char * destination_folder = g_build_filename(mods_folder, destination_name, NULL);
+	g_autofree char * target = g_ascii_strdown(GAMES_MOD_TARGET[gameId], -1);
+	g_autofree const char * destination_folder = g_build_filename(mods_folder, destination_name, target, NULL);
 
 	//priority higher a less important and should be processed first.
 	*pending_file_operations = g_list_sort(*pending_file_operations, priority_cmp);
@@ -73,13 +78,15 @@ error_t fomod_process_file_operations(GList ** pending_file_operations, int mod_
 
 		error_t copy_result = ERR_SUCCESS;
 		if(file->isFolder) {
-			g_autofree GFile * dest_folder = g_file_new_for_path(destination_folder);
-			copy_result = file_recursive_copy(source, dest_folder, G_FILE_COPY_NONE, NULL, NULL);
+			g_autofree GFile * destination = g_file_new_build_filename(destination_folder, file->destination, NULL);
+			g_autofree char * destination_str = g_file_get_path(destination);
+			g_mkdir_with_parents(destination_str, 0700);
+			copy_result = file_recursive_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL);
 		} else {
 			GError * err = NULL;
-			//see basename man page
-			g_autofree char * posix_source = strdup(file->source);
-			g_autofree GFile * destination = g_file_new_build_filename(destination_folder, basename(posix_source), NULL);
+			//basename is unsafe
+			g_autofree char * file_destination = strdup(file->destination);
+			g_autofree GFile * destination = g_file_new_build_filename(destination_folder, basename(file_destination), NULL);
 			if(!g_file_copy(source, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, &err)) {
 				fprintf(stderr, "%s\n", err->message);
 				copy_result = ERR_FAILURE;
@@ -160,9 +167,11 @@ void fomod_free_fomod(Fomod_t * fomod) {
 	free(fomod->module_image);
 	free(fomod->module_name);
 
-	int size = fomod_count_until_null(fomod->required_install_files);
-	for(int i = 0; i < size; i++) {
-		free(fomod->required_install_files[i]);
+	for(FomodFile_t ** step = fomod->required_install_files; *step != NULL; step++) {
+		FomodFile_t * file = *step;
+		g_free(file->destination);
+		g_free(file->source);
+		g_free(file);
 	}
 	free(fomod->required_install_files);
 
@@ -185,4 +194,17 @@ void fomod_free_fomod(Fomod_t * fomod) {
 
 	//set every counter to zero and every pointer to null
 	memset(fomod, 0, sizeof(Fomod_t));
+}
+
+
+GList * fomod_process_required_files(const Fomod_t * fomod, GList * pending_file_operations) {
+	for(FomodFile_t ** step = fomod->required_install_files; *step != NULL; step++) {
+		FomodFile_t * file = *step;
+		FomodFile_t * operation = g_malloc(sizeof(FomodFile_t));
+		memcpy(operation, file, sizeof(FomodFile_t));
+		operation->destination = strdup(file->destination);
+		operation->source = strdup(file->source);
+		pending_file_operations = g_list_append(pending_file_operations, operation);
+	}
+	return pending_file_operations;
 }

@@ -5,3 +5,4 @@ build
 build/*
 compile_commands.json
 .buildconfig
+test

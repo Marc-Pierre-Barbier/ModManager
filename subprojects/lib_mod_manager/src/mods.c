@@ -16,6 +16,11 @@
 #include "src/macro.h"
 #include "steam.h"
 
+//known directories that goes in the data subfolder
+const char * KNOWN_DATA_DIRECTORIES[] = {
+	"mesh", "textures", "scripts", "skse", "interface", "shader"
+};
+
 typedef struct Mod {
 	int modId;
 	char * path;
@@ -101,10 +106,8 @@ GList * mods_list(int appid) {
 
 
 error_t mods_swap_place(int appid, int mod_id_a, int mod_id_b) {
-	char appidStr[10];
+	char appidStr[GAMES_MAX_APPID_LENGTH];
 	sprintf(appidStr, "%d", appid);
-
-	g_message("flipping mod%d and mod%d", mod_id_a, mod_id_b);
 
 	const char * home = g_get_home_dir();
 	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appidStr, NULL);
@@ -295,20 +298,6 @@ exit:
 	return mod_folder;
 }
 
-static bool search_fomod_data(GFile * path_file, int appid) {
-	g_autofree const char * path = g_file_get_path(path_file);
-	g_autofree GFile * fomod = g_file_new_build_filename(path, "fomod", NULL);
-
-	if(g_file_query_exists(fomod, NULL)) {
-		return true;
-	}
-
-	const int gameId = steam_game_id_from_app_id(appid);
-	g_autofree char * target = g_ascii_strdown(GAMES_MOD_TARGET[gameId], -1);
-	g_autofree GFile * data = g_file_new_build_filename(path, target, NULL);
-	return g_file_query_exists(data, NULL);
-}
-
 static bool check_for_wrap(GFile * path_file, int appid) {
 	/* Some mods come with a single folder inside their archive these mods need to be unwraped */
 	g_autofree char * path = g_file_get_path(path_file);
@@ -323,27 +312,15 @@ static bool check_for_wrap(GFile * path_file, int appid) {
 
 	const gchar *filename;
 	GDir * dir = g_dir_open(path, 0, NULL);
-	const char * known_data_directories[] = {
-		"mesh", "textures", "scripts"
-	};
 
 	while ((filename = g_dir_read_name(dir))) {
-		for(int i = 0; i < LEN(known_data_directories); i++) {
-			if(strcmp(filename, "mesh") == 0) {
-				return true; //needs wrapping
-			}
+		if(g_str_has_suffix(filename, ".dll") || g_str_has_suffix(filename, ".exe")) {
+			return false;
 		}
-
-		if(g_str_has_suffix(filename, ".esm") ||
-		   g_str_has_suffix(filename, ".esl") ||
-		   g_str_has_suffix(filename, ".bsa")) {
-			return true;
-		}
-
 	}
 
-
-	return false;
+	//default to wrap as it's what most mods expect
+	return true;
 }
 
 static bool check_for_unwrap(GFile * path_file, int appid) {
@@ -356,10 +333,19 @@ static bool check_for_unwrap(GFile * path_file, int appid) {
 	GDir * dir = g_dir_open(path, 0, NULL);
 	int filecount = 0;
 	while ((filename = g_dir_read_name(dir))) {
-		if(strcmp(filename, "fomod") == 0 || strcmp(filename, target) == 0) {
-			filecount = INT_MAX;
-			break;
+		if(!g_file_test(filename, G_FILE_TEST_IS_DIR)){
+			continue;
 		}
+		
+		for(int i = 0; i < LEN(KNOWN_DATA_DIRECTORIES); i++) {
+			if(strcmp(filename, KNOWN_DATA_DIRECTORIES[i]) == 0) {
+				return false; //need to be wrapped do not unwrap
+			}
+		}
+		if(strcmp(filename, "fomod") == 0 || strcmp(filename, target) == 0 || strcmp(filename, "data") == 0) {
+			return true;
+		}
+		
 		filecount++;
 		if(filecount > 1)
 			break;
@@ -438,21 +424,6 @@ error_t mods_add_mod(GFile * file_path, int app_id) {
 		EXIT_FAIL(g_file_move(outdir, tmp_dir, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
 		g_mkdir_with_parents(outdir_str, 0700);
 		EXIT_FAIL(g_file_move(tmp_dir, wraped_outdir, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
-	}
-
-
-	if(!search_fomod_data(outdir, app_id)) {
-		const int gameId = steam_game_id_from_app_id(app_id);
-
-		if(g_file_query_exists(tmp_dir, NULL)) {
-			EXIT_FAIL(g_file_delete(tmp_dir, NULL, NULL))
-		}
-
-		EXIT_FAIL(g_file_move(outdir, tmp_dir, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
-		char * target = g_ascii_strdown(GAMES_MOD_TARGET[gameId], -1);
-		g_autofree GFile * outdir2 = g_file_new_build_filename(outdir_str, target, NULL);
-		g_mkdir_with_parents(outdir_str, 0700);
-		EXIT_FAIL(g_file_move(tmp_dir, outdir2, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL))
 	}
 
 exit:

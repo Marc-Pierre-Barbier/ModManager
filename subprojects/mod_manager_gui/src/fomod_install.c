@@ -220,7 +220,8 @@ static void last_install_step() {
 
 	//TODO: manage multiple files with the same name
 	pendingFileOperations = fomod_process_cond_files(&current_fomod, flagList, pendingFileOperations);
-	fomod_process_file_operations(&pendingFileOperations, mod_id, GAMES_APPIDS[current_game]);
+	pendingFileOperations = fomod_process_required_files(&current_fomod, pendingFileOperations);
+	fomod_execute_file_operations(&pendingFileOperations, mod_id, GAMES_APPIDS[current_game]);
 
 	printf("FOMod successfully installed!\n");
 

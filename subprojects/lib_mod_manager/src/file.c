@@ -1,6 +1,5 @@
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <glib.h>
 #include <gio/gio.h>

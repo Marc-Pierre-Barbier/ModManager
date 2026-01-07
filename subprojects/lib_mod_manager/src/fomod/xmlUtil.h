@@ -28,12 +28,4 @@ fomod_Order_t fomod_get_order(const char * order);
  */
 void xml_fix_path(char * path);
 
-/**
- * @brief Count the number of step before null
- *
- * @param pointers pointer to the list
- * @return size
- */
-int fomod_count_until_null(char ** pointers);
-
 #endif

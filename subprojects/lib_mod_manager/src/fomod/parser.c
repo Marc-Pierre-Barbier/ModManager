@@ -1,4 +1,5 @@
 #include <fomod.h>
+#include "fomodTypes.h"
 #include "group.h"
 #include <libxml/tree.h>
 #include "xmlUtil.h"
@@ -274,6 +275,17 @@ static void fomod_sortGroup(FomodGroup_t * group) {
 	}
 }
 
+static int fomod_count_until_null(FomodFile_t ** pointers) {
+	if(pointers == NULL) return 0;
+	int i = 0;
+	FomodFile_t ** arithmetic = pointers;
+	while(arithmetic != NULL) {
+		arithmetic++;
+		i++;
+	}
+	return i;
+}
+
 error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod) {
 	xmlDocPtr doc;
 	xmlNodePtr cur;
@@ -317,7 +329,6 @@ error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod) {
 		} else if(xmlStrcmp(cur->name, (const xmlChar *) "moduleImage") == 0) {
 			fomod->module_image = xml_free_and_dup(xmlGetProp(cur, (const xmlChar *)"path"));
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"requiredInstallFiles") == 0) {
-			//TODO: support non empty destination.
 			xmlNodePtr required_install_file = cur->children;
 			while(required_install_file != NULL) {
 				if(!xml_validate_node(&required_install_file, true, "folder", "file", NULL)) {
@@ -327,12 +338,20 @@ error_t fomod_parse(GFile * fomod_file, Fomod_t* fomod) {
 				}
 				if(required_install_file == NULL) break;
 
-				int size = fomod_count_until_null(fomod->required_install_files) + 2;
+				FomodFile_t * file = g_malloc(sizeof(FomodFile_t));
 
-				fomod->required_install_files = realloc(fomod->required_install_files, sizeof(char *) * size);
+				file->source = xml_free_and_dup(xmlGetProp(required_install_file, (const xmlChar *)"source"));
+				file->destination = xml_free_and_dup(xmlGetProp(required_install_file, (const xmlChar *)"destination"));
+				file->isFolder = strcmp((const char *)required_install_file->name, "folder") == 0;
+				file->priority = 0; //NA
+
+				//insertion
+				int size = fomod_count_until_null(fomod->required_install_files) + 2;
+				fomod->required_install_files = realloc(fomod->required_install_files, sizeof(FomodFile_t) * size);
+
 				//ensure it is null terminated
 				fomod->required_install_files[size - 1] = NULL;
-				fomod->required_install_files[size - 2] = xml_free_and_dup(xmlGetProp(required_install_file, (const xmlChar *)"source"));
+				fomod->required_install_files[size - 2] = file;
 				required_install_file = required_install_file->next;
 			}
 		} else if(xmlStrcmp(cur->name, (const xmlChar *)"installSteps") == 0) {
