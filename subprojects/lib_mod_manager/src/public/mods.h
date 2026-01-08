@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include <linux/limits.h>
 #include "errorType.h"
 
 //This file manager the load order of mods.
@@ -14,6 +15,7 @@ typedef struct mods_mod_detail {
     bool is_present; //set to false if mod_name or appid is invalid
     bool is_fomod;
     bool has_fomodfile;
+    char fomod_file[PATH_MAX];
     bool is_activated;
     bool has_fomod_sibling;
 } mods_mod_detail_t;

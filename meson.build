@@ -12,7 +12,9 @@ if get_option('use_sanitizers')
 	add_global_link_arguments('-fsanitize=address', language: 'c')
 endif
 
+subproject('path_utils')
 subproject('lib_mod_manager')
 subproject('mod_manager_gui')
 subproject('steam_hook')
 subproject('modfs')
+

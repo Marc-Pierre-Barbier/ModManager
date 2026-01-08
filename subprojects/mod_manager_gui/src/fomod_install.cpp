@@ -1,49 +1,64 @@
-#include <fomod.h>
-#include <constants.h>
 
-#include <adwaita.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <mods.h>
-#include <steam.h>
-#include <gtk/gtk.h>
+extern "C" {
+	#include <constants.h>
+	
+	#include <adwaita.h>
+	#include <stdio.h>
+	#include <sys/stat.h>
+	#include <unistd.h>
+	#include <mods.h>
+	#include <steam.h>
+	#include <gtk/gtk.h>
+	
+	#include "gio/gio.h"
+	#include "mod_tab.h"
+	#include "file.h"
+	#include "game_tab.h"
+	#include "fomod_install.h"
+}
 
-#include "mod_tab.h"
-#include "file.h"
-#include "game_tab.h"
-#include "fomod_install.h"
+#include <algorithm>
+#include <ranges>
+#include <filesystem>
+#include <vector>
+
+#include <case_adapted_path.hpp>
+
+#include <fomodTypes.hpp>
+#include <fomod.hpp>
+
+static void on_next();
+
+namespace fs = std::filesystem;
 
 GtkWidget * popover_image;
 GtkLabel * popover_description;
 
 
 // fomod specific globs
-GList * flagList = NULL;
-GList * pendingFileOperations = NULL;
-GList * buttons;
+std::vector<FOModFlag> flagList;
+std::vector<FOModFile> pendingFileOperations;
+std::vector<GtkWidget *> buttons;
 AdwWindow * dialog_window;
 
 bool install_in_progress = FALSE;
-Fomod_t current_fomod;
-int fomod_step_id;
-int current_group_id;
-int mod_id;
-char * mod_folder;
+std::shared_ptr<FOMod> current_fomod;
+unsigned int fomod_step_id;
+unsigned int current_group_id;
+unsigned int mod_id;
+fs::path mod_folder;
 
 //used for most one
 GtkCheckButton * last_selected;
 //used for least_one
 int selection_count;
 
-static void on_next();
-
-
 static void popover_on_enter(GtkEventControllerMotion*, gdouble, gdouble, gpointer user_data) {
-	FomodPlugin_t * plugin = user_data;
-	char * imagepath = g_build_filename(mod_folder, plugin->image, NULL);
+	FOModPlugin * plugin = reinterpret_cast<FOModPlugin*>(user_data);
+	//i have my doubts with the c_str
+	char * imagepath = g_build_filename(mod_folder.c_str(), plugin->image.c_str(), NULL);
 	gtk_image_set_from_file(GTK_IMAGE(popover_image), imagepath);
-	gtk_label_set_text(popover_description, plugin->description);
+	gtk_label_set_text(popover_description, plugin->description.c_str());
 }
 
 static void on_button_toggeled_least_one(GtkCheckButton* self, gpointer) {
@@ -73,55 +88,58 @@ static void on_button_toggeled_most_one(GtkCheckButton* self, gpointer) {
 	last_selected = self;
 }
 
-static GList * popover_checked(const FomodGroup_t *group) {
+static std::vector<GtkWidget *> popover_checked(FOModGroup &group) {
+	std::vector<GtkWidget *> buttons;
 	last_selected = NULL;
-	GList * buttons = NULL;
 	GtkWidget * first_button = NULL;
 	selection_count = 1;
-	for(int i = 0; i < group->plugin_count; i++) {
+	for(auto &plugin : group.plugins) {
 		GtkWidget * button = gtk_check_button_new();
-		buttons = g_list_append(buttons, button);
+		buttons.push_back(button);
 
 		if(first_button == NULL)
 				first_button = button;
 
-		switch(group->type) {
-		case ONE_ONLY:
+		switch(group.type) {
+		case GroupType::ONE_ONLY:
 			if(first_button == button)
 				gtk_check_button_set_active(GTK_CHECK_BUTTON(button), TRUE);
 			else
 				gtk_check_button_set_group(GTK_CHECK_BUTTON(button), GTK_CHECK_BUTTON(first_button));
 			break;
-		case AT_LEAST_ONE:
+		case GroupType::AT_LEAST_ONE:
 			if(first_button == button)
 				gtk_check_button_set_active(GTK_CHECK_BUTTON(button), TRUE);
 			g_signal_connect(button, "toggled", G_CALLBACK(on_button_toggeled_least_one), NULL);
 			break;
-		case ALL:
+		case GroupType::ALL:
 			gtk_widget_set_sensitive(button, FALSE);
 			gtk_check_button_set_active(GTK_CHECK_BUTTON(button), TRUE);
 			break;
-		case AT_MOST_ONE:
+		case GroupType::AT_MOST_ONE:
 			g_signal_connect(button, "toggled", G_CALLBACK(on_button_toggeled_most_one), NULL);
 			break;
-		case ANY:
+		case GroupType::ANY:
+			break;
+		default:
+			g_warning("unknown group");
 			break;
 		}
 
 		GtkEventController * controller = gtk_event_controller_motion_new();
-		g_signal_connect(controller, "enter", G_CALLBACK(popover_on_enter), &(group->plugins[i]));
+		g_signal_connect(controller, "enter", G_CALLBACK(popover_on_enter), reinterpret_cast<gpointer>(&plugin));
 
 		gtk_widget_add_controller(button, controller);
-		gtk_check_button_set_label(GTK_CHECK_BUTTON(button), group->plugins[i].name);
+		gtk_check_button_set_label(GTK_CHECK_BUTTON(button), plugin.name.c_str());
 	}
 
 	return buttons;
 }
 
-static void popover_fomod_container(const FomodGroup_t *group) {
+static void popover_fomod_container(FOModGroup &group) {
 	//TODO: handle force closure
 	dialog_window = ADW_WINDOW(adw_window_new());
-	gtk_window_set_title(GTK_WINDOW(dialog_window), group->name);
+	gtk_window_set_title(GTK_WINDOW(dialog_window), group.name.c_str());
 
 	GtkWidget * root = adw_toolbar_view_new();
 	GtkWidget *header = adw_header_bar_new();
@@ -164,38 +182,25 @@ static void popover_fomod_container(const FomodGroup_t *group) {
 	gtk_box_append(GTK_BOX(right_box), GTK_WIDGET(popover_description));
 
 	buttons = popover_checked(group);
-	GList * btn_iterator = buttons;
-	while(btn_iterator != NULL) {
-		gtk_box_append(GTK_BOX(left_box), btn_iterator->data);
-		btn_iterator = g_list_next(btn_iterator);
+	for(auto &button : buttons) {
+		gtk_box_append(GTK_BOX(left_box), button);
 	}
-	popover_on_enter(NULL, 0, 0, &group->plugins[0]);
+	popover_on_enter(NULL, 0, 0, reinterpret_cast<void *>(&group.plugins[0]));
 
 	adw_window_set_content(dialog_window, root);
 	gtk_window_present(GTK_WINDOW (dialog_window));
 }
 
-//match the definirion of gcompare func
-static gint fomod_flag_equal(const FomodFlag_t * a, const FomodFlag_t * b) {
-	int nameCmp = strcmp(a->name, b->name);
-	if(nameCmp == 0) {
-		if(strcmp(a->value, b->value) == 0)
-			//is equal
-			return 0;
-
-		return 1;
-	}
-	return nameCmp;
-}
-
 static void next_install_step() {
-	const FomodStep_t * step = &current_fomod.steps[fomod_step_id];
+	FOModStep &step = current_fomod->steps[fomod_step_id];
 
 	//checking if we collected all required flags for this step
 	bool validFlags = true;
-	for(int flagId = 0; flagId < step->flag_count; flagId++) {
-		const GList * flagLink = g_list_find_custom(flagList, &step->required_flags[flagId], (GCompareFunc)fomod_flag_equal);
-		if(flagLink == NULL) {
+	for(auto &flag : step.required_flags) {
+		auto flagLink = std::find_if(flagList.begin(), flagList.end(), [flag](const FOModFlag &item) {
+			return item.name == flag.name && item.value == flag.value;
+		});
+		if(flagLink != flagList.end()) {
 			validFlags = false;
 			break;
 		}
@@ -204,35 +209,34 @@ static void next_install_step() {
 	if(!validFlags) {
 		fomod_step_id += 1;
 		//exit condition.
-		if(current_fomod.step_count == fomod_step_id) {
+		if(current_fomod->steps.size() == fomod_step_id) {
 			return;
 		}
 		return next_install_step();
 	}
 
-	//don't remember
-	FomodGroup_t * group = &step->groups[current_group_id];
-	popover_fomod_container(group);
+	popover_fomod_container(step.groups[current_group_id]);
 }
 
 static void last_install_step() {
 	//triggerd when there is no next step
 
 	//TODO: manage multiple files with the same name
-	pendingFileOperations = fomod_process_cond_files(&current_fomod, flagList, pendingFileOperations);
-	pendingFileOperations = fomod_process_required_files(&current_fomod, pendingFileOperations);
-	fomod_execute_file_operations(&pendingFileOperations, mod_id, GAMES_APPIDS[current_game]);
+	fomod_process_cond_files(*current_fomod, flagList, pendingFileOperations);
+	
+	pendingFileOperations.reserve(current_fomod->required_install_files.size());
+	for(auto &file : current_fomod->required_install_files) {
+		pendingFileOperations.push_back(file);
+	}
+
+	fomod_execute_file_operations(pendingFileOperations, mod_id, GAMES_APPIDS[current_game]);
 
 	printf("FOMod successfully installed!\n");
 
 	//cleanup
-	fomod_free_fomod(&current_fomod);
-	fomod_free_file_operations(pendingFileOperations);
-	pendingFileOperations = NULL;
-	g_list_free(flagList);
-	flagList = NULL;
-	g_free(mod_folder);
-	mod_folder = NULL;
+	pendingFileOperations = {};
+	flagList = {};
+	mod_folder = "";
 	install_in_progress = FALSE;
 	last_selected = NULL;
 	fomod_step_id = 0;
@@ -246,54 +250,41 @@ static void last_install_step() {
 static void on_next() {
 	gtk_window_close(GTK_WINDOW(dialog_window));
 	//extract user choices
-	const FomodStep_t * step = &current_fomod.steps[fomod_step_id];
-	FomodGroup_t * group = &step->groups[current_group_id];
-	GList * choices = NULL;
-	GList * btn_iterator = buttons;
+	FOModStep &step = current_fomod->steps[fomod_step_id];
+	FOModGroup &group = step.groups[current_group_id];
+
+	std::vector<unsigned int> choices;
 	unsigned int index = 0;
-	while(btn_iterator != NULL) {
-		GtkCheckButton * button = GTK_CHECK_BUTTON(btn_iterator->data);
+	for(GtkWidget * &widget : buttons) {
+		GtkCheckButton * button = GTK_CHECK_BUTTON(widget);
 		if(gtk_check_button_get_active(button)) {
-			unsigned int * id = (unsigned int *)g_malloc(sizeof(unsigned int));
-			*id = index;
-			choices = g_list_append(choices, id);
+			choices.push_back(index);
 		}
 		index++;
-		btn_iterator = g_list_next(btn_iterator);
 	}
 
 	//process them
-	GList * choice_iterator = choices;
-	while(choice_iterator != NULL) {
-		int choice = *(int *)choice_iterator->data;
-		choice_iterator = g_list_next(choice_iterator);
-
-		FomodPlugin_t * plugin = &group->plugins[choice];
-		for(int flagId = 0; flagId < plugin->flag_count; flagId++) {
-			flagList = g_list_append(flagList, &plugin->flags[flagId]);
+	for(auto choice : choices) {
+		FOModPlugin &plugin = group.plugins[choice];
+		flagList.reserve(plugin.flags.size());
+		for(auto &flag : plugin.flags) {
+			flagList.push_back(flag);
 		}
 
 		//do the install
-		for(int pluginId = 0; pluginId < plugin->file_count; pluginId++) {
-			FomodFile_t * file = g_malloc(sizeof(FomodFile_t));
+		for(auto &file : plugin.files) {
 			//copy the file implies that we need to also clone the strings in it
-			*file = plugin->files[pluginId];
-			file->destination = strdup(file->destination);
-			file->source = strdup(file->source);
-
-			pendingFileOperations = g_list_append(pendingFileOperations, file);
+			pendingFileOperations.push_back(file);
 		}
 	}
 
-	g_list_free_full(choices, g_free);
-
 	current_group_id += 1;
-	if(step->group_count == current_group_id) {
+	if(step.groups.size() == current_group_id) {
 		fomod_step_id += 1;
 		current_group_id = 0;
 	}
 
-	if(current_fomod.step_count == fomod_step_id) {
+	if(current_fomod->steps.size() == fomod_step_id) {
 		last_install_step();
 	} else {
 		next_install_step();
@@ -324,8 +315,9 @@ error_t gui_fomod_installer(int modid) {
 		return ERR_FAILURE;
 	}
 
-	g_autofree char * destination = g_strconcat(mod->data, "__FOMOD", NULL);
-	g_autofree GFile * destination_file = g_file_new_build_filename(mods_folder, destination, NULL);
+	mod_folder = fs::path(mods_folder) / std::string((char *)mod->data);
+	std::string destination = std::string((char *)mod->data) + "__FOMOD";
+	g_autofree GFile * destination_file = g_file_new_build_filename(mods_folder, destination.c_str(), NULL);
 
 	if(g_file_query_exists(destination_file, NULL)) {
 		if(!file_delete_recursive(destination_file, NULL, NULL)) {
@@ -333,22 +325,21 @@ error_t gui_fomod_installer(int modid) {
 		}
 	}
 
-	mod_folder = g_build_filename(mods_folder, mod->data, NULL);
+	
+	auto details = mods_mod_details(appid, modid);
+	fs::path relative_fomod_file = fs::path(details.fomod_file);
 	g_list_free_full(mod_list, g_free);
-
-	//TODO: handle all casing
-	g_autofree char * fomod_folder = g_build_filename(mod_folder, "fomod", NULL);
-	g_autofree GFile * fomod_file = g_file_new_build_filename(fomod_folder, "moduleconfig.xml", NULL);
-
-	if(!g_file_query_exists(fomod_file, NULL)) {
+	if(!fs::exists(relative_fomod_file)) {
 		g_warning( "FOMod file not found, are you sure this is a fomod mod ?\n");
 		return ERR_FAILURE;
 	}
 
 	fomod_step_id = 0;
-	int returnValue = fomod_parse(fomod_file, &current_fomod);
-	if(returnValue == ERR_FAILURE)
+	auto fomod = fomod_parse(relative_fomod_file);
+	if(!fomod)
 		return ERR_FAILURE;
+
+	current_fomod = *fomod;
 
 	next_install_step();
 	return ERR_SUCCESS;

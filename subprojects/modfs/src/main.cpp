@@ -2,12 +2,12 @@
 #define autofree __attribute__((cleanup(cleanup_free)))
 
 #include <fuse3/fuse.h>
+#include <case_adapted_path.hpp>
 
 #include <filesystem>
 #include <algorithm>
 #include <unordered_set>
 #include <optional>
-#include <vector>
 #include <cassert>
 
 #include <dirent.h>
@@ -136,43 +136,6 @@ static inline void dirent_iterator(fs::path path, F callback) {
 		callback(dp, de);
 	}
 	closedir(dp);
-}
-
-static std::optional<fs::path> case_adapted_path(fs::path fspath, fs::path refrence_dir) {
-	std::vector<std::string> path;
-
-	fs::path badpath = fspath;
-	while(badpath.has_parent_path()) { //fail in precense of tailing sperators
-		auto name = badpath.filename();
-		if(!name.empty()) //handle tailing sperators
-			path.push_back(name);
-		badpath = badpath.parent_path();
-	}
-
-	while(!path.empty()) {
-		std::string filename = *path.rbegin();
-		transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
-		path.pop_back();
-
-		bool found = false;
-		for(auto entry : fs::directory_iterator(refrence_dir)) {
-			const auto on_disk_name = entry.path().filename().string();
-			std::string on_disk_name_lower = on_disk_name;
-			transform(on_disk_name_lower.begin(), on_disk_name_lower.end(), on_disk_name_lower.begin(), ::tolower);
-
-			if(filename == on_disk_name_lower) {
-				refrence_dir /= on_disk_name;
-				found = true;
-				break;
-			}
-		}
-
-		if(!found) {
-			return std::nullopt;
-		}
-	}
-
-	return refrence_dir;
 }
 
 static int modfs_readdir(fs::path path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags) {
