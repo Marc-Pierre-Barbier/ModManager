@@ -56,8 +56,7 @@ int selection_count;
 static void popover_on_enter(GtkEventControllerMotion*, gdouble, gdouble, gpointer user_data) {
 	FOModPlugin * plugin = reinterpret_cast<FOModPlugin*>(user_data);
 	//i have my doubts with the c_str
-	char * imagepath = g_build_filename(mod_folder.c_str(), plugin->image.c_str(), NULL);
-	gtk_image_set_from_file(GTK_IMAGE(popover_image), imagepath);
+	gtk_image_set_from_file(GTK_IMAGE(popover_image), plugin->image.c_str());
 	gtk_label_set_text(popover_description, plugin->description.c_str());
 }
 
@@ -207,12 +206,7 @@ static void next_install_step() {
 	}
 
 	if(!validFlags) {
-		fomod_step_id += 1;
-		//exit condition.
-		if(current_fomod->steps.size() == fomod_step_id) {
-			return;
-		}
-		return next_install_step();
+		return on_next();
 	}
 
 	popover_fomod_container(step.groups[current_group_id]);
@@ -284,7 +278,7 @@ static void on_next() {
 		current_group_id = 0;
 	}
 
-	if(current_fomod->steps.size() == fomod_step_id) {
+	if(current_fomod->steps.size() <= fomod_step_id) {
 		last_install_step();
 	} else {
 		next_install_step();

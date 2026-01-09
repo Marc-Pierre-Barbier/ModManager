@@ -11,7 +11,7 @@ std::optional<fs::path> case_adapted_path(fs::path fspath, fs::path refrence_dir
 	std::vector<std::string> path;
 
 	fs::path badpath = fspath;
-	while(!badpath.empty() && badpath != "/") { //fail in precense of tailing sperators
+	while(!badpath.empty() && badpath != "/" && badpath != ".") { //fail in precense of tailing sperators
 		auto name = badpath.filename();
 		if(!name.empty()) //handle tailing sperators
 			path.push_back(name);

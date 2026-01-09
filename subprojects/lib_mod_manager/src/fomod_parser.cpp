@@ -118,10 +118,10 @@ static bool parseGroupFiles(FOModPlugin &plugin, xmlNodePtr node_element) {
 		if(file_node == NULL)break;
 
 
-		FOModFile file = plugin.files.emplace_back();
+		FOModFile &file = plugin.files.emplace_back();
 
-		std::string destination = *xmlGetProp(file_node, "destination");
-		std::string source = *xmlGetProp(file_node, "source");
+		file.destination = *xmlGetProp(file_node, "destination");
+		file.source = *xmlGetProp(file_node, "source");
 
 		//TODO: test if it's a number
 		auto priority = xmlGetProp(file_node, "priority");
@@ -407,10 +407,10 @@ static void fomod_fix_case(FOMod &fomod, std::filesystem::path mod_dir) {
 	}
 
 	for(auto &step : fomod.steps) {
-		for(auto group : step.groups) {
-			for(auto plugin : group.plugins) {
+		for(auto &group : step.groups) {
+			for(auto &plugin : group.plugins) {
 				plugin.image = fix_path(plugin.image);
-				for(auto file : plugin.files) {
+				for(auto &file : plugin.files) {
 					file.source = fix_path(file.source);
 				}
 			}
