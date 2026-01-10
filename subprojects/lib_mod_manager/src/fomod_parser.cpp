@@ -140,10 +140,7 @@ static bool parseNodeElement(FOModPlugin &plugin, xmlNodePtr node_element) {
 	if(str_equal(node_element->name, "description")) {
 		plugin.description = *xmlNodeGetContentString(node_element);
 	} else if(str_equal(node_element->name, "image")) {
-		std::string path = *xmlGetProp(node_element, "path");
-		xml_fix_path(path);
-		//TODO: maybe absolute path
-		plugin.image = path;
+		plugin.image = *xmlGetProp(node_element, "path");
 	} else if(str_equal(node_element->name, "conditionFlags")) {
 		return parse_condition_flags(plugin, node_element);
 	} else if(str_equal(node_element->name, "files")) {
@@ -404,14 +401,19 @@ static void fomod_fix_case(FOMod &fomod, std::filesystem::path mod_dir) {
 	};
 
 	for(auto &file : fomod.required_install_files) {
+		xml_fix_path(file.source);
+		xml_fix_path(file.destination);
 		file.source = fix_path(file.source);
 	}
 
 	for(auto &step : fomod.steps) {
 		for(auto &group : step.groups) {
 			for(auto &plugin : group.plugins) {
+				xml_fix_path(plugin.image);
 				plugin.image = fix_path(plugin.image);
 				for(auto &file : plugin.files) {
+					xml_fix_path(file.source);
+					xml_fix_path(file.destination);
 					file.source = fix_path(file.source);
 				}
 			}

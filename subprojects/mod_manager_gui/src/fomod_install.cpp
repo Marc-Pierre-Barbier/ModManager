@@ -190,21 +190,24 @@ static void popover_fomod_container(FOModGroup &group) {
 	gtk_window_present(GTK_WINDOW (dialog_window));
 }
 
+static bool are_requirements_fulfilled(const std::vector<FOModFlag> &required, const std::vector<FOModFlag> &owned) {
+	for(auto &required_flag : required) {
+		auto flagLink = std::find_if(owned.begin(), owned.end(), [required_flag](const FOModFlag &item) {
+			return item.name == required_flag.name && item.value == required_flag.value;
+		});
+
+		if(flagLink == flagList.end()) {
+			return false;
+		}
+	}
+	return true;
+}
+
 static void next_install_step() {
 	FOModStep &step = current_fomod->steps[fomod_step_id];
 
 	//checking if we collected all required flags for this step
-	bool validFlags = true;
-	for(auto &flag : step.required_flags) {
-		auto flagLink = std::find_if(flagList.begin(), flagList.end(), [flag](const FOModFlag &item) {
-			return item.name == flag.name && item.value == flag.value;
-		});
-		if(flagLink == flagList.end()) {
-			validFlags = false;
-			break;
-		}
-	}
-
+	bool validFlags = are_requirements_fulfilled(step.required_flags, flagList);
 	if(!validFlags) {
 		return on_next();
 	}
