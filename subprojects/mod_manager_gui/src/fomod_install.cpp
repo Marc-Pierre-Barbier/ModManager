@@ -199,7 +199,7 @@ static void next_install_step() {
 		auto flagLink = std::find_if(flagList.begin(), flagList.end(), [flag](const FOModFlag &item) {
 			return item.name == flag.name && item.value == flag.value;
 		});
-		if(flagLink != flagList.end()) {
+		if(flagLink == flagList.end()) {
 			validFlags = false;
 			break;
 		}
@@ -214,8 +214,6 @@ static void next_install_step() {
 
 static void last_install_step() {
 	//triggerd when there is no next step
-
-	//TODO: manage multiple files with the same name
 	fomod_process_cond_files(*current_fomod, flagList, pendingFileOperations);
 	
 	pendingFileOperations.reserve(current_fomod->required_install_files.size());

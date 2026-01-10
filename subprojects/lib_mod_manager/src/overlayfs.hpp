@@ -1,8 +1,8 @@
-#ifndef __OVERLAY_H__
-#define __OVERLAY_H__
+#pragma once
 
-typedef enum overlay_errors { SUCCESS, NOT_INSTALLED, FAILURE } overlay_errors_t;
-
+#include <filesystem>
+#include <vector>
+enum class OverlayErrors { SUCCESS, NOT_INSTALLED, FAILURE };
 
 /**
  * @brief Overlayfs is what make it possible to deploy to the game files without altering anything.
@@ -12,6 +12,4 @@ typedef enum overlay_errors { SUCCESS, NOT_INSTALLED, FAILURE } overlay_errors_t
  * @param upperdir the director that will store the changed files
  * @return int error code
  */
-overlay_errors_t overlay_mount(char ** sources, const char * dest, const char * upperdir);
-
-#endif
+OverlayErrors overlay_mount(const std::vector<std::filesystem::path> &sources, const std::filesystem::path &dest, const std::filesystem::path &upperdir);

@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstring>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <libxml/parser.h>
 #include <glib.h>
@@ -503,7 +504,8 @@ std::optional<std::shared_ptr<FOMod>> fomod_parse(std::filesystem::path fomod_fi
 				file.source = *xmlGetProp(required_install_file, "source");
 				file.destination = *xmlGetProp(required_install_file, "destination");
 				file.isFolder = str_equal(required_install_file->name, "folder");
-				file.priority = 0;
+				//minimum priority so that it get installed first and everything can override it
+				file.priority = std::numeric_limits<int>::min();
 			}
 		} else if(str_equal(cur->name, "installSteps")) {
 			if(!fomod->steps.empty()) {

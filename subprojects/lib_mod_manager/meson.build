@@ -1,7 +1,7 @@
 project('libmodManager', [ 'c', 'cpp' ],
 	default_options : [
 		'c_std=gnu2x',
-		'cpp_std=c++2a,c++23'
+		'cpp_std=c++23'
 	],
 )
 
@@ -15,12 +15,12 @@ lib_path_utils_dep = path_utils_proj.get_variable('lib_path_utils_dep')
 lib_sources = files(
 	'src/steam.c',
 	'src/loadOrder.c',
-	'src/overlayfs.c',
+	'src/overlayfs.cpp',
 	'src/file.c',
 	'src/mods.c',
 	'src/archives.c',
 	'src/fomod.cpp',
-	'src/deploy.c',
+	'src/deploy.cpp',
 	'src/game_executables.c',
 	'src/fomod_parser.cpp'
 )
@@ -30,7 +30,7 @@ lib_sources = files(
 lib_headers = files(
 	'src/public/modmanager.h',
 	'src/public/constants.h',
-	'src/public/deploy.h',
+	'src/public/deploy.hpp',
 	'src/public/errorType.h',
 	'src/public/file.h',
 	'src/public/fomod.hpp',
