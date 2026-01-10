@@ -1,27 +1,21 @@
-#include <optional>
-#include <vector>
 #define FUSE_USE_VERSION FUSE_MAKE_VERSION(3, 18)
 #define autofree __attribute__((cleanup(cleanup_free)))
 
 #include <fuse3/fuse.h>
+#include <case_adapted_path.hpp>
+
 #include <filesystem>
 #include <algorithm>
 #include <unordered_set>
+#include <optional>
+#include <cassert>
 
+#include <dirent.h>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
-#include <string.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <stdbool.h>
-#include <libgen.h>
+constexpr char delimiter = ':';
 
 char * mountpoint;
 
@@ -63,11 +57,9 @@ static void usage(const char *progname)
 
 static void *modfs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
 	//no caching we are using the underlying fs'
-	if (!cfg->auto_cache) {
-		cfg->entry_timeout = 0;
-		cfg->attr_timeout = 0;
-		cfg->negative_timeout = 0;
-	}
+	cfg->entry_timeout = 0;
+	cfg->attr_timeout = 0;
+	cfg->negative_timeout = 0;
 
 	return NULL;
 }
@@ -80,6 +72,8 @@ static int modfs_mkdir(const char *path, mode_t mode);
 static int modfs_unlink(const char *path);
 static int modfs_rmdir(const char *path);
 static int modfs_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi);
+static int modfs_release(const char *path, struct fuse_file_info *fi);
+
 
 static const struct fuse_operations mod_operations = {
 	.getattr = modfs_getattr,
@@ -89,6 +83,7 @@ static const struct fuse_operations mod_operations = {
 	.open = modfs_open,
 	.read = modfs_read,
 	.write = modfs_write,
+	.release = modfs_release,
 	.readdir = modfs_readdir,
 	.init = modfs_init,
 	.create = modfs_create,
@@ -104,10 +99,16 @@ int main(int argc, char *argv[])
 	if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
 		return 1;
 
-	if(options.lowerdirs == NULL || options.upperdir == NULL) {
+	if(options.lowerdirs == nullptr || options.upperdir == nullptr) {
 		printf("Missing lowerdirs and/or upperdir options\n");
 		options.show_help = 1;
 	}
+
+	if(options.upperdir != nullptr && !fs::exists(options.upperdir)) {
+		printf("Upperdir doesn't exist");
+	}
+
+	//TODO: test lowerdir
 
 	if (options.show_help) {
 		usage(argv[0]);
@@ -137,43 +138,6 @@ static inline void dirent_iterator(fs::path path, F callback) {
 	closedir(dp);
 }
 
-static std::optional<fs::path> case_adapted_path(fs::path fspath, fs::path refrence_dir) {
-	std::vector<std::string> path;
-
-	fs::path badpath = fspath;
-	while(badpath.has_parent_path()) { //fail in precense of tailing sperators
-		auto name = badpath.filename();
-		if(!name.empty()) //handle tailing sperators
-			path.push_back(name);
-		badpath = badpath.parent_path();
-	}
-
-	while(!path.empty()) {
-		std::string filename = *path.rbegin();
-		transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
-		path.pop_back();
-
-		bool found = false;
-		for(auto entry : fs::directory_iterator(refrence_dir)) {
-			const auto on_disk_name = entry.path().filename().string();
-			std::string on_disk_name_lower = on_disk_name;
-			transform(on_disk_name_lower.begin(), on_disk_name_lower.end(), on_disk_name_lower.begin(), ::tolower);
-
-			if(filename == on_disk_name_lower) {
-				refrence_dir /= on_disk_name;
-				found = true;
-				break;
-			}
-		}
-
-		if(!found) {
-			return std::nullopt;
-		}
-	}
-
-	return refrence_dir;
-}
-
 static int modfs_readdir(fs::path path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags) {
 	std::stringstream ss(options.lowerdirs);
 	std::unordered_set<std::string> entries{};
@@ -201,7 +165,7 @@ static int modfs_readdir(fs::path path, void *buf, fuse_fill_dir_t filler, off_t
 	if(adapted_path)
 		process_path(*adapted_path);
 
-	while (getline(ss, lowerdir, ',')) {
+	while (getline(ss, lowerdir, delimiter)) {
 		auto adapted_path = case_adapted_path(path, lowerdir);
 		if(adapted_path)
 			process_path(*adapted_path);
@@ -221,7 +185,7 @@ static std::optional<fs::path> search(fs::path path) {
 
 	std::stringstream ss(options.lowerdirs);
 	std::string lowerdir;
-	while (getline(ss, lowerdir, ',')) {
+	while (getline(ss, lowerdir, delimiter)) {
 		auto guessed_path = case_adapted_path(path, lowerdir);
 		if(guessed_path) {
 			return guessed_path;
@@ -292,6 +256,8 @@ static int recurse_mkdir(fs::path fspath, fs::path reference_path, mode_t mode) 
 
 	if(ret != 0)
 		return ret;
+
+	path = case_adapted_path(fspath.parent_path(), reference_path);
 	//make the thing
 	return mkdir((*path / fspath.filename()).c_str(), mode);
 }
@@ -333,11 +299,12 @@ static int modfs_write(fs::path path, const char *buf, size_t size, off_t offset
 		return -errno;
 
 	int res = pwrite(fd, buf, size, offset);
-	if (res == -1)
-		res = -errno;
 
 	if(fi == NULL)
 		close(fd);
+
+	if (res == -1)
+		res = -errno;
 
 	return res;
 }
@@ -361,11 +328,12 @@ static int modfs_read(fs::path path, char *buf, size_t size, off_t offset, struc
 		return -errno;
 
 	int res = pread(fd, buf, size, offset);
-	if (res == -1)
-		res = -errno;
 
 	if(fi == NULL)
 		close(fd);
+
+	if (res == -1)
+		res = -errno;
 
 	return res;
 }
@@ -374,20 +342,31 @@ static int modfs_read(const char *path, char *buf, size_t size, off_t offset, st
 }
 
 static int modfs_open(fs::path path, struct fuse_file_info *fi){
-	auto searched_path = search(path);
-	//doesn't exists
-	if(!searched_path) {
-		searched_path = case_adapted_path(path.parent_path(), options.upperdir);
-		if(!searched_path) //parent dir doesn't exists => can't open
+	auto path_to_open = search(path);
+	
+	if(!path_to_open) { //doesn't exists
+		path_to_open = search(path.parent_path());
+		if(!path_to_open) //parent dir doesn't exists => can't create
 			return -ENOENT;
 
-		searched_path = (*searched_path) / path.filename();
+		//ensure the path exists inside the upperdir, it might only have exister in one of the lowers
+		recurse_mkdir(path.parent_path(), options.upperdir, 0700);
+
+		auto adapted_path = case_adapted_path(path.parent_path(), options.upperdir);
+		if(!adapted_path) {
+			return -EIO; // io error, this wouldn'y make sens
+		}
+
+		path_to_open = *adapted_path / path.filename();
 	}
 
-	//create it in the upperdir
-	int res = open(searched_path->c_str(), O_RDWR);
+	int res = open(path_to_open->c_str(), fi->flags);
 	if (res == -1)
 		return -errno;
+
+	if (fi->flags & O_DIRECT) {
+		fi->direct_io = 1;
+	}
 
 	fi->fh = res;
 	return 0;
@@ -398,19 +377,25 @@ static int modfs_open(const char *path, struct fuse_file_info *fi){
 
 
 static int modfs_create(fs::path path, mode_t mode, struct fuse_file_info *fi) {
-	printf("Modfs create\n");
 	auto searched_path = search(path);
 	//already exists
 	if(searched_path) {
 		return 0;
 	}
 
-	//create in upperdir
-	searched_path = case_adapted_path(path.parent_path(), options.upperdir);
+	searched_path = search(path.parent_path());
 	if(!searched_path) //parent dir doesn't exists => can't create
 		return -ENOENT;
 
-	fs::path full_path = (*searched_path) / path.filename();
+	//ensure the path exists inside the upperdir, it might only have exister in one of the lowers
+	recurse_mkdir(path.parent_path(), options.upperdir, 0700);
+
+	auto adapted_path = case_adapted_path(path.parent_path(), options.upperdir);
+	if(!adapted_path) {
+		return -EIO; // io error, this wouldn'y make sens
+	}
+
+	auto full_path = *adapted_path / path.filename();
 	int res = open(full_path.c_str(), fi->flags, mode);
 	if (res == -1)
 		return -errno;
@@ -420,4 +405,9 @@ static int modfs_create(fs::path path, mode_t mode, struct fuse_file_info *fi) {
 }
 static int modfs_create(const char * path, mode_t mode, struct fuse_file_info *fi) {
 	return modfs_create("." + std::string(path), mode, fi);
+}
+
+static int modfs_release(const char *path, struct fuse_file_info *fi) {
+	close(fi->fh);
+	return 0;
 }

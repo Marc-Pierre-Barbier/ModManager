@@ -7,41 +7,6 @@
 
 #include "file.h"
 
-//rename a folder and all subfolder and files to lowercase
-//TODO: error handling
-error_t file_casefold(GFile * folder) {
-	g_autofree char * folder_path = g_file_get_path(folder);
-	if (g_file_query_exists(folder, NULL)) {
-		GFileType file_type = g_file_query_file_type(folder, G_FILE_QUERY_INFO_NONE, NULL);
-		if(file_type != G_FILE_TYPE_DIRECTORY)
-			return ERR_FAILURE;
-
-		GFileEnumerator *enumerator = g_file_enumerate_children(folder, G_FILE_ATTRIBUTE_STANDARD_NAME, G_FILE_QUERY_INFO_NONE, NULL, NULL);
-		for (GFileInfo *info = g_file_enumerator_next_file(enumerator, NULL, NULL); info != NULL; info = g_file_enumerator_next_file(enumerator, NULL, NULL)) {
-			const char * name = g_file_info_get_name(info);
-			//only look at ascii and hope for the best.
-			g_autofree GFile * file = g_file_new_build_filename(folder_path, name, NULL);
-
-			g_autofree gchar * destination_name = g_ascii_strdown(name, -1);
-			g_autofree GFile * destination = g_file_new_build_filename(folder_path, destination_name, NULL);
-
-			if(strcmp(destination_name, name) != 0) {
-				if(!g_file_move(file, destination, G_FILE_COPY_NONE, NULL, NULL, NULL, NULL)) {
-					g_warning( "Move failed: %s => %s \n", name, destination_name);
-				}
-			}
-			GFileType type = g_file_query_file_type(destination, G_FILE_QUERY_INFO_NONE, NULL);
-
-			if(type == G_FILE_TYPE_DIRECTORY) {
-				file_casefold(destination);
-			}
-
-		}
-		g_object_unref(enumerator);
-	}
-	return ERR_SUCCESS;
-}
-
 static const char * file_extract_last_part(const char * file_path, const char delimeter) {
 	const int length = strlen(file_path);
 	long index = -1;

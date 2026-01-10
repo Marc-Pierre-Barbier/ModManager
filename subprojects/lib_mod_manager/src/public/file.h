@@ -9,13 +9,6 @@
 #include <gio/gio.h>
 
 /**
- * @brief Recursively rename all file and folder to lowercase.
- *
- * @param folder
- */
-error_t file_casefold(GFile * folder);
-
-/**
  * @brief Return the extension of a file by looking for the character '.'
  * @param filePath
  * @return return a pointer to the address after the '.' or null if it was not found;

@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "mods.h"
 #include "archives.h"
+#include <case_adapted_path.h>
 
 //no function are declared in main it's just macros
 #include <constants.h>
@@ -154,7 +155,10 @@ mods_mod_detail_t mods_mod_details(const int appid, int modid) {
 	g_autofree char * mod_folder = g_build_filename(home, MODLIB_WORKING_DIR, MOD_FOLDER_NAME, appIdStr, NULL);
 	g_autofree char * current_mod_path = g_build_filename(mod_folder, mod_name, NULL);
 	g_autofree char * current_mod_install_flag =  g_build_filename(current_mod_path, INSTALLED_FLAG_FILE, NULL);
-	g_autofree char * current_mod_fomod_file =  g_build_filename(current_mod_path, "fomod", "moduleconfig.xml", NULL);
+
+	g_autofree char * fomod_relative_path =  g_build_filename("fomod", "moduleconfig.xml", NULL);
+	g_autofree char * current_mod_fomod_file = case_adapted_path(fomod_relative_path, current_mod_path);
+
 	g_autofree char * fomod_mod_name = g_strconcat(mod_name, "__FOMOD", NULL);
 	g_autofree char * fomod_mod_folder = g_build_filename(mod_folder, fomod_mod_name, NULL);
 
@@ -162,7 +166,10 @@ mods_mod_detail_t mods_mod_details(const int appid, int modid) {
 	mods_mod_detail_t result;
 	result.is_present = access(current_mod_path, F_OK) == 0;
 	result.is_activated = access(current_mod_install_flag, F_OK) == 0;
-	result.has_fomodfile = access(current_mod_fomod_file, F_OK) == 0;
+	result.has_fomodfile = current_mod_fomod_file != NULL;
+	if(result.has_fomodfile) {
+		strcpy(result.fomod_file, current_mod_fomod_file);
+	}
 	result.is_fomod = strstr(current_mod_path, "__FOMOD") != NULL;
 	result.has_fomod_sibling = access(fomod_mod_folder, F_OK) == 0;
 
@@ -292,7 +299,7 @@ GFile * mods_get_mod_folder(int appid, int mod_id) {
 		goto exit;
 	}
 
-	mod_folder = g_file_new_build_filename(mods_folder_path, mods->data, NULL);
+	mod_folder = g_file_new_build_filename(mods_folder_path, mod->data, NULL);
 	g_list_free_full(mods, free);
 exit:
 	return mod_folder;

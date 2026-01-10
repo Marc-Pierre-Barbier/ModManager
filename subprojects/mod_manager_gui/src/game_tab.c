@@ -17,7 +17,7 @@ static GHashTable * gamePaths;
 static void on_undeploy();
 
 static void on_deploy() {
-	if(deploy(appid) == OK) {
+	if(_deploy(appid) == OK) {
 		gtk_button_set_icon_name(start_button, "media-playback-stop-symbolic");
 		g_signal_handlers_disconnect_by_func(start_button, on_deploy, NULL);
 		g_signal_connect(start_button, "clicked", G_CALLBACK(on_undeploy), NULL);
@@ -27,7 +27,7 @@ static void on_deploy() {
 }
 
 static void on_undeploy() {
-	if(undeploy(appid) == ERR_SUCCESS) {
+	if(_undeploy(appid) == ERR_SUCCESS) {
 		gtk_button_set_icon_name(start_button, "media-playback-start-symbolic");
 		g_signal_handlers_disconnect_by_func(start_button, on_undeploy, NULL);
 		g_signal_connect(start_button, "clicked", G_CALLBACK(on_deploy), NULL);
@@ -47,7 +47,7 @@ static void row_selected (GtkListBox*, GtkListBoxRow* row, gpointer) {
 
 	//enable the button
 	bool status;
-	error_t err = is_deployed(appid, &status);
+	error_t err = _is_deployed(appid, &status);
 	if(err != ERR_SUCCESS) {
 		g_error("No button");
 		//TODO: error handling

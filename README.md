@@ -18,7 +18,6 @@ mods conflicts are solved by priority like in mo3
 * libarchive
 * libaudit
 * Fuse 3
-* Fuse-overlayfs
 * xdg-open
 
 ## TODO:

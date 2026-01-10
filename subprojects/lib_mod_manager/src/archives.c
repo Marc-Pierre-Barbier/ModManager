@@ -100,7 +100,6 @@ archive_error_t archive_deflate(GFile * file, GFile * g_out_dir) {
 	archive_write_close(output);
 	archive_write_free(output);
 
-	file_casefold(g_out_dir);
 	chdir(initial_work_dir);
 	return AR_ERR_OK;
 }

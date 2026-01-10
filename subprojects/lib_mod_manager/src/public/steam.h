@@ -114,24 +114,24 @@ static const char * GAMES_EXECUTABLE[] = {
 	"Fallout3.exe"
 };
 
-_Static_assert(sizeof(GAMES_EXECUTABLE) / sizeof(GAMES_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+static_assert(sizeof(GAMES_EXECUTABLE) / sizeof(GAMES_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_EXECUTABLE doesn't match");
 
 /*
-_Static_assert(sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE) / sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+static_assert(sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE) / sizeof(GAMES_SCRIPT_EXTENDER_EXECUTABLE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_SCRIPT_EXTENDER_EXECUTABLE doesn't match");
 */
 
-_Static_assert(sizeof(GAMES_PLUGINS_FILE) / sizeof(GAMES_PLUGINS_FILE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+static_assert(sizeof(GAMES_PLUGINS_FILE) / sizeof(GAMES_PLUGINS_FILE[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_PLUGINS_FILE doesn't match");
 
-_Static_assert(sizeof(GAMES_PREFIX_DIR) / sizeof(GAMES_PREFIX_DIR[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+static_assert(sizeof(GAMES_PREFIX_DIR) / sizeof(GAMES_PREFIX_DIR[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_PREFIX_DIR doesn't match");
 
-_Static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+static_assert(sizeof(GAMES_NAMES) / sizeof(GAMES_NAMES[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game APPIDS and GAMES_NAMES doesn't match");
 
-_Static_assert(sizeof(GAMES_MOD_TARGET) / sizeof(GAMES_MOD_TARGET[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
+static_assert(sizeof(GAMES_MOD_TARGET) / sizeof(GAMES_MOD_TARGET[0]) == sizeof(GAMES_APPIDS) / sizeof(GAMES_APPIDS[0]),
 	"Game mod target and GAMES_MOD_TARGET doesn't match");
 
 /**

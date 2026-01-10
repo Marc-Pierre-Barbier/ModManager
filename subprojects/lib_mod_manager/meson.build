@@ -1,6 +1,7 @@
-project('libmodManager', 'c',
+project('libmodManager', [ 'c', 'cpp' ],
 	default_options : [
-		'c_std=gnu2x' # 23 but it's not available yet
+		'c_std=gnu2x',
+		'cpp_std=c++23'
 	],
 )
 
@@ -8,21 +9,20 @@ glib2_dep = dependency('glib-2.0')
 libxml_dep = dependency('libxml-2.0')
 gio_dep = dependency('gio-2.0')
 libarchive_dep = dependency('libarchive')
-
+path_utils_proj = subproject('path_utils')
+lib_path_utils_dep = path_utils_proj.get_variable('lib_path_utils_dep')
 
 lib_sources = files(
 	'src/steam.c',
 	'src/loadOrder.c',
-	'src/overlayfs.c',
+	'src/overlayfs.cpp',
 	'src/file.c',
 	'src/mods.c',
 	'src/archives.c',
-	'src/fomod.c',
-	'src/deploy.c',
+	'src/fomod.cpp',
+	'src/deploy.cpp',
 	'src/game_executables.c',
-	'src/fomod/group.c',
-	'src/fomod/xmlUtil.c',
-	'src/fomod/parser.c'
+	'src/fomod_parser.cpp'
 )
 
 
@@ -30,11 +30,11 @@ lib_sources = files(
 lib_headers = files(
 	'src/public/modmanager.h',
 	'src/public/constants.h',
-	'src/public/deploy.h',
+	'src/public/deploy.hpp',
 	'src/public/errorType.h',
 	'src/public/file.h',
-	'src/public/fomod.h',
-	'src/public/fomodTypes.h',
+	'src/public/fomod.hpp',
+	'src/public/fomodTypes.hpp',
 	'src/public/loadOrder.h',
 	'src/public/mods.h',
 	'src/public/steam.h',
@@ -46,7 +46,7 @@ incdir = [ include_directories('src/public') ]
 lib_mod_manager = library(
 	'modManager',
 	sources: [lib_sources + lib_headers],
-	dependencies: [ glib2_dep, libxml_dep, gio_dep, libarchive_dep ],
+	dependencies: [ glib2_dep, libxml_dep, gio_dep, libarchive_dep, lib_path_utils_dep ],
 	include_directories: incdir,
 	install : true
 )
